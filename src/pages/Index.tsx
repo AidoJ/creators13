@@ -1,23 +1,13 @@
-import { Navbar } from "@/components/landing/Navbar";
-import { HeroSection } from "@/components/landing/HeroSection";
-import { AboutSection } from "@/components/landing/AboutSection";
-import { BodySection } from "@/components/landing/BodySection";
-import { TiersSection } from "@/components/landing/TiersSection";
-import { ComingSoonSection } from "@/components/landing/ComingSoonSection";
-import { Footer } from "@/components/landing/Footer";
+import { Navigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
-  return (
-    <div className="min-h-screen">
-      <Navbar />
-      <HeroSection />
-      <AboutSection />
-      <BodySection />
-      <TiersSection />
-      <ComingSoonSection />
-      <Footer />
-    </div>
-  );
+  const { user, loading } = useAuth();
+
+  if (loading) return null;
+
+  // Logged-in users go to dashboard, everyone else to enrollment
+  return <Navigate to={user ? "/dashboard" : "/enroll"} replace />;
 };
 
 export default Index;
