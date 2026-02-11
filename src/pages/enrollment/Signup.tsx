@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowRight, Loader2 } from "lucide-react";
+import { ArrowRight, Loader2, MailCheck } from "lucide-react";
 import { TIERS, TierKey } from "@/lib/tiers";
 import logo from "@/assets/13creators-logo.png";
 import EnrollmentHeader from "@/components/enrollment/EnrollmentHeader";
@@ -33,6 +33,8 @@ export default function Signup() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showVerification, setShowVerification] = useState(false);
+  const [createdUserId, setCreatedUserId] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,6 +69,7 @@ export default function Signup() {
       setLoading(false);
       return;
     }
+    setCreatedUserId(userId);
 
     // 2. Profile is auto-created by the handle_new_user trigger.
     //    Update it with enrollment_step.
@@ -88,24 +91,58 @@ export default function Signup() {
       // TODO: Link client to practitioner via client_practitioner table once practitioner lookup is built
     }
 
-    toast({
-      title: "Account created!",
-      description: "Please check your email to verify your account.",
-    });
+    setLoading(false);
 
-    // 5. Navigate to next step
+    // Show verification screen instead of navigating immediately
+    setShowVerification(true);
+  };
+
+  const handleContinue = () => {
     const nextParams = new URLSearchParams({ tier, billing });
-    // Pass user info for the checkout edge function (user isn't confirmed yet)
-    nextParams.set("uid", userId);
+    nextParams.set("uid", createdUserId);
     nextParams.set("email", email);
     if (tier === "wren") {
       navigate(`/enroll/details?${nextParams.toString()}`);
     } else {
       navigate(`/enroll/payment?${nextParams.toString()}`);
     }
-
-    setLoading(false);
   };
+
+  if (showVerification) {
+    return (
+      <div className="min-h-screen bg-background">
+        <EnrollmentHeader currentStep={1} />
+        <main className="container mx-auto px-4 py-10 max-w-md text-center">
+          <div className="bg-card border border-border rounded-2xl p-8 space-y-6">
+            <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+              <MailCheck className="h-8 w-8 text-primary" />
+            </div>
+            <h1 className="text-2xl font-display font-bold text-foreground">Check Your Email</h1>
+            <p className="text-muted-foreground">
+              We've sent a verification link to{" "}
+              <span className="font-semibold text-foreground">{email}</span>.
+              Please verify your email to complete enrollment.
+            </p>
+            <div className="bg-muted/50 rounded-xl p-4 text-sm text-muted-foreground">
+              <p className="font-medium text-foreground mb-1">What happens next?</p>
+              <p>Once verified, click below to continue with {tier === "wren" ? "your profile details" : "payment"}.</p>
+            </div>
+            <Button
+              onClick={handleContinue}
+              size="lg"
+              className="rounded-full px-10 text-base font-semibold"
+            >
+              I've Verified — Continue
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              Didn't receive it? Check your spam folder or try signing up again.
+            </p>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
