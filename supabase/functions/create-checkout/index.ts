@@ -18,34 +18,50 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const supabaseClient = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_ANON_KEY") ?? ""
-  );
-
   try {
     logStep("Function started");
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
 
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      { auth: { persistSession: false } }
+    );
+
+    // Try to get user from JWT first, fall back to body params
+    let userEmail: string | undefined;
+    let userId: string | undefined;
+
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header provided");
+    if (authHeader) {
+      const token = authHeader.replace("Bearer ", "");
+      const { data } = await supabaseClient.auth.getUser(token);
+      if (data.user?.email) {
+        userEmail = data.user.email;
+        userId = data.user.id;
+        logStep("User from JWT", { userId, email: userEmail });
+      }
+    }
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data } = await supabaseClient.auth.getUser(token);
-    const user = data.user;
-    if (!user?.email) throw new Error("User not authenticated or email not available");
-    logStep("User authenticated", { userId: user.id, email: user.email });
+    const body = await req.json();
+    const { priceId, successUrl, cancelUrl, email, user_id } = body;
 
-    const { priceId, successUrl, cancelUrl } = await req.json();
+    // Fall back to body params if JWT auth didn't work (unconfirmed user)
+    if (!userEmail && email) {
+      userEmail = email;
+      userId = user_id;
+      logStep("User from body params", { userId, email: userEmail });
+    }
+
+    if (!userEmail) throw new Error("No user email available");
     if (!priceId) throw new Error("priceId is required");
-    logStep("Checkout params", { priceId });
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
-    // Find or reference existing customer
-    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
+    // Find or create Stripe customer
+    const customers = await stripe.customers.list({ email: userEmail, limit: 1 });
     let customerId: string | undefined;
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
@@ -55,16 +71,37 @@ serve(async (req) => {
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
-      customer_email: customerId ? undefined : user.email,
+      customer_email: customerId ? undefined : userEmail,
       line_items: [{ price: priceId, quantity: 1 }],
       mode: "subscription",
       success_url: successUrl || `${origin}/enroll/details?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: cancelUrl || `${origin}/enroll/payment?canceled=true`,
-      payment_method_types: ["card", "au_becs_debit"],
+      payment_method_types: ["card"],
       metadata: {
-        user_id: user.id,
+        user_id: userId || "",
       },
     });
+
+    // Also create role + subscription records server-side if user_id provided
+    if (userId) {
+      // Insert role (ignore if exists)
+      await supabaseClient.from("user_roles").upsert(
+        { user_id: userId, role: "client" },
+        { onConflict: "user_id,role" }
+      );
+
+      // Insert subscription (ignore if exists)
+      await supabaseClient.from("subscriptions").upsert(
+        {
+          user_id: userId,
+          tier: body.tier || "robin",
+          status: "incomplete",
+          billing_period: body.billing || "monthly",
+        },
+        { onConflict: "user_id" }
+      );
+      logStep("Created role + subscription records");
+    }
 
     logStep("Checkout session created", { sessionId: session.id, url: session.url });
 
