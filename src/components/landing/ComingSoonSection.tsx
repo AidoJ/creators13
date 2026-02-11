@@ -9,7 +9,7 @@ const sections = [
   },
   {
     title: "Golden Games",
-    description: "Gamified challenges and interactive experiences designed to deepen your understanding of the 12 forces of nature.",
+    description: "Gamified challenges and interactive experiences designed to deepen your understanding of the 13 forces of nature.",
     icon: Gamepad2,
   },
   {
@@ -21,7 +21,7 @@ const sections = [
 
 export function ComingSoonSection() {
   return (
-    <section id="coming-soon" className="py-28 bg-card">
+    <section id="coming-soon" className="py-24 bg-card">
       <div className="container mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -32,7 +32,7 @@ export function ComingSoonSection() {
           <p className="text-primary font-body text-sm font-semibold uppercase tracking-[0.3em] mb-4">
             What's Next
           </p>
-          <h2 className="text-4xl md:text-6xl font-display font-bold text-foreground mb-4">
+          <h2 className="text-4xl md:text-5xl font-display font-bold text-foreground mb-4">
             Coming Soon
           </h2>
           <p className="text-lg text-muted-foreground max-w-lg mx-auto">

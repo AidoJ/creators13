@@ -4,11 +4,17 @@ import { Link } from "react-router-dom";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import levelCard1 from "@/assets/level-card-1.png";
+import levelCard2 from "@/assets/level-card-2.png";
+import levelCard3 from "@/assets/level-card-3.png";
+import levelCard4 from "@/assets/level-card-4.png";
+import levelsBg from "@/assets/levels-bg.png";
 
 const tiers = [
   {
     name: "Wren",
     subtitle: "Explorer",
+    image: levelCard1,
     monthlyPrice: 0,
     annualPrice: 0,
     features: [
@@ -19,10 +25,12 @@ const tiers = [
     ],
     cta: "Join Free",
     popular: false,
+    color: "text-green-600",
   },
   {
     name: "Robin",
     subtitle: "Seeker",
+    image: levelCard2,
     monthlyPrice: 29,
     annualPrice: 290,
     features: [
@@ -34,10 +42,12 @@ const tiers = [
     ],
     cta: "Get Started",
     popular: true,
+    color: "text-orange-500",
   },
   {
     name: "Falcon",
     subtitle: "Achiever",
+    image: levelCard3,
     monthlyPrice: 59,
     annualPrice: 590,
     features: [
@@ -49,10 +59,12 @@ const tiers = [
     ],
     cta: "Level Up",
     popular: false,
+    color: "text-blue-600",
   },
   {
     name: "Owl",
     subtitle: "Practitioner Training",
+    image: levelCard4,
     monthlyPrice: 149,
     annualPrice: 1490,
     features: [
@@ -65,6 +77,7 @@ const tiers = [
     ],
     cta: "Apply Now",
     popular: false,
+    color: "text-purple-600",
   },
 ];
 
@@ -72,26 +85,30 @@ export function TiersSection() {
   const [annual, setAnnual] = useState(false);
 
   return (
-    <section id="tiers" className="py-28 bg-background">
-      <div className="container mx-auto px-4">
+    <section id="tiers" className="relative py-24 overflow-hidden">
+      {/* Background image */}
+      <div
+        className="absolute inset-0 bg-cover bg-center opacity-10"
+        style={{ backgroundImage: `url(${levelsBg})` }}
+      />
+      <div className="absolute inset-0 bg-background/95" />
+
+      <div className="relative z-10 container mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center mb-14"
+          className="text-center mb-12"
         >
-          <p className="text-primary font-body text-sm font-semibold uppercase tracking-[0.3em] mb-4">
-            Your Journey
-          </p>
-          <h2 className="text-4xl md:text-6xl font-display font-bold text-foreground mb-4">
-            Choose Your Path
+          <h2 className="text-3xl md:text-5xl font-display font-bold text-foreground mb-4">
+            Click On Your Level To Get Started
           </h2>
-          <p className="text-lg text-muted-foreground mb-10 max-w-xl mx-auto">
-            From curious explorer to certified practitioner — find the tier that fits your journey.
+          <p className="text-muted-foreground text-lg">
+            (Newbies to the Creator Types… Yes, you START at the start!)
           </p>
 
           {/* Toggle */}
-          <div className="inline-flex items-center gap-1 bg-muted rounded-full p-1">
+          <div className="inline-flex items-center gap-1 bg-muted rounded-full p-1 mt-8">
             <button
               onClick={() => setAnnual(false)}
               className={cn(
@@ -113,7 +130,8 @@ export function TiersSection() {
           </div>
         </motion.div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5 max-w-6xl mx-auto">
+        {/* Level cards with pricing */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
           {tiers.map((tier, i) => (
             <motion.div
               key={tier.name}
@@ -122,49 +140,61 @@ export function TiersSection() {
               viewport={{ once: true }}
               transition={{ duration: 0.4, delay: i * 0.08 }}
               className={cn(
-                "relative flex flex-col rounded-2xl p-7 border transition-all duration-300 hover:shadow-xl",
+                "relative flex flex-col rounded-2xl overflow-hidden border transition-all duration-300 hover:shadow-xl bg-card",
                 tier.popular
-                  ? "border-primary bg-card shadow-lg ring-2 ring-primary/20 scale-[1.02]"
-                  : "border-border bg-card hover:border-primary/30"
+                  ? "border-primary shadow-lg ring-2 ring-primary/20 scale-[1.02]"
+                  : "border-border hover:border-primary/30"
               )}
             >
               {tier.popular && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-xs font-bold px-4 py-1 rounded-full uppercase tracking-wider">
+                <span className="absolute top-3 right-3 z-10 bg-primary text-primary-foreground text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
                   Most Popular
                 </span>
               )}
-              <h3 className="text-2xl font-display font-bold text-foreground">{tier.name}</h3>
-              <p className="text-sm text-muted-foreground mb-5">{tier.subtitle}</p>
-              <div className="mb-7">
-                <span className="text-5xl font-display font-bold text-foreground">
-                  ${annual ? Math.round(tier.annualPrice / 12) : tier.monthlyPrice}
-                </span>
-                <span className="text-muted-foreground text-sm ml-1">/mo</span>
-                {annual && tier.annualPrice > 0 && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    ${tier.annualPrice} billed annually
-                  </p>
-                )}
+
+              {/* Level card image */}
+              <div className="relative">
+                <img
+                  src={tier.image}
+                  alt={`${tier.name} level`}
+                  className="w-full aspect-[4/3] object-cover"
+                />
               </div>
-              <ul className="space-y-3 mb-8 flex-1">
-                {tier.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2.5 text-sm text-foreground">
-                    <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <Link to="/auth">
-                <Button
-                  className={cn(
-                    "w-full rounded-full font-semibold",
-                    tier.popular ? "" : ""
+
+              {/* Pricing + features */}
+              <div className="p-6 flex flex-col flex-1">
+                <h3 className={cn("text-2xl font-display font-bold", tier.color)}>{tier.name}</h3>
+                <p className="text-sm text-muted-foreground mb-4">{tier.subtitle}</p>
+                <div className="mb-5">
+                  <span className="text-4xl font-display font-bold text-foreground">
+                    ${annual ? Math.round(tier.annualPrice / 12) : tier.monthlyPrice}
+                  </span>
+                  <span className="text-muted-foreground text-sm ml-1">/mo</span>
+                  {annual && tier.annualPrice > 0 && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      ${tier.annualPrice} billed annually
+                    </p>
                   )}
-                  variant={tier.popular ? "default" : "outline"}
-                >
-                  {tier.cta}
-                </Button>
-              </Link>
+                </div>
+                <ul className="space-y-2.5 mb-6 flex-1">
+                  {tier.features.map((f) => (
+                    <li key={f} className="flex items-start gap-2 text-sm text-foreground">
+                      <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <Link to="/auth">
+                  <Button
+                    className={cn(
+                      "w-full rounded-full font-semibold",
+                    )}
+                    variant={tier.popular ? "default" : "outline"}
+                  >
+                    {tier.cta}
+                  </Button>
+                </Link>
+              </div>
             </motion.div>
           ))}
         </div>

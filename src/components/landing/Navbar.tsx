@@ -15,7 +15,7 @@ export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-foreground/90 backdrop-blur-xl border-b border-white/5">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-blue-900/80 backdrop-blur-xl border-b border-white/10">
       <div className="container mx-auto flex items-center justify-between h-16 px-4">
         <Link to="/" className="flex items-center gap-2">
           <span className="text-2xl font-display font-bold text-primary">13</span>
@@ -28,7 +28,7 @@ export function Navbar() {
             <a
               key={link.label}
               href={link.href}
-              className="text-sm font-medium text-white/50 hover:text-white transition-colors"
+              className="text-sm font-medium text-white/60 hover:text-white transition-colors"
             >
               {link.label}
             </a>
@@ -50,7 +50,7 @@ export function Navbar() {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="md:hidden bg-foreground border-b border-white/5 px-4 pb-4 space-y-3">
+        <div className="md:hidden bg-blue-900/95 border-b border-white/10 px-4 pb-4 space-y-3">
           {navLinks.map((link) => (
             <a
               key={link.label}

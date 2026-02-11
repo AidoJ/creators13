@@ -1,73 +1,80 @@
 import { motion } from "framer-motion";
 import creatorTypesIcons from "@/assets/creator-types-icons.png";
+import sandDivider from "@/assets/sand-divider.png";
+import decorativeElements from "@/assets/decorative-elements.png";
 
 export function AboutSection() {
   return (
-    <section id="about" className="py-28 bg-background">
-      <div className="container mx-auto px-4">
-        {/* Intro */}
-        <div className="max-w-3xl mx-auto text-center mb-20">
-          <motion.p
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            className="text-primary font-body text-sm font-semibold uppercase tracking-[0.3em] mb-4"
-          >
-            The Science of You
-          </motion.p>
-          <motion.h2
+    <section id="about">
+      {/* Sand divider with icons */}
+      <div className="relative">
+        <img src={sandDivider} alt="" className="w-full" />
+      </div>
+
+      {/* Want To Meet Your Co-Creators */}
+      <div className="py-20 bg-background">
+        <div className="container mx-auto px-4 text-center">
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-4xl md:text-6xl font-display font-bold text-foreground mb-6 leading-tight"
           >
-            12 Body Types.<br />
-            <span className="text-primary">12 Forces of Nature.</span>
-          </motion.h2>
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.1 }}
-            className="text-lg text-muted-foreground leading-relaxed"
-          >
-            The shape, structure, and features of your body form the template for everything you create.
-            When you know how to operate your vehicle, you can create whatever your heart desires.
-          </motion.p>
+            <img src={decorativeElements} alt="" className="w-20 mx-auto mb-6 opacity-70" />
+            <h2 className="text-3xl md:text-5xl font-display font-bold text-foreground mb-4">
+              Want To Meet Your Co-Creators?
+            </h2>
+            <img src={decorativeElements} alt="" className="w-20 mx-auto mt-6 opacity-70" />
+          </motion.div>
         </div>
+      </div>
 
-        {/* Creator type icons */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="flex justify-center mb-20"
-        >
-          <img src={creatorTypesIcons} alt="The 12 Creator Type archetypes" className="w-full max-w-4xl" />
-        </motion.div>
+      {/* YouTube embed */}
+      <div className="py-16 bg-background">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="max-w-4xl mx-auto"
+          >
+            <div className="aspect-video rounded-lg overflow-hidden shadow-2xl">
+              <iframe
+                width="100%"
+                height="100%"
+                src="https://www.youtube.com/embed/N_hAuOoWFjM"
+                title="13 CREATOR TYPES In 12 Minutes"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="w-full h-full"
+              />
+            </div>
+          </motion.div>
+        </div>
+      </div>
 
-        {/* YouTube embed */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="max-w-4xl mx-auto"
-        >
-          <p className="text-center text-sm font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-6">
-            Watch: 12 Creator Types in 12 Minutes
-          </p>
-          <div className="aspect-video rounded-2xl overflow-hidden shadow-2xl ring-1 ring-border">
-            <iframe
-              width="100%"
-              height="100%"
-              src="https://www.youtube.com/embed/N_hAuOoWFjM"
-              title="12 CREATOR TYPES In 12 Minutes"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              className="w-full h-full"
-            />
-          </div>
-        </motion.div>
+      {/* 13 Body Types = 13 Forces of Nature */}
+      <div className="py-20 bg-background">
+        <div className="container mx-auto px-4 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <img src={creatorTypesIcons} alt="The 13 Creator Type archetypes" className="w-full max-w-4xl mx-auto mb-10" />
+            <h2 className="text-3xl md:text-5xl font-display font-bold text-foreground leading-relaxed">
+              <span className="text-primary">13 BODY TYPES</span>
+              <br />
+              = 13 Forces of Nature
+              <br />
+              = Unlimited Creative Power!
+            </h2>
+            <p className="text-lg text-muted-foreground mt-8 max-w-2xl mx-auto">
+              Doors open soon to the Creator Types ecosystem —
+              <br />
+              The only place online where you can meet other Creators by their body type
+            </p>
+          </motion.div>
+        </div>
       </div>
     </section>
   );
