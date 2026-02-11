@@ -79,27 +79,8 @@ export default function Signup() {
       // Non-blocking — profile was still created by trigger
     }
 
-    // 3. Auto-assign role based on tier
-    const { error: roleError } = await supabase.from("user_roles").insert({
-      user_id: userId,
-      role: TIER_ROLES[tier] as any,
-    });
-
-    if (roleError) {
-      console.error("Role assignment error:", roleError);
-    }
-
-    // 4. Create subscription record
-    const { error: subError } = await supabase.from("subscriptions").insert({
-      user_id: userId,
-      tier: tier as any,
-      status: tier === "wren" ? "active" : "incomplete",
-      billing_period: billing,
-    });
-
-    if (subError) {
-      console.error("Subscription creation error:", subError);
-    }
+    // 3. Role + subscription are created server-side by the create-checkout edge function
+    //    (or for Wren, we handle it below)
 
     // 5. If case study, log the practitioner code (linking happens server-side)
     if (caseStudy && practitionerCode) {
@@ -112,13 +93,14 @@ export default function Signup() {
       description: "Please check your email to verify your account.",
     });
 
-    // 6. Navigate to next step
+    // 5. Navigate to next step
     const nextParams = new URLSearchParams({ tier, billing });
+    // Pass user info for the checkout edge function (user isn't confirmed yet)
+    nextParams.set("uid", userId);
+    nextParams.set("email", email);
     if (tier === "wren") {
-      // Free tier skips payment → go to personal details + photos
       navigate(`/enroll/details?${nextParams.toString()}`);
     } else {
-      // Paid tier → go to payment
       navigate(`/enroll/payment?${nextParams.toString()}`);
     }
 
