@@ -65,6 +65,18 @@ serve(async (req) => {
     let customerId: string | undefined;
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
+      logStep("Found existing customer", { customerId });
+
+      // Expire any open checkout sessions to avoid currency conflict
+      const openSessions = await stripe.checkout.sessions.list({
+        customer: customerId,
+        status: "open",
+        limit: 10,
+      });
+      for (const s of openSessions.data) {
+        await stripe.checkout.sessions.expire(s.id);
+        logStep("Expired open session", { sessionId: s.id });
+      }
     }
 
     const origin = req.headers.get("origin") || "http://localhost:3000";
