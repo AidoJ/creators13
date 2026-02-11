@@ -68,18 +68,15 @@ export default function Signup() {
       return;
     }
 
-    // 2. Create minimal profile (details added later in Step 4)
-    const { error: profileError } = await supabase.from("profiles").insert({
-      user_id: userId,
-      email,
+    // 2. Profile is auto-created by the handle_new_user trigger.
+    //    Update it with enrollment_step.
+    const { error: profileError } = await supabase.from("profiles").update({
       enrollment_step: "signed_up" as const,
-    });
+    }).eq("user_id", userId);
 
     if (profileError) {
-      console.error("Profile creation error:", profileError);
-      toast({ title: "Profile creation failed", description: profileError.message, variant: "destructive" });
-      setLoading(false);
-      return;
+      console.error("Profile update error:", profileError);
+      // Non-blocking — profile was still created by trigger
     }
 
     // 3. Auto-assign role based on tier
