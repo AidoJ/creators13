@@ -15,15 +15,15 @@ export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-blue-900/80 backdrop-blur-xl border-b border-white/10">
-      <div className="container mx-auto flex items-center justify-between h-16 px-4">
-        <Link to="/" className="flex items-center gap-2">
-          <span className="text-2xl font-display font-bold text-primary">13</span>
-          <span className="text-lg font-display font-semibold text-white">Creators</span>
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-[#1a2a5a]/90 backdrop-blur-md border-b border-white/10">
+      <div className="container mx-auto flex items-center justify-between h-14 px-4">
+        <Link to="/" className="flex items-center gap-1.5">
+          <span className="text-xl font-display font-bold text-primary">13</span>
+          <span className="text-base font-display font-semibold text-white">Creators</span>
         </Link>
 
         {/* Desktop */}
-        <div className="hidden md:flex items-center gap-8">
+        <div className="hidden md:flex items-center gap-7">
           {navLinks.map((link) => (
             <a
               key={link.label}
@@ -34,7 +34,7 @@ export function Navbar() {
             </a>
           ))}
           <Link to="/auth">
-            <Button size="sm" className="rounded-full px-6 font-semibold">Get Started</Button>
+            <Button size="sm" className="rounded-full px-5 font-semibold text-sm">Get Started</Button>
           </Link>
         </div>
 
@@ -48,9 +48,8 @@ export function Navbar() {
         </button>
       </div>
 
-      {/* Mobile menu */}
       {mobileOpen && (
-        <div className="md:hidden bg-blue-900/95 border-b border-white/10 px-4 pb-4 space-y-3">
+        <div className="md:hidden bg-[#1a2a5a]/95 border-b border-white/10 px-4 pb-4 space-y-3">
           {navLinks.map((link) => (
             <a
               key={link.label}
