@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,16 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowRight, Loader2, MailCheck } from "lucide-react";
 import { TIERS, TierKey } from "@/lib/tiers";
-import logo from "@/assets/13creators-logo.png";
 import EnrollmentHeader from "@/components/enrollment/EnrollmentHeader";
-
-// Role mapping based on tier
-const TIER_ROLES: Record<TierKey, string> = {
-  wren: "client",
-  robin: "client",
-  falcon: "client",
-  owl: "trainee",
-};
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -71,29 +62,33 @@ export default function Signup() {
     }
     setCreatedUserId(userId);
 
-    // 2. Profile is auto-created by the handle_new_user trigger.
-    //    Update it with enrollment_step.
-    const { error: profileError } = await supabase.from("profiles").update({
-      enrollment_step: "signed_up" as const,
-    }).eq("user_id", userId);
+    // 2. Call the edge function to create all DB records (role, subscription, profile update)
+    //    This works for both free and paid tiers — it handles everything server-side.
+    const priceId = tierInfo.stripe?.price_id || null;
 
-    if (profileError) {
-      console.error("Profile update error:", profileError);
-      // Non-blocking — profile was still created by trigger
+    const { error: fnError } = await supabase.functions.invoke("create-checkout", {
+      body: {
+        priceId,
+        email,
+        user_id: userId,
+        tier,
+        billing,
+        successUrl: `${window.location.origin}/enroll/details?tier=${tier}&billing=${billing}&payment=skipped`,
+        cancelUrl: `${window.location.origin}/enroll/payment?tier=${tier}&billing=${billing}&canceled=true`,
+      },
+    });
+
+    if (fnError) {
+      console.error("Edge function error:", fnError);
+      // Non-blocking — user is created, DB records may still need fixing
     }
 
-    // 3. Role + subscription are created server-side by the create-checkout edge function
-    //    (or for Wren, we handle it below)
-
-    // 5. If case study, log the practitioner code (linking happens server-side)
+    // 3. If case study, log the practitioner code
     if (caseStudy && practitionerCode) {
       console.log("Case study enrollment with practitioner code:", practitionerCode);
-      // TODO: Link client to practitioner via client_practitioner table once practitioner lookup is built
     }
 
     setLoading(false);
-
-    // Show verification screen instead of navigating immediately
     setShowVerification(true);
   };
 
@@ -160,47 +155,20 @@ export default function Signup() {
           <section className="bg-card border border-border rounded-2xl p-6 space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="email">Email *</Label>
-              <Input
-                id="email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-              />
+              <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="password">Password *</Label>
-              <Input
-                id="password"
-                type="password"
-                required
-                minLength={6}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Min 6 characters"
-              />
+              <Input id="password" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Min 6 characters" />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="confirmPassword">Confirm Password *</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Re-enter password"
-              />
+              <Input id="confirmPassword" type="password" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Re-enter password" />
             </div>
           </section>
 
-          <div className="text-center">
-            <Button
-              type="submit"
-              size="lg"
-              className="rounded-full px-10 text-base font-semibold"
-              disabled={loading}
-            >
+          <div className="text-center space-y-3">
+            <Button type="submit" size="lg" className="rounded-full px-10 text-base font-semibold" disabled={loading}>
               {loading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
@@ -210,6 +178,12 @@ export default function Signup() {
                 </>
               )}
             </Button>
+            <p className="text-sm text-muted-foreground">
+              Already have an account?{" "}
+              <Link to="/auth" className="text-primary font-semibold hover:underline">
+                Sign in
+              </Link>
+            </p>
           </div>
         </form>
       </main>

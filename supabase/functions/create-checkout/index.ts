@@ -21,9 +21,6 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
-    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
-
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
@@ -46,7 +43,7 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { priceId, successUrl, cancelUrl, email, user_id } = body;
+    const { priceId, successUrl, cancelUrl, email, user_id, tier, billing } = body;
 
     // Fall back to body params if JWT auth didn't work (unconfirmed user)
     if (!userEmail && email) {
@@ -56,7 +53,50 @@ serve(async (req) => {
     }
 
     if (!userEmail) throw new Error("No user email available");
-    if (!priceId) throw new Error("priceId is required");
+    if (!userId) throw new Error("No user ID available");
+
+    const tierValue = tier || "wren";
+    const role = tierValue === "owl" ? "trainee" : "client";
+
+    // Always create role + subscription records
+    await supabaseClient.from("user_roles").upsert(
+      { user_id: userId, role },
+      { onConflict: "user_id,role" }
+    );
+
+    await supabaseClient.from("subscriptions").upsert(
+      {
+        user_id: userId,
+        tier: tierValue,
+        status: tierValue === "wren" ? "active" : "incomplete",
+        billing_period: billing || "monthly",
+      },
+      { onConflict: "user_id" }
+    );
+    logStep("Created role + subscription records", { role, tier: tierValue });
+
+    // Update profile enrollment_step
+    await supabaseClient.from("profiles").update({
+      enrollment_step: "signed_up",
+    }).eq("user_id", userId);
+    logStep("Updated profile enrollment_step");
+
+    // FREE TIER: no Stripe needed, return success directly
+    if (!priceId || tierValue === "wren") {
+      logStep("Free tier — skipping Stripe checkout");
+      const origin = req.headers.get("origin") || "http://localhost:3000";
+      return new Response(JSON.stringify({
+        url: successUrl || `${origin}/enroll/details?tier=${tierValue}&billing=monthly&payment=skipped`,
+        free: true,
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    // PAID TIER: create Stripe checkout session
+    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+    if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
@@ -87,33 +127,12 @@ serve(async (req) => {
       line_items: [{ price: priceId, quantity: 1 }],
       mode: "subscription",
       success_url: successUrl || `${origin}/enroll/details?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: cancelUrl || `${origin}/enroll/payment?canceled=true`,
+      cancel_url: cancelUrl || `${origin}/enroll/payment?tier=${tierValue}&billing=${billing || "monthly"}&canceled=true`,
       payment_method_types: ["card"],
       metadata: {
-        user_id: userId || "",
+        user_id: userId,
       },
     });
-
-    // Also create role + subscription records server-side if user_id provided
-    if (userId) {
-      // Insert role (ignore if exists)
-      await supabaseClient.from("user_roles").upsert(
-        { user_id: userId, role: "client" },
-        { onConflict: "user_id,role" }
-      );
-
-      // Insert subscription (ignore if exists)
-      await supabaseClient.from("subscriptions").upsert(
-        {
-          user_id: userId,
-          tier: body.tier || "robin",
-          status: "incomplete",
-          billing_period: body.billing || "monthly",
-        },
-        { onConflict: "user_id" }
-      );
-      logStep("Created role + subscription records");
-    }
 
     logStep("Checkout session created", { sessionId: session.id, url: session.url });
 
