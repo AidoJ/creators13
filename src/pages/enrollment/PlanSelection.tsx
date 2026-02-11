@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { TIERS, TierKey } from "@/lib/tiers";
-import logo from "@/assets/13creators-logo.png";
+import EnrollmentHeader from "@/components/enrollment/EnrollmentHeader";
 import birdWren from "@/assets/bird-wren.png";
 import birdRobin from "@/assets/bird-robin.png";
 import birdFalcon from "@/assets/bird-falcon.png";
@@ -43,27 +43,7 @@ export default function PlanSelection() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto flex items-center justify-between h-16 px-4">
-          <a href="/" className="flex items-center gap-3">
-            <img src={logo} alt="13 Creators" className="h-10" />
-          </a>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span className="hidden sm:inline">Step</span>
-            <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">1</span>
-            <span className="text-foreground font-medium">Plan</span>
-            <span className="mx-1">→</span>
-            <span>Signup</span>
-            <span className="mx-1">→</span>
-            <span>Payment</span>
-            <span className="mx-1">→</span>
-            <span>Photos</span>
-            <span className="mx-1">→</span>
-            <span>Booking</span>
-          </div>
-        </div>
-      </header>
+      <EnrollmentHeader currentStep={0} />
 
       <main className="container mx-auto px-4 py-12 max-w-5xl">
         <div className="text-center mb-10">
