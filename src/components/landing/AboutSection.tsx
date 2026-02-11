@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
-import creatorTypesIcons from "@/assets/creator-types-icons.png";
+import bodyTypesArrows from "@/assets/body-types-arrows.png";
+import celebritiesRow from "@/assets/celebrities-row.png";
 
 export function AboutSection() {
   return (
@@ -32,19 +33,30 @@ export function AboutSection() {
             className="text-lg text-muted-foreground leading-relaxed"
           >
             The shape, structure, and features of your body form the template for everything you create.
-            When you know how to operate your vehicle, you can create whatever your heart desires.
+            Each body type maps to a force of nature. See the patterns for yourself.
           </motion.p>
         </div>
 
-        {/* Creator type icons */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="flex justify-center mb-20"
-        >
-          <img src={creatorTypesIcons} alt="The 12 Creator Type archetypes" className="w-full max-w-4xl" />
-        </motion.div>
+        {/* Body type names with arrows → celebrities */}
+        <div className="max-w-5xl mx-auto mb-24">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="bg-card rounded-3xl p-6 md:p-10 border border-border shadow-sm"
+          >
+            <img
+              src={bodyTypesArrows}
+              alt="12 body types — Lava, Fire, Whirlwind, Snow, Lightning, Sun, Lake, Ocean, Tree, Soil, Mountain, River"
+              className="w-full max-w-4xl mx-auto"
+            />
+            <img
+              src={celebritiesRow}
+              alt="Celebrity examples of each Creator body type"
+              className="w-full max-w-4xl mx-auto -mt-4"
+            />
+          </motion.div>
+        </div>
 
         {/* YouTube embed */}
         <motion.div
