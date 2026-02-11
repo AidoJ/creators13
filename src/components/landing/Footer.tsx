@@ -1,74 +1,67 @@
+import { Link } from "react-router-dom";
 import aharaPhoto from "@/assets/ahara-photo.jpg";
-import footerBg from "@/assets/footer-bg.png";
 
 export function Footer() {
   return (
-    <footer className="relative overflow-hidden">
-      {/* Footer background */}
-      <div
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: `url(${footerBg})` }}
-      />
-      <div className="absolute inset-0 bg-foreground/80" />
-
-      <div className="relative z-10 py-16">
-        <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-2 gap-12 items-center max-w-4xl mx-auto">
-            {/* A'HaRa info */}
-            <div className="text-center md:text-left">
-              <p className="text-xl font-display text-white mb-1">Create & Come Alive</p>
-              <p className="text-lg text-white/80 mb-6">
-                with <span className="text-[hsl(0,100%,60%)]">C</span>
-                <span className="text-[hsl(30,100%,60%)]">R</span>
-                <span className="text-[hsl(120,80%,50%)]">E</span>
-                <span className="text-[hsl(280,100%,60%)]">A</span>
-                <span className="text-[hsl(50,100%,60%)]">T</span>
-                <span className="text-[hsl(200,100%,60%)]">O</span>
-                <span className="text-[hsl(0,100%,60%)]">R</span>
-                {" "}TYPES
-              </p>
-
-              <div className="space-y-1 text-sm text-white/70">
-                <p><span className="text-white font-semibold">FULL NAME:</span> A'HaRa</p>
-                <p><span className="text-white font-semibold">CREATOR BLUEPRINT:</span> Lava/Whirlwind/Tree/Mountain</p>
-                <p><span className="text-white font-semibold">MISSION:</span> To exit the sim we are in</p>
-                <p><span className="text-white font-semibold">KNOWN FOR:</span> Blueprinting bodies, inner earth transmissions, timeline jumps, cosmic chats</p>
-                <p><span className="text-white font-semibold">CURRENT LOCATION:</span> Victoria, Australia</p>
-              </div>
-
-              <div className="mt-6">
-                <a
-                  href="http://www.creatortypes.com/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:text-primary/80 font-display font-semibold transition-colors"
-                >
-                  Creator Types For Business →
-                </a>
-              </div>
-
-              <p className="text-xs text-white/40 mt-4">
-                <a href="http://www.earthdreaming.com.au/" target="_blank" rel="noopener noreferrer" className="hover:text-white/60">
-                  Photos by Earth Dreaming
-                </a>
-              </p>
+    <footer className="bg-foreground text-white">
+      <div className="container mx-auto px-4 py-20">
+        <div className="grid md:grid-cols-2 gap-16 items-center max-w-5xl mx-auto mb-16">
+          {/* A'HaRa info */}
+          <div>
+            <p className="text-primary font-body text-sm font-semibold uppercase tracking-[0.3em] mb-6">
+              The Founder
+            </p>
+            <h3 className="text-3xl font-display font-bold text-white mb-6">A'HaRa</h3>
+            <div className="space-y-2 text-sm text-white/60">
+              <p><span className="text-white/90 font-semibold">Creator Blueprint:</span> Lava / Whirlwind / Tree / Mountain</p>
+              <p><span className="text-white/90 font-semibold">Mission:</span> To exit the sim we are in</p>
+              <p><span className="text-white/90 font-semibold">Known For:</span> Blueprinting bodies, inner earth transmissions, timeline jumps, cosmic chats</p>
+              <p><span className="text-white/90 font-semibold">Location:</span> Victoria, Australia</p>
             </div>
+            <div className="mt-6 flex gap-4">
+              <a
+                href="http://www.creatortypes.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary text-sm font-semibold hover:text-primary/80 transition-colors"
+              >
+                Creator Types for Business →
+              </a>
+            </div>
+          </div>
 
-            {/* A'HaRa photo */}
-            <div className="flex justify-center">
+          {/* Photo */}
+          <div className="flex justify-center md:justify-end">
+            <div className="relative">
+              <div className="absolute -inset-2 bg-gradient-to-br from-primary/30 to-accent/20 rounded-2xl blur-xl" />
               <img
                 src={aharaPhoto}
-                alt="A'HaRa - Creator Types founder"
-                className="w-64 h-64 object-cover rounded-full shadow-xl border-4 border-primary/30"
+                alt="A'HaRa — Creator Types founder"
+                className="relative w-56 h-56 object-cover rounded-2xl shadow-2xl"
               />
             </div>
           </div>
+        </div>
 
-          <div className="border-t border-white/10 mt-12 pt-6 text-center">
-            <p className="text-xs text-white/40">
-              © {new Date().getFullYear()} Creator Types. All rights reserved.
-            </p>
+        {/* Bottom bar */}
+        <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl font-display font-bold text-primary">13</span>
+            <span className="text-lg font-display font-semibold text-white">Creators</span>
           </div>
+          <div className="flex gap-8 text-sm text-white/50">
+            <a href="#about" className="hover:text-white transition-colors">About</a>
+            <a href="#tiers" className="hover:text-white transition-colors">Pricing</a>
+            <Link to="/auth" className="hover:text-white transition-colors">Sign In</Link>
+          </div>
+          <p className="text-xs text-white/30">
+            © {new Date().getFullYear()} Creator Types. All rights reserved.
+            <span className="ml-2">
+              <a href="http://www.earthdreaming.com.au/" target="_blank" rel="noopener noreferrer" className="hover:text-white/50">
+                Photos by Earth Dreaming
+              </a>
+            </span>
+          </p>
         </div>
       </div>
     </footer>

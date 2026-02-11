@@ -1,44 +1,62 @@
 import { motion } from "framer-motion";
-import sandDivider from "@/assets/sand-divider.png";
-import iconsRow1 from "@/assets/icons-row-1.png";
-import iconsRow2 from "@/assets/icons-row-2.png";
-import iconsRow3 from "@/assets/icons-row-3.png";
 import creatorTypesIcons from "@/assets/creator-types-icons.png";
 
 export function AboutSection() {
   return (
-    <section id="about">
-      {/* Sand divider */}
-      <div className="w-full">
-        <img src={sandDivider} alt="" className="w-full h-auto" />
-      </div>
-
-      {/* Meet Your Co-Creators */}
-      <div className="bg-white py-16">
-        <div className="container mx-auto px-4 text-center">
+    <section id="about" className="py-28 bg-background">
+      <div className="container mx-auto px-4">
+        {/* Intro */}
+        <div className="max-w-3xl mx-auto text-center mb-20">
+          <motion.p
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            className="text-primary font-body text-sm font-semibold uppercase tracking-[0.3em] mb-4"
+          >
+            The Science of You
+          </motion.p>
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-4xl md:text-5xl font-display font-bold text-foreground mb-8"
+            className="text-4xl md:text-6xl font-display font-bold text-foreground mb-6 leading-tight"
           >
-            Want To Meet Your Co-Creators?
+            12 Body Types.<br />
+            <span className="text-primary">12 Forces of Nature.</span>
           </motion.h2>
-
-          {/* Icon rows */}
-          <div className="flex flex-col items-center gap-4 mb-10">
-            <img src={iconsRow1} alt="Creator type icons" className="w-full max-w-2xl" />
-            <img src={iconsRow2} alt="Creator type icons" className="w-full max-w-2xl" />
-            <img src={iconsRow3} alt="Creator type icons" className="w-full max-w-2xl" />
-          </div>
-
-          {/* YouTube embed */}
-          <motion.div
+          <motion.p
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="max-w-3xl mx-auto aspect-video rounded-xl overflow-hidden shadow-lg mb-8"
+            transition={{ delay: 0.1 }}
+            className="text-lg text-muted-foreground leading-relaxed"
           >
+            The shape, structure, and features of your body form the template for everything you create.
+            When you know how to operate your vehicle, you can create whatever your heart desires.
+          </motion.p>
+        </div>
+
+        {/* Creator type icons */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="flex justify-center mb-20"
+        >
+          <img src={creatorTypesIcons} alt="The 12 Creator Type archetypes" className="w-full max-w-4xl" />
+        </motion.div>
+
+        {/* YouTube embed */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="max-w-4xl mx-auto"
+        >
+          <p className="text-center text-sm font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-6">
+            Watch: 12 Creator Types in 12 Minutes
+          </p>
+          <div className="aspect-video rounded-2xl overflow-hidden shadow-2xl ring-1 ring-border">
             <iframe
               width="100%"
               height="100%"
@@ -48,33 +66,8 @@ export function AboutSection() {
               allowFullScreen
               className="w-full h-full"
             />
-          </motion.div>
-        </div>
-      </div>
-
-      {/* 12 Body Types */}
-      <div className="bg-foreground py-20 text-center">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-          >
-            <img src={creatorTypesIcons} alt="12 Creator Types icons" className="w-full max-w-3xl mx-auto mb-10" />
-            <h2 className="text-4xl md:text-5xl font-display font-bold text-white mb-4">
-              12 BODY TYPES
-            </h2>
-            <p className="text-2xl md:text-3xl font-display text-primary mb-2">
-              = 12 Forces of Nature
-            </p>
-            <p className="text-2xl md:text-3xl font-display text-primary mb-8">
-              = Unlimited Creative Power!
-            </p>
-            <p className="text-lg text-white/80 max-w-2xl mx-auto">
-              Doors open soon to the Creator Types ecosystem — The only place online where you can meet other Creators by their body type
-            </p>
-          </motion.div>
-        </div>
+          </div>
+        </motion.div>
       </div>
     </section>
   );
