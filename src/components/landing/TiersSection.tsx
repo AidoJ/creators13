@@ -4,17 +4,17 @@ import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import origLevelsDivider from "@/assets/orig-levels-divider.png";
-import origLevel1 from "@/assets/orig-level-1.png";
-import origLevel2 from "@/assets/orig-level-2.png";
-import origLevel3 from "@/assets/orig-level-3.png";
-import origLevel4 from "@/assets/orig-level-4.png";
+import birdWren from "@/assets/bird-wren.png";
+import birdRobin from "@/assets/bird-robin.png";
+import birdFalcon from "@/assets/bird-falcon.png";
+import birdOwl from "@/assets/bird-owl.png";
 import origStartHere from "@/assets/orig-start-here.png";
 
 const tiers = [
   {
     name: "Wren",
     subtitle: "Explorer",
-    image: origLevel1,
+    image: birdWren,
     monthlyPrice: 0,
     annualPrice: 0,
     features: [
@@ -29,7 +29,7 @@ const tiers = [
   {
     name: "Robin",
     subtitle: "Seeker",
-    image: origLevel2,
+    image: birdRobin,
     monthlyPrice: 29,
     annualPrice: 290,
     features: [
@@ -45,7 +45,7 @@ const tiers = [
   {
     name: "Falcon",
     subtitle: "Achiever",
-    image: origLevel3,
+    image: birdFalcon,
     monthlyPrice: 59,
     annualPrice: 590,
     features: [
@@ -61,7 +61,7 @@ const tiers = [
   {
     name: "Owl",
     subtitle: "Practitioner Training",
-    image: origLevel4,
+    image: birdOwl,
     monthlyPrice: 149,
     annualPrice: 1490,
     features: [
