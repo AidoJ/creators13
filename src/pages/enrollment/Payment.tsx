@@ -66,7 +66,7 @@ export default function Payment() {
     }
 
     return data.clientSecret;
-  }, [tier, billing, user, tierInfo]);
+  }, [tier, billing, userEmail, userId, tierInfo]);
 
   useEffect(() => {
     if (tier === "wren") {
