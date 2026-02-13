@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { Camera, Upload, X, CheckCircle, AlertCircle, ArrowRight, Loader2 } from "lucide-react";
+import { Camera, X, CheckCircle, AlertCircle, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,15 +8,24 @@ import { useAuth } from "@/contexts/AuthContext";
 import EnrollmentHeader from "@/components/enrollment/EnrollmentHeader";
 import { useToast } from "@/hooks/use-toast";
 
+import guidePhoto1 from "@/assets/guide-photo-1.png";
+import guidePhoto2 from "@/assets/guide-photo-2.png";
+import guidePhoto3 from "@/assets/guide-photo-3.png";
+import guidePhoto4 from "@/assets/guide-photo-4.png";
+import guidePhoto5 from "@/assets/guide-photo-5.png";
+import guidePhoto6 from "@/assets/guide-photo-6.png";
+import guidePhoto7 from "@/assets/guide-photo-7.png";
+import guidePhoto8 from "@/assets/guide-photo-8.png";
+
 const PHOTO_SLOTS = [
-  { key: "face_front_closed", label: "Face – Front", description: "Mouth closed, neutral expression" },
-  { key: "face_front_smiling", label: "Face – Smiling", description: "Smiling with teeth showing" },
-  { key: "face_side", label: "Face – Side Profile", description: "Clear side profile of your face" },
-  { key: "body_front", label: "Full Body – Front", description: "Standing naturally, facing camera" },
-  { key: "body_back", label: "Full Body – Back", description: "Standing naturally, back to camera" },
-  { key: "body_side", label: "Full Body – Side", description: "Standing naturally, side profile" },
-  { key: "feet", label: "Both Feet", description: "Top-down view of both feet together" },
-  { key: "hands", label: "Hand(s)", description: "Both hands if they differ, or one hand" },
+  { key: "face_front_closed", label: "Face – Front", description: "Mouth closed, neutral expression", guide: guidePhoto1 },
+  { key: "face_front_smiling", label: "Face – Smiling", description: "Smiling with teeth showing", guide: guidePhoto2 },
+  { key: "face_side", label: "Face – Side Profile", description: "Clear side profile of your face", guide: guidePhoto3 },
+  { key: "body_front", label: "Full Body – Front", description: "Standing naturally, facing camera", guide: guidePhoto4 },
+  { key: "body_back", label: "Full Body – Back", description: "Standing naturally, back to camera", guide: guidePhoto5 },
+  { key: "body_side", label: "Full Body – Side", description: "Standing naturally, side profile", guide: guidePhoto6 },
+  { key: "feet", label: "Both Feet", description: "Top-down view of both feet together", guide: guidePhoto7 },
+  { key: "hands", label: "Hand(s)", description: "Both hands if they differ, or one hand", guide: guidePhoto8 },
 ] as const;
 
 type PhotoKey = typeof PHOTO_SLOTS[number]["key"];
@@ -101,7 +110,6 @@ export default function Photos() {
         return;
       }
 
-      // Save record to profiling_photos table
       const { error: dbError } = await supabase.from("profiling_photos").upsert(
         { user_id: user.id, photo_type: slot.key, storage_path: path },
         { onConflict: "user_id,photo_type" }
@@ -122,7 +130,6 @@ export default function Photos() {
       }));
     }
 
-    // Update enrollment step
     await supabase
       .from("profiles")
       .update({ enrollment_step: "photos_uploaded" })
@@ -139,7 +146,7 @@ export default function Photos() {
     <div className="min-h-screen bg-background">
       <EnrollmentHeader currentStep={4} />
 
-      <main className="container mx-auto px-4 py-10 max-w-3xl">
+      <main className="container mx-auto px-4 py-10 max-w-4xl">
         {/* Instructions */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-display font-bold text-foreground mb-3">
@@ -158,11 +165,11 @@ export default function Photos() {
           <ul className="space-y-2 text-sm text-muted-foreground">
             <li className="flex items-start gap-2">
               <span className="text-primary font-bold mt-0.5">•</span>
-              <span><strong className="text-foreground">Ask someone to take these photos for you</strong>, rather than taking them yourself in the mirror. This allows your natural posture to be seen clearly.</span>
+              <span><strong className="text-foreground">Ask someone to take these photos for you</strong>, rather than taking them yourself in the mirror.</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-primary font-bold mt-0.5">•</span>
-              <span>Your full body photos must show the contours of your whole body with <strong className="text-foreground">as much skin shown as possible</strong>. The more visible your body, the more insight we can share.</span>
+              <span>Your full body photos must show the contours of your whole body with <strong className="text-foreground">as much skin shown as possible</strong>.</span>
             </li>
           </ul>
 
@@ -192,7 +199,7 @@ export default function Photos() {
         </div>
 
         {/* Photo grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-5 mb-8">
           {PHOTO_SLOTS.map((slot, i) => {
             const photo = photos[slot.key];
             return (
@@ -200,6 +207,18 @@ export default function Photos() {
                 <p className="text-xs font-semibold text-foreground mb-1">
                   {i + 1}. {slot.label}
                 </p>
+
+                {/* Guide example */}
+                <div className="rounded-lg overflow-hidden border border-border mb-2 bg-muted/20">
+                  <img
+                    src={slot.guide}
+                    alt={`Example: ${slot.label}`}
+                    className="w-full aspect-[3/4] object-cover opacity-80"
+                  />
+                  <p className="text-[9px] text-muted-foreground text-center py-1 bg-muted/40">Example</p>
+                </div>
+
+                {/* Upload slot */}
                 <button
                   type="button"
                   onClick={() => fileInputRefs.current[slot.key]?.click()}
@@ -213,11 +232,7 @@ export default function Photos() {
                 >
                   {photo.preview ? (
                     <>
-                      <img
-                        src={photo.preview}
-                        alt={slot.label}
-                        className="absolute inset-0 w-full h-full object-cover"
-                      />
+                      <img src={photo.preview} alt={slot.label} className="absolute inset-0 w-full h-full object-cover" />
                       {photo.uploaded && (
                         <div className="absolute top-1.5 right-1.5 bg-forest text-white rounded-full p-0.5">
                           <CheckCircle className="h-4 w-4" />
