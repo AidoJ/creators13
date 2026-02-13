@@ -13,6 +13,7 @@ import Signup from "./pages/enrollment/Signup";
 import Payment from "./pages/enrollment/Payment";
 import Details from "./pages/enrollment/Details";
 import Photos from "./pages/enrollment/Photos";
+import Booking from "./pages/enrollment/Booking";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/enroll/payment" element={<Payment />} />
             <Route path="/enroll/details" element={<Details />} />
             <Route path="/enroll/photos" element={<ProtectedRoute><Photos /></ProtectedRoute>} />
+            <Route path="/enroll/booking" element={<ProtectedRoute><Booking /></ProtectedRoute>} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
