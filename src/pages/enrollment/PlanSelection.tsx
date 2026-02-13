@@ -146,7 +146,7 @@ export default function PlanSelection() {
                     isSelected
                       ? "bg-primary text-primary-foreground shadow-md"
                       : key === "robin"
-                        ? "bg-ocean text-white ring-2 ring-ocean/30 hover:brightness-110"
+                        ? "border-2 border-primary text-primary font-bold hover:bg-primary hover:text-primary-foreground"
                         : "bg-primary/15 text-primary hover:bg-primary/25"
                   )}>
                     {isSelected ? "Selected ✓" : "Select"}
