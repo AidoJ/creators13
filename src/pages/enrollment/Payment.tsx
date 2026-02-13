@@ -38,6 +38,10 @@ export default function Payment() {
   const tierInfo = TIERS[tier] || TIERS.robin;
   const tierImage = BIRD_IMAGES[tier];
 
+  // Fall back to URL params for unverified users coming from Signup
+  const userEmail = user?.email || params.get("email") || "";
+  const userId = user?.id || params.get("uid") || "";
+
   const price = billing === "annual" ? tierInfo.annualPrice : tierInfo.monthlyPrice;
 
   const fetchClientSecret = useCallback(async () => {
@@ -47,8 +51,8 @@ export default function Payment() {
     const { data, error } = await supabase.functions.invoke("create-checkout", {
       body: {
         priceId,
-        email: user?.email || "",
-        user_id: user?.id || "",
+        email: userEmail,
+        user_id: userId,
         tier,
         billing,
         embedded: true,
