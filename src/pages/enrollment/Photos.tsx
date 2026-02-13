@@ -283,14 +283,14 @@ export default function Photos() {
       <div className="min-h-screen bg-background">
         <EnrollmentHeader currentStep={4} />
         <main className="container mx-auto px-4 py-6 max-w-4xl">
-          <div className="text-center mb-6">
-            <h1 className="text-2xl font-display font-bold text-foreground mb-2">Review Your Photos</h1>
-            <p className="text-sm text-muted-foreground">
-              {anyFailed
-                ? "Some photos didn't pass AI review. Please re-take the flagged ones."
-                : "All photos look good! Check the layout below and submit when ready."}
-            </p>
-          </div>
+           <div className="text-center mb-6">
+             <h1 className="text-2xl font-display font-bold text-foreground mb-2">Review Your Photos</h1>
+             <p className="text-sm text-muted-foreground">
+               {anyFailed
+                 ? "Some photos have AI feedback below. You can re-take them or continue with your submission."
+                 : "All photos look good! Check the layout below and submit when ready."}
+             </p>
+           </div>
 
           {/* Composite layout */}
           <div className="bg-card border border-border rounded-2xl p-4 mb-6">
@@ -400,7 +400,7 @@ export default function Photos() {
             </Button>
             <Button
               onClick={handleSubmitAll}
-              disabled={submitting || anyFailed}
+              disabled={submitting}
               className="rounded-full px-8"
             >
               {submitting ? (
