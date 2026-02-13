@@ -166,14 +166,14 @@ export default function Payment() {
           </div>
 
           {/* RIGHT: Embedded Stripe checkout */}
-          <div className="lg:col-span-8">
-            <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
-              <div className="min-h-[500px]">
+          <div className="lg:col-span-8 relative">
+            <div className="rounded-2xl overflow-hidden shadow-sm border border-border" style={{ position: 'relative', zIndex: 1 }}>
+              <div id="stripe-checkout-container" className="min-h-[500px]">
                 <EmbeddedCheckoutProvider
                   stripe={stripePromise}
                   options={{ fetchClientSecret }}
                 >
-                  <EmbeddedCheckout />
+                  <EmbeddedCheckout className="stripe-embedded-checkout" />
                 </EmbeddedCheckoutProvider>
               </div>
             </div>
