@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { Camera, X, CheckCircle, AlertCircle, ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
+import { Camera, X, CheckCircle, AlertCircle, ArrowRight, ArrowLeft, Loader2, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -46,17 +46,19 @@ const initialPhotoState: PhotoState = {
   error: null,
 };
 
+type ViewMode = "guidelines" | "wizard" | "review";
+
 export default function Photos() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(0);
+  const [viewMode, setViewMode] = useState<ViewMode>("guidelines");
   const [photos, setPhotos] = useState<Record<PhotoKey, PhotoState>>(
     Object.fromEntries(PHOTO_SLOTS.map((s) => [s.key, { ...initialPhotoState }])) as Record<PhotoKey, PhotoState>
   );
   const [submitting, setSubmitting] = useState(false);
-  const [showGuidelines, setShowGuidelines] = useState(true);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const tier = params.get("tier") || "wren";
@@ -66,6 +68,7 @@ export default function Photos() {
   const photo = photos[slot.key];
   const completedCount = PHOTO_SLOTS.filter((s) => photos[s.key].file !== null).length;
   const allPhotosSelected = completedCount === PHOTO_SLOTS.length;
+  const uploadedCount = PHOTO_SLOTS.filter((s) => photos[s.key].uploaded).length;
 
   const handleFileSelect = (file: File) => {
     const key = slot.key;
@@ -81,8 +84,7 @@ export default function Photos() {
     setPhotos((p) => ({ ...p, [key]: { file, preview, uploading: false, uploaded: false, error: null } }));
   };
 
-  const removePhoto = () => {
-    const key = slot.key;
+  const removePhoto = (key: PhotoKey) => {
     if (photos[key].preview) URL.revokeObjectURL(photos[key].preview!);
     setPhotos((p) => ({ ...p, [key]: { ...initialPhotoState } }));
   };
@@ -140,19 +142,15 @@ export default function Photos() {
     navigate("/dashboard");
   };
 
-  // Guidelines screen
-  if (showGuidelines) {
+  // ─── GUIDELINES ───
+  if (viewMode === "guidelines") {
     return (
       <div className="min-h-screen bg-background">
         <EnrollmentHeader currentStep={4} />
         <main className="container mx-auto px-4 py-10 max-w-lg">
           <div className="text-center mb-6">
-            <h1 className="text-3xl font-display font-bold text-foreground mb-3">
-              How To Take Your Photos
-            </h1>
-            <p className="text-muted-foreground">
-              We need 8 clear photos. Please read the guidelines below before you begin.
-            </p>
+            <h1 className="text-3xl font-display font-bold text-foreground mb-3">How To Take Your Photos</h1>
+            <p className="text-muted-foreground">We need 8 clear photos. Please read the guidelines below before you begin.</p>
           </div>
 
           <div className="bg-card border border-border rounded-2xl p-6 mb-6">
@@ -173,31 +171,16 @@ export default function Photos() {
 
             <h3 className="text-sm font-semibold text-foreground mt-5 mb-2">Please ensure:</h3>
             <ul className="space-y-1.5 text-sm text-muted-foreground">
-              <li className="flex items-start gap-2">
-                <CheckCircle className="h-3.5 w-3.5 text-forest mt-0.5 shrink-0" />
-                Tight-fitting clothing — bathing suit, yoga wear (spine visible)
-              </li>
-              <li className="flex items-start gap-2">
-                <CheckCircle className="h-3.5 w-3.5 text-forest mt-0.5 shrink-0" />
-                No glasses on your face
-              </li>
-              <li className="flex items-start gap-2">
-                <CheckCircle className="h-3.5 w-3.5 text-forest mt-0.5 shrink-0" />
-                No shoes or socks
-              </li>
-              <li className="flex items-start gap-2">
-                <CheckCircle className="h-3.5 w-3.5 text-forest mt-0.5 shrink-0" />
-                Hair tied back, fringe clipped — forehead and ears visible
-              </li>
-              <li className="flex items-start gap-2">
-                <CheckCircle className="h-3.5 w-3.5 text-forest mt-0.5 shrink-0" />
-                No makeup, especially eyebrow pencil
-              </li>
+              <li className="flex items-start gap-2"><CheckCircle className="h-3.5 w-3.5 text-forest mt-0.5 shrink-0" />Tight-fitting clothing — bathing suit, yoga wear (spine visible)</li>
+              <li className="flex items-start gap-2"><CheckCircle className="h-3.5 w-3.5 text-forest mt-0.5 shrink-0" />No glasses on your face</li>
+              <li className="flex items-start gap-2"><CheckCircle className="h-3.5 w-3.5 text-forest mt-0.5 shrink-0" />No shoes or socks</li>
+              <li className="flex items-start gap-2"><CheckCircle className="h-3.5 w-3.5 text-forest mt-0.5 shrink-0" />Hair tied back, fringe clipped — forehead and ears visible</li>
+              <li className="flex items-start gap-2"><CheckCircle className="h-3.5 w-3.5 text-forest mt-0.5 shrink-0" />No makeup, especially eyebrow pencil</li>
             </ul>
           </div>
 
           <div className="text-center">
-            <Button onClick={() => setShowGuidelines(false)} size="lg" className="rounded-full px-10 text-base font-semibold">
+            <Button onClick={() => setViewMode("wizard")} size="lg" className="rounded-full px-10 text-base font-semibold">
               I Understand — Start Photos <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </div>
@@ -206,6 +189,101 @@ export default function Photos() {
     );
   }
 
+  // ─── REVIEW / COMPOSITE ───
+  if (viewMode === "review") {
+    return (
+      <div className="min-h-screen bg-background">
+        <EnrollmentHeader currentStep={4} />
+        <main className="container mx-auto px-4 py-6 max-w-4xl">
+          <div className="text-center mb-6">
+            <h1 className="text-2xl font-display font-bold text-foreground mb-2">Review Your Photos</h1>
+            <p className="text-sm text-muted-foreground">Check that all photos are clear and match the guidelines before uploading.</p>
+          </div>
+
+          {/* Composite layout matching reference */}
+          <div className="bg-card border border-border rounded-2xl p-4 mb-6">
+            <div className="grid grid-cols-6 gap-2">
+              {/* Row 1: 3 face photos (square) + 3 body photos (tall, row-span-2) */}
+              {/* Face photos */}
+              {(["face_front_closed", "face_front_smiling", "face_side"] as PhotoKey[]).map((key) => {
+                const s = PHOTO_SLOTS.find((x) => x.key === key)!;
+                return (
+                  <div key={key} className="relative aspect-square rounded-lg overflow-hidden bg-muted/30">
+                    <img src={photos[key].preview!} alt={s.label} className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => { removePhoto(key); setViewMode("wizard"); setCurrentStep(PHOTO_SLOTS.findIndex((x) => x.key === key)); }}
+                      className="absolute top-1 right-1 bg-foreground/60 text-white rounded-full p-0.5 hover:bg-foreground/80"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                    <span className="absolute bottom-0 inset-x-0 bg-foreground/50 text-white text-[8px] text-center py-0.5">{s.label}</span>
+                  </div>
+                );
+              })}
+
+              {/* Body photos - tall */}
+              {(["body_front", "body_side", "body_back"] as PhotoKey[]).map((key) => {
+                const s = PHOTO_SLOTS.find((x) => x.key === key)!;
+                return (
+                  <div key={key} className="relative row-span-2 rounded-lg overflow-hidden bg-muted/30">
+                    <img src={photos[key].preview!} alt={s.label} className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => { removePhoto(key); setViewMode("wizard"); setCurrentStep(PHOTO_SLOTS.findIndex((x) => x.key === key)); }}
+                      className="absolute top-1 right-1 bg-foreground/60 text-white rounded-full p-0.5 hover:bg-foreground/80"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                    <span className="absolute bottom-0 inset-x-0 bg-foreground/50 text-white text-[8px] text-center py-0.5">{s.label}</span>
+                  </div>
+                );
+              })}
+
+              {/* Row 2: feet + hands + empty */}
+              {(["feet", "hands"] as PhotoKey[]).map((key) => {
+                const s = PHOTO_SLOTS.find((x) => x.key === key)!;
+                return (
+                  <div key={key} className="relative aspect-square rounded-lg overflow-hidden bg-muted/30">
+                    <img src={photos[key].preview!} alt={s.label} className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => { removePhoto(key); setViewMode("wizard"); setCurrentStep(PHOTO_SLOTS.findIndex((x) => x.key === key)); }}
+                      className="absolute top-1 right-1 bg-foreground/60 text-white rounded-full p-0.5 hover:bg-foreground/80"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                    <span className="absolute bottom-0 inset-x-0 bg-foreground/50 text-white text-[8px] text-center py-0.5">{s.label}</span>
+                  </div>
+                );
+              })}
+              <div /> {/* empty cell */}
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-3 justify-center">
+            <Button variant="outline" onClick={() => setViewMode("wizard")} className="rounded-full">
+              <ArrowLeft className="mr-2 h-4 w-4" /> Edit Photos
+            </Button>
+            <Button
+              onClick={handleSubmitAll}
+              disabled={submitting}
+              className="rounded-full px-8"
+            >
+              {submitting ? (
+                <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Uploading {uploadedCount}/{PHOTO_SLOTS.length}...</>
+              ) : (
+                <>Submit All Photos <ArrowRight className="ml-2 h-4 w-4" /></>
+              )}
+            </Button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // ─── WIZARD ───
   return (
     <div className="min-h-screen bg-background">
       <EnrollmentHeader currentStep={4} />
@@ -214,12 +292,8 @@ export default function Photos() {
         {/* Progress */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-foreground">
-              Photo {currentStep + 1} of {PHOTO_SLOTS.length}
-            </span>
-            <span className="text-sm text-muted-foreground">
-              {completedCount} / {PHOTO_SLOTS.length} added
-            </span>
+            <span className="text-sm font-medium text-foreground">Photo {currentStep + 1} of {PHOTO_SLOTS.length}</span>
+            <span className="text-sm text-muted-foreground">{completedCount} / {PHOTO_SLOTS.length} added</span>
           </div>
           <div className="flex gap-1">
             {PHOTO_SLOTS.map((s, i) => (
@@ -228,11 +302,7 @@ export default function Photos() {
                 onClick={() => setCurrentStep(i)}
                 className={cn(
                   "h-2 flex-1 rounded-full transition-all",
-                  i === currentStep
-                    ? "bg-primary"
-                    : photos[s.key].file
-                    ? "bg-forest/60"
-                    : "bg-muted"
+                  i === currentStep ? "bg-primary" : photos[s.key].file ? "bg-forest/60" : "bg-muted"
                 )}
               />
             ))}
@@ -243,25 +313,17 @@ export default function Photos() {
         <h2 className="text-xl font-display font-bold text-foreground text-center mb-1">
           {currentStep + 1}. {slot.label}
         </h2>
-        <p className="text-sm text-muted-foreground text-center mb-5">
-          {slot.description}
-        </p>
+        <p className="text-sm text-muted-foreground text-center mb-5">{slot.description}</p>
 
-        {/* Guide vs Upload comparison */}
+        {/* Guide vs Upload */}
         <div className="grid grid-cols-2 gap-3 mb-6">
-          {/* Guide photo */}
           <div className="flex flex-col">
             <span className="text-xs font-semibold text-muted-foreground mb-1.5 text-center uppercase tracking-wide">Example</span>
             <div className="rounded-xl border border-border overflow-hidden bg-muted/20 flex-1">
-              <img
-                src={slot.guide}
-                alt={`Guide: ${slot.label}`}
-                className="w-full h-full object-contain"
-              />
+              <img src={slot.guide} alt={`Guide: ${slot.label}`} className="w-full h-full object-contain" />
             </div>
           </div>
 
-          {/* User upload */}
           <div className="flex flex-col">
             <span className="text-xs font-semibold text-muted-foreground mb-1.5 text-center uppercase tracking-wide">Your Photo</span>
             <button
@@ -269,32 +331,16 @@ export default function Photos() {
               onClick={() => fileInputRef.current?.click()}
               className={cn(
                 "relative rounded-xl border-2 border-dashed flex flex-col items-center justify-center overflow-hidden transition-all flex-1 min-h-[200px]",
-                photo.preview
-                  ? "border-primary/40"
-                  : "border-border hover:border-primary/40 bg-muted/30 hover:bg-muted/50",
+                photo.preview ? "border-primary/40" : "border-border hover:border-primary/40 bg-muted/30 hover:bg-muted/50",
                 photo.error && "border-destructive/60"
               )}
             >
               {photo.preview ? (
                 <>
-                  <img
-                    src={photo.preview}
-                    alt={slot.label}
-                    className="absolute inset-0 w-full h-full object-contain"
-                  />
-                  {photo.uploaded && (
-                    <div className="absolute top-2 right-2 bg-forest text-white rounded-full p-0.5">
-                      <CheckCircle className="h-5 w-5" />
-                    </div>
-                  )}
-                  {photo.uploading && (
-                    <div className="absolute inset-0 bg-foreground/40 flex items-center justify-center">
-                      <Loader2 className="h-8 w-8 text-white animate-spin" />
-                    </div>
-                  )}
+                  <img src={photo.preview} alt={slot.label} className="absolute inset-0 w-full h-full object-contain" />
                   <button
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); removePhoto(); }}
+                    onClick={(e) => { e.stopPropagation(); removePhoto(slot.key); }}
                     className="absolute top-2 left-2 bg-foreground/60 text-white rounded-full p-1 hover:bg-foreground/80"
                   >
                     <X className="h-4 w-4" />
@@ -322,39 +368,25 @@ export default function Photos() {
           }}
         />
 
-        {photo.error && (
-          <p className="text-sm text-destructive text-center mb-4">{photo.error}</p>
-        )}
+        {photo.error && <p className="text-sm text-destructive text-center mb-4">{photo.error}</p>}
 
         {/* Navigation */}
         <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            onClick={goPrev}
-            disabled={currentStep === 0}
-            className="rounded-full flex-1"
-          >
+          <Button variant="outline" onClick={goPrev} disabled={currentStep === 0} className="rounded-full flex-1">
             <ArrowLeft className="mr-2 h-4 w-4" /> Previous
           </Button>
 
           {currentStep < PHOTO_SLOTS.length - 1 ? (
-            <Button
-              onClick={goNext}
-              className="rounded-full flex-1"
-            >
+            <Button onClick={goNext} className="rounded-full flex-1">
               Next <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           ) : (
             <Button
-              onClick={handleSubmitAll}
-              disabled={!allPhotosSelected || submitting}
+              onClick={() => setViewMode("review")}
+              disabled={!allPhotosSelected}
               className="rounded-full flex-1"
             >
-              {submitting ? (
-                <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Uploading...</>
-              ) : (
-                <>Upload All <ArrowRight className="ml-2 h-4 w-4" /></>
-              )}
+              <Eye className="mr-2 h-4 w-4" /> Review All
             </Button>
           )}
         </div>
