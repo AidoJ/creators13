@@ -42,11 +42,14 @@ export default function Details() {
                 </ul>
               </div>
               <Button
-                onClick={() => navigate("/dashboard")}
+                onClick={() => {
+                  const nextParams = new URLSearchParams({ tier, billing });
+                  navigate(`/enroll/photos?${nextParams.toString()}`);
+                }}
                 size="lg"
                 className="rounded-full px-10 text-base font-semibold"
               >
-                Go to Dashboard
+                Upload Your Photos
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </>
