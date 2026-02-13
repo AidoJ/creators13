@@ -17,8 +17,7 @@ import birdRobin from "@/assets/bird-robin.png";
 import birdFalcon from "@/assets/bird-falcon.png";
 import birdOwl from "@/assets/bird-owl.png";
 
-// TODO: Replace with your Stripe publishable key
-const stripePromise = loadStripe("pk_test_REPLACE_ME");
+const stripePromise = loadStripe("pk_test_51PGxKUKn3GaB6FyY1qeTOeYxWnBMDax8bUZhdP7RggDi1OyUp4BbSJWPhgb7hcvDynNqakuSfpGzwfuVhOsTvXmb001lwoCn7a");
 
 const BIRD_IMAGES: Record<TierKey, string> = {
   wren: birdWren,
