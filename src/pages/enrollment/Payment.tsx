@@ -5,18 +5,18 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowRight, CreditCard, Loader2, AlertCircle } from "lucide-react";
 import { TIERS, TierKey } from "@/lib/tiers";
+import { useAuth } from "@/contexts/AuthContext";
 import EnrollmentHeader from "@/components/enrollment/EnrollmentHeader";
 
 export default function Payment() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const tier = (params.get("tier") as TierKey) || "robin";
   const billing = params.get("billing") || "monthly";
   const canceled = params.get("canceled") === "true";
-  const uid = params.get("uid") || "";
-  const userEmail = params.get("email") || "";
   const tierInfo = TIERS[tier] || TIERS.robin;
 
   const price = billing === "annual"
@@ -44,8 +44,8 @@ export default function Payment() {
     const { data, error } = await supabase.functions.invoke("create-checkout", {
       body: {
         priceId,
-        email: userEmail,
-        user_id: uid,
+        email: user?.email || "",
+        user_id: user?.id || "",
         tier,
         billing,
         successUrl: `${window.location.origin}/enroll/details?tier=${tier}&billing=${billing}&payment=success`,
