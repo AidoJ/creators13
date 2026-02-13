@@ -30,7 +30,7 @@ export default function Payment() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   const tier = (params.get("tier") as TierKey) || "robin";
   const billing = params.get("billing") || "monthly";
@@ -44,13 +44,13 @@ export default function Payment() {
 
   const price = billing === "annual" ? tierInfo.annualPrice : tierInfo.monthlyPrice;
 
-  // If no email from auth or URL params, redirect to auth with returnTo
+  // Once auth is done loading, if we still have no email, redirect to auth with returnTo
   useEffect(() => {
-    if (!userEmail && !userId) {
+    if (!authLoading && !userEmail && !userId) {
       const returnTo = encodeURIComponent(`/enroll/payment?tier=${tier}&billing=${billing}`);
       navigate(`/auth?returnTo=${returnTo}`, { replace: true });
     }
-  }, [userEmail, userId, tier, billing, navigate]);
+  }, [authLoading, userEmail, userId, tier, billing, navigate]);
 
   const fetchClientSecret = useCallback(async () => {
     const priceId = tierInfo.stripe?.price_id;
@@ -82,7 +82,8 @@ export default function Payment() {
     }
   }, [tier, navigate]);
 
-  if (tier === "wren") return null;
+  // Don't render Stripe until auth is resolved AND we have an email
+  if (tier === "wren" || authLoading || !userEmail) return null;
 
   return (
     <div className="min-h-screen bg-background">
