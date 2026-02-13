@@ -142,10 +142,12 @@ export default function PlanSelection() {
 
                   {/* Selection indicator */}
                   <div className={cn(
-                    "mt-4 h-9 rounded-full flex items-center justify-center text-sm font-semibold transition-colors",
+                    "mt-4 h-9 rounded-full flex items-center justify-center text-sm font-semibold transition-all",
                     isSelected
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground"
+                      ? "bg-primary text-primary-foreground shadow-md"
+                      : key === "robin"
+                        ? "bg-secondary text-secondary-foreground ring-2 ring-secondary/40 hover:brightness-110"
+                        : "bg-primary/15 text-primary hover:bg-primary/25"
                   )}>
                     {isSelected ? "Selected ✓" : "Select"}
                   </div>
