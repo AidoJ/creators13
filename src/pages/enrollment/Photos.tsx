@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { Camera, X, CheckCircle, AlertCircle, ArrowRight, Loader2 } from "lucide-react";
+import { Camera, X, CheckCircle, AlertCircle, ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,7 +25,7 @@ const PHOTO_SLOTS = [
   { key: "body_back", label: "Full Body – Back", description: "Standing naturally, back to camera", guide: guidePhoto5 },
   { key: "body_side", label: "Full Body – Side", description: "Standing naturally, side profile", guide: guidePhoto6 },
   { key: "feet", label: "Both Feet", description: "Top-down view of both feet together", guide: guidePhoto7 },
-  { key: "hands", label: "Hand(s)", description: "Both hands if they differ, or one hand", guide: guidePhoto8 },
+  { key: "hands", label: "Hand(s)", description: "Both hands, or one if they're similar", guide: guidePhoto8 },
 ] as const;
 
 type PhotoKey = typeof PHOTO_SLOTS[number]["key"];
@@ -51,16 +51,24 @@ export default function Photos() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const [currentStep, setCurrentStep] = useState(0);
   const [photos, setPhotos] = useState<Record<PhotoKey, PhotoState>>(
     Object.fromEntries(PHOTO_SLOTS.map((s) => [s.key, { ...initialPhotoState }])) as Record<PhotoKey, PhotoState>
   );
   const [submitting, setSubmitting] = useState(false);
-  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const [showGuidelines, setShowGuidelines] = useState(true);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const tier = params.get("tier") || "wren";
   const billing = params.get("billing") || "monthly";
 
-  const handleFileSelect = (key: PhotoKey, file: File) => {
+  const slot = PHOTO_SLOTS[currentStep];
+  const photo = photos[slot.key];
+  const completedCount = PHOTO_SLOTS.filter((s) => photos[s.key].file !== null).length;
+  const allPhotosSelected = completedCount === PHOTO_SLOTS.length;
+
+  const handleFileSelect = (file: File) => {
+    const key = slot.key;
     if (!file.type.startsWith("image/")) {
       setPhotos((p) => ({ ...p, [key]: { ...p[key], error: "Please select an image file" } }));
       return;
@@ -73,13 +81,18 @@ export default function Photos() {
     setPhotos((p) => ({ ...p, [key]: { file, preview, uploading: false, uploaded: false, error: null } }));
   };
 
-  const removePhoto = (key: PhotoKey) => {
+  const removePhoto = () => {
+    const key = slot.key;
     if (photos[key].preview) URL.revokeObjectURL(photos[key].preview!);
     setPhotos((p) => ({ ...p, [key]: { ...initialPhotoState } }));
   };
 
-  const allPhotosSelected = PHOTO_SLOTS.every((s) => photos[s.key].file !== null);
-  const uploadedCount = PHOTO_SLOTS.filter((s) => photos[s.key].uploaded).length;
+  const goNext = () => {
+    if (currentStep < PHOTO_SLOTS.length - 1) setCurrentStep(currentStep + 1);
+  };
+  const goPrev = () => {
+    if (currentStep > 0) setCurrentStep(currentStep - 1);
+  };
 
   const handleSubmitAll = async () => {
     if (!user) {
@@ -88,214 +101,283 @@ export default function Photos() {
     }
     setSubmitting(true);
 
-    for (const slot of PHOTO_SLOTS) {
-      const photo = photos[slot.key];
-      if (!photo.file || photo.uploaded) continue;
+    for (const s of PHOTO_SLOTS) {
+      const p = photos[s.key];
+      if (!p.file || p.uploaded) continue;
 
-      setPhotos((p) => ({ ...p, [slot.key]: { ...p[slot.key], uploading: true, error: null } }));
+      setPhotos((prev) => ({ ...prev, [s.key]: { ...prev[s.key], uploading: true, error: null } }));
 
-      const ext = photo.file.name.split(".").pop() || "jpg";
-      const path = `${user.id}/${slot.key}.${ext}`;
+      const ext = p.file.name.split(".").pop() || "jpg";
+      const path = `${user.id}/${s.key}.${ext}`;
 
       const { error: uploadError } = await supabase.storage
         .from("profiling-photos")
-        .upload(path, photo.file, { upsert: true });
+        .upload(path, p.file, { upsert: true });
 
       if (uploadError) {
-        setPhotos((p) => ({
-          ...p,
-          [slot.key]: { ...p[slot.key], uploading: false, error: uploadError.message },
-        }));
+        setPhotos((prev) => ({ ...prev, [s.key]: { ...prev[s.key], uploading: false, error: uploadError.message } }));
         setSubmitting(false);
         return;
       }
 
       const { error: dbError } = await supabase.from("profiling_photos").upsert(
-        { user_id: user.id, photo_type: slot.key, storage_path: path },
+        { user_id: user.id, photo_type: s.key, storage_path: path },
         { onConflict: "user_id,photo_type" }
       );
 
       if (dbError) {
-        setPhotos((p) => ({
-          ...p,
-          [slot.key]: { ...p[slot.key], uploading: false, error: dbError.message },
-        }));
+        setPhotos((prev) => ({ ...prev, [s.key]: { ...prev[s.key], uploading: false, error: dbError.message } }));
         setSubmitting(false);
         return;
       }
 
-      setPhotos((p) => ({
-        ...p,
-        [slot.key]: { ...p[slot.key], uploading: false, uploaded: true },
-      }));
+      setPhotos((prev) => ({ ...prev, [s.key]: { ...prev[s.key], uploading: false, uploaded: true } }));
     }
 
-    await supabase
-      .from("profiles")
-      .update({ enrollment_step: "photos_uploaded" })
-      .eq("user_id", user.id);
-
+    await supabase.from("profiles").update({ enrollment_step: "photos_uploaded" }).eq("user_id", user.id);
     toast({ title: "All photos uploaded successfully!" });
     setSubmitting(false);
-
-    // Booking page not yet built — go to dashboard for now
     navigate("/dashboard");
   };
+
+  // Guidelines screen
+  if (showGuidelines) {
+    return (
+      <div className="min-h-screen bg-background">
+        <EnrollmentHeader currentStep={4} />
+        <main className="container mx-auto px-4 py-10 max-w-lg">
+          <div className="text-center mb-6">
+            <h1 className="text-3xl font-display font-bold text-foreground mb-3">
+              How To Take Your Photos
+            </h1>
+            <p className="text-muted-foreground">
+              We need 8 clear photos. Please read the guidelines below before you begin.
+            </p>
+          </div>
+
+          <div className="bg-card border border-border rounded-2xl p-6 mb-6">
+            <h2 className="text-lg font-display font-bold text-foreground mb-3 flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-primary" />
+              Important Guidelines
+            </h2>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              <li className="flex items-start gap-2">
+                <span className="text-primary font-bold mt-0.5">•</span>
+                <span><strong className="text-foreground">Ask someone to take these photos for you</strong>, rather than taking them yourself in the mirror.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-primary font-bold mt-0.5">•</span>
+                <span>Full body photos must show contours with <strong className="text-foreground">as much skin as possible</strong>.</span>
+              </li>
+            </ul>
+
+            <h3 className="text-sm font-semibold text-foreground mt-5 mb-2">Please ensure:</h3>
+            <ul className="space-y-1.5 text-sm text-muted-foreground">
+              <li className="flex items-start gap-2">
+                <CheckCircle className="h-3.5 w-3.5 text-forest mt-0.5 shrink-0" />
+                Tight-fitting clothing — bathing suit, yoga wear (spine visible)
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle className="h-3.5 w-3.5 text-forest mt-0.5 shrink-0" />
+                No glasses on your face
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle className="h-3.5 w-3.5 text-forest mt-0.5 shrink-0" />
+                No shoes or socks
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle className="h-3.5 w-3.5 text-forest mt-0.5 shrink-0" />
+                Hair tied back, fringe clipped — forehead and ears visible
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle className="h-3.5 w-3.5 text-forest mt-0.5 shrink-0" />
+                No makeup, especially eyebrow pencil
+              </li>
+            </ul>
+          </div>
+
+          <div className="text-center">
+            <Button onClick={() => setShowGuidelines(false)} size="lg" className="rounded-full px-10 text-base font-semibold">
+              I Understand — Start Photos <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
       <EnrollmentHeader currentStep={4} />
 
-      <main className="container mx-auto px-4 py-10 max-w-4xl">
-        {/* Instructions */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-display font-bold text-foreground mb-3">
-            How To Take Your Photos
-          </h1>
-          <p className="text-muted-foreground max-w-xl mx-auto">
-            To see all of you, we require eight (8) clear photos of your face, hands, feet and body.
-          </p>
-        </div>
-
-        <div className="bg-card border border-border rounded-2xl p-6 mb-8">
-          <h2 className="text-lg font-display font-bold text-foreground mb-3 flex items-center gap-2">
-            <AlertCircle className="h-5 w-5 text-primary" />
-            Important Guidelines
-          </h2>
-          <ul className="space-y-2 text-sm text-muted-foreground">
-            <li className="flex items-start gap-2">
-              <span className="text-primary font-bold mt-0.5">•</span>
-              <span><strong className="text-foreground">Ask someone to take these photos for you</strong>, rather than taking them yourself in the mirror.</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-primary font-bold mt-0.5">•</span>
-              <span>Your full body photos must show the contours of your whole body with <strong className="text-foreground">as much skin shown as possible</strong>.</span>
-            </li>
-          </ul>
-
-          <h3 className="text-sm font-semibold text-foreground mt-5 mb-2">Please ensure you are wearing:</h3>
-          <ul className="space-y-1.5 text-sm text-muted-foreground">
-            <li className="flex items-start gap-2">
-              <CheckCircle className="h-3.5 w-3.5 text-forest mt-0.5 shrink-0" />
-              Tight-fitting clothing — bathing suit, yoga wear or similar (spine visible)
-            </li>
-            <li className="flex items-start gap-2">
-              <CheckCircle className="h-3.5 w-3.5 text-forest mt-0.5 shrink-0" />
-              No glasses on your face
-            </li>
-            <li className="flex items-start gap-2">
-              <CheckCircle className="h-3.5 w-3.5 text-forest mt-0.5 shrink-0" />
-              No shoes or socks
-            </li>
-            <li className="flex items-start gap-2">
-              <CheckCircle className="h-3.5 w-3.5 text-forest mt-0.5 shrink-0" />
-              Hair tied back, fringe clipped — we need to see your whole forehead and ears
-            </li>
-            <li className="flex items-start gap-2">
-              <CheckCircle className="h-3.5 w-3.5 text-forest mt-0.5 shrink-0" />
-              No makeup, especially eyebrow pencil — we want your natural brows!
-            </li>
-          </ul>
-        </div>
-
-        {/* Photo grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-5 mb-8">
-          {PHOTO_SLOTS.map((slot, i) => {
-            const photo = photos[slot.key];
-            return (
-              <div key={slot.key} className="flex flex-col">
-                <p className="text-xs font-semibold text-foreground mb-1">
-                  {i + 1}. {slot.label}
-                </p>
-
-                {/* Guide example */}
-                <div className="rounded-lg overflow-hidden border border-border mb-2 bg-muted/20">
-                  <img
-                    src={slot.guide}
-                    alt={`Example: ${slot.label}`}
-                    className="w-full aspect-[3/4] object-contain bg-muted/40 opacity-80"
-                  />
-                  <p className="text-[9px] text-muted-foreground text-center py-1 bg-muted/40">Example</p>
-                </div>
-
-                {/* Upload slot */}
-                <button
-                  type="button"
-                  onClick={() => fileInputRefs.current[slot.key]?.click()}
-                  className={cn(
-                    "relative aspect-[3/4] rounded-xl border-2 border-dashed flex flex-col items-center justify-center overflow-hidden transition-all",
-                    photo.preview
-                      ? "border-primary/40"
-                      : "border-border hover:border-primary/40 bg-muted/30 hover:bg-muted/50",
-                    photo.error && "border-destructive/60"
-                  )}
-                >
-                  {photo.preview ? (
-                    <>
-                      <img src={photo.preview} alt={slot.label} className="absolute inset-0 w-full h-full object-cover" />
-                      {photo.uploaded && (
-                        <div className="absolute top-1.5 right-1.5 bg-forest text-white rounded-full p-0.5">
-                          <CheckCircle className="h-4 w-4" />
-                        </div>
-                      )}
-                      {photo.uploading && (
-                        <div className="absolute inset-0 bg-foreground/40 flex items-center justify-center">
-                          <Loader2 className="h-6 w-6 text-white animate-spin" />
-                        </div>
-                      )}
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); removePhoto(slot.key); }}
-                        className="absolute top-1.5 left-1.5 bg-foreground/60 text-white rounded-full p-0.5 hover:bg-foreground/80"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <Camera className="h-6 w-6 text-muted-foreground mb-1" />
-                      <span className="text-[10px] text-muted-foreground text-center px-2">{slot.description}</span>
-                    </>
-                  )}
-                </button>
-                <input
-                  ref={(el) => { fileInputRefs.current[slot.key] = el; }}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handleFileSelect(slot.key, file);
-                    e.target.value = "";
-                  }}
-                />
-                {photo.error && (
-                  <p className="text-[10px] text-destructive mt-1">{photo.error}</p>
+      <main className="container mx-auto px-4 py-6 max-w-lg">
+        {/* Progress */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-foreground">
+              Photo {currentStep + 1} of {PHOTO_SLOTS.length}
+            </span>
+            <span className="text-sm text-muted-foreground">
+              {completedCount} / {PHOTO_SLOTS.length} added
+            </span>
+          </div>
+          <div className="flex gap-1">
+            {PHOTO_SLOTS.map((s, i) => (
+              <button
+                key={s.key}
+                onClick={() => setCurrentStep(i)}
+                className={cn(
+                  "h-2 flex-1 rounded-full transition-all",
+                  i === currentStep
+                    ? "bg-primary"
+                    : photos[s.key].file
+                    ? "bg-forest/60"
+                    : "bg-muted"
                 )}
-              </div>
-            );
-          })}
+              />
+            ))}
+          </div>
         </div>
 
-        {/* Submit */}
-        <div className="text-center space-y-3">
-          {submitting && (
-            <p className="text-sm text-muted-foreground">
-              Uploading... {uploadedCount}/{PHOTO_SLOTS.length} complete
-            </p>
-          )}
+        {/* Title */}
+        <h2 className="text-xl font-display font-bold text-foreground text-center mb-1">
+          {currentStep + 1}. {slot.label}
+        </h2>
+        <p className="text-sm text-muted-foreground text-center mb-5">
+          {slot.description}
+        </p>
+
+        {/* Guide vs Upload comparison */}
+        <div className="grid grid-cols-2 gap-3 mb-6">
+          {/* Guide photo */}
+          <div className="flex flex-col">
+            <span className="text-xs font-semibold text-muted-foreground mb-1.5 text-center uppercase tracking-wide">Example</span>
+            <div className="rounded-xl border border-border overflow-hidden bg-muted/20 flex-1">
+              <img
+                src={slot.guide}
+                alt={`Guide: ${slot.label}`}
+                className="w-full h-full object-contain"
+              />
+            </div>
+          </div>
+
+          {/* User upload */}
+          <div className="flex flex-col">
+            <span className="text-xs font-semibold text-muted-foreground mb-1.5 text-center uppercase tracking-wide">Your Photo</span>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className={cn(
+                "relative rounded-xl border-2 border-dashed flex flex-col items-center justify-center overflow-hidden transition-all flex-1 min-h-[200px]",
+                photo.preview
+                  ? "border-primary/40"
+                  : "border-border hover:border-primary/40 bg-muted/30 hover:bg-muted/50",
+                photo.error && "border-destructive/60"
+              )}
+            >
+              {photo.preview ? (
+                <>
+                  <img
+                    src={photo.preview}
+                    alt={slot.label}
+                    className="absolute inset-0 w-full h-full object-contain"
+                  />
+                  {photo.uploaded && (
+                    <div className="absolute top-2 right-2 bg-forest text-white rounded-full p-0.5">
+                      <CheckCircle className="h-5 w-5" />
+                    </div>
+                  )}
+                  {photo.uploading && (
+                    <div className="absolute inset-0 bg-foreground/40 flex items-center justify-center">
+                      <Loader2 className="h-8 w-8 text-white animate-spin" />
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); removePhoto(); }}
+                    className="absolute top-2 left-2 bg-foreground/60 text-white rounded-full p-1 hover:bg-foreground/80"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Camera className="h-8 w-8 text-muted-foreground mb-2" />
+                  <span className="text-xs text-muted-foreground font-medium">Tap to add photo</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) handleFileSelect(file);
+            e.target.value = "";
+          }}
+        />
+
+        {photo.error && (
+          <p className="text-sm text-destructive text-center mb-4">{photo.error}</p>
+        )}
+
+        {/* Navigation */}
+        <div className="flex items-center gap-3">
           <Button
-            onClick={handleSubmitAll}
-            disabled={!allPhotosSelected || submitting}
-            size="lg"
-            className="rounded-full px-10 text-base font-semibold"
+            variant="outline"
+            onClick={goPrev}
+            disabled={currentStep === 0}
+            className="rounded-full flex-1"
           >
-            {submitting ? (
-              <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Uploading...</>
-            ) : (
-              <>Upload All Photos <ArrowRight className="ml-2 h-4 w-4" /></>
-            )}
+            <ArrowLeft className="mr-2 h-4 w-4" /> Previous
           </Button>
+
+          {currentStep < PHOTO_SLOTS.length - 1 ? (
+            <Button
+              onClick={goNext}
+              className="rounded-full flex-1"
+            >
+              Next <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          ) : (
+            <Button
+              onClick={handleSubmitAll}
+              disabled={!allPhotosSelected || submitting}
+              className="rounded-full flex-1"
+            >
+              {submitting ? (
+                <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Uploading...</>
+              ) : (
+                <>Upload All <ArrowRight className="ml-2 h-4 w-4" /></>
+              )}
+            </Button>
+          )}
+        </div>
+
+        {/* Thumbnail strip */}
+        <div className="flex gap-1.5 justify-center mt-6">
+          {PHOTO_SLOTS.map((s, i) => (
+            <button
+              key={s.key}
+              onClick={() => setCurrentStep(i)}
+              className={cn(
+                "w-9 h-9 rounded-lg overflow-hidden border-2 transition-all",
+                i === currentStep ? "border-primary" : "border-transparent",
+                !photos[s.key].file && "bg-muted/40"
+              )}
+            >
+              {photos[s.key].preview ? (
+                <img src={photos[s.key].preview!} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-[10px] text-muted-foreground flex items-center justify-center h-full">{i + 1}</span>
+              )}
+            </button>
+          ))}
         </div>
       </main>
     </div>
