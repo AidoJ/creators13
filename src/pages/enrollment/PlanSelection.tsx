@@ -159,8 +159,8 @@ export default function PlanSelection() {
 
         {/* Case Study toggle for Wren */}
         {selectedTier === "wren" && (
-          <div className="max-w-md mx-auto bg-amber-50 border-2 border-amber-400 rounded-2xl p-6 mb-8 shadow-md">
-            <p className="text-[11px] font-semibold text-amber-600 uppercase tracking-wider mb-3">
+          <div className="max-w-md mx-auto bg-primary/5 border-2 border-primary rounded-2xl p-6 mb-8 shadow-md">
+            <p className="text-[11px] font-semibold text-primary uppercase tracking-wider mb-3">
               This only applies to Wren subscription
             </p>
             <div className="flex items-start gap-3">
@@ -169,13 +169,13 @@ export default function PlanSelection() {
                 id="case-study"
                 checked={isCaseStudy}
                 onChange={(e) => setIsCaseStudy(e.target.checked)}
-                className="mt-1 h-5 w-5 rounded border-amber-400 text-amber-600 focus:ring-amber-500 accent-amber-600"
+                className="mt-1 h-5 w-5 rounded border-primary text-primary focus:ring-primary accent-primary"
               />
               <div>
-                <Label htmlFor="case-study" className="text-sm font-bold text-amber-900 cursor-pointer">
+                <Label htmlFor="case-study" className="text-sm font-bold text-foreground cursor-pointer">
                   I'm joining as a Case Study
                 </Label>
-                <p className="text-xs text-amber-700 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   A Practitioner or Trainee has invited you to be profiled as part of their training.
                 </p>
               </div>
