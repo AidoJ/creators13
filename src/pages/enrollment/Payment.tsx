@@ -60,8 +60,9 @@ export default function Payment() {
       return;
     }
 
-    // Redirect to Stripe Checkout
-    window.location.href = data.url;
+    // Open Stripe Checkout in a new tab (iframe blocks cross-origin redirects)
+    window.open(data.url, "_blank");
+    setLoading(false);
   };
 
   return (
