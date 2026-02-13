@@ -18,9 +18,11 @@ export default function Auth() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
+  const returnTo = new URLSearchParams(window.location.search).get("returnTo") || "/dashboard";
+
   useEffect(() => {
-    if (user) navigate("/dashboard", { replace: true });
-  }, [user, navigate]);
+    if (user) navigate(returnTo, { replace: true });
+  }, [user, navigate, returnTo]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,7 +33,7 @@ export default function Auth() {
       if (error) {
         toast({ title: "Login failed", description: error.message, variant: "destructive" });
       } else {
-        navigate("/dashboard");
+        navigate(returnTo);
       }
     } else {
       const { error } = await supabase.auth.signUp({
