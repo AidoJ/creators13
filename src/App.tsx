@@ -12,6 +12,7 @@ import PlanSelection from "./pages/enrollment/PlanSelection";
 import Signup from "./pages/enrollment/Signup";
 import Payment from "./pages/enrollment/Payment";
 import Details from "./pages/enrollment/Details";
+import Photos from "./pages/enrollment/Photos";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/enroll/signup" element={<Signup />} />
             <Route path="/enroll/payment" element={<Payment />} />
             <Route path="/enroll/details" element={<Details />} />
+            <Route path="/enroll/photos" element={<Photos />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
