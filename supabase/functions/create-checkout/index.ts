@@ -43,7 +43,7 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { priceId, successUrl, cancelUrl, email, user_id, tier, billing } = body;
+    const { priceId, successUrl, cancelUrl, email, user_id, tier, billing, embedded } = body;
 
     // Fall back to body params if JWT auth didn't work (unconfirmed user)
     if (!userEmail && email) {
@@ -121,6 +121,30 @@ serve(async (req) => {
 
     const origin = req.headers.get("origin") || "http://localhost:3000";
 
+    // EMBEDDED MODE: return client_secret instead of URL
+    if (embedded) {
+      const session = await stripe.checkout.sessions.create({
+        customer: customerId,
+        customer_email: customerId ? undefined : userEmail,
+        line_items: [{ price: priceId, quantity: 1 }],
+        mode: "subscription",
+        ui_mode: "embedded",
+        return_url: successUrl || `${origin}/enroll/details?session_id={CHECKOUT_SESSION_ID}&tier=${tierValue}&billing=${billing || "monthly"}&payment=success`,
+        payment_method_types: ["card"],
+        metadata: {
+          user_id: userId,
+        },
+      });
+
+      logStep("Embedded checkout session created", { sessionId: session.id });
+
+      return new Response(JSON.stringify({ clientSecret: session.client_secret }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    // REDIRECT MODE (legacy): return URL
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : userEmail,
