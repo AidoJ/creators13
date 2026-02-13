@@ -148,7 +148,6 @@ export type Database = {
           creator_types_identified: string[] | null
           description: string | null
           id: string
-          photos: Json | null
           practitioner_id: string
           profiling_notes: string | null
           reviewed_at: string | null
@@ -163,7 +162,6 @@ export type Database = {
           creator_types_identified?: string[] | null
           description?: string | null
           id?: string
-          photos?: Json | null
           practitioner_id: string
           profiling_notes?: string | null
           reviewed_at?: string | null
@@ -178,7 +176,6 @@ export type Database = {
           creator_types_identified?: string[] | null
           description?: string | null
           id?: string
-          photos?: Json | null
           practitioner_id?: string
           profiling_notes?: string | null
           reviewed_at?: string | null
