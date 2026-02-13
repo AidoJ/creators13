@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { Check, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +22,7 @@ const birdImages: Record<TierKey, string> = {
 
 export default function PlanSelection() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [selectedTier, setSelectedTier] = useState<TierKey | null>(null);
   const [annual, setAnnual] = useState(false);
   const [isCaseStudy, setIsCaseStudy] = useState(false);
@@ -38,7 +40,17 @@ export default function PlanSelection() {
       params.set("case_study", "true");
       params.set("practitioner_code", practitionerCode.trim());
     }
-    navigate(`/enroll/signup?${params.toString()}`);
+
+    // If already logged in, skip signup and go directly to payment (or details for free tier)
+    if (user) {
+      if (selectedTier === "wren") {
+        navigate(`/enroll/details?${params.toString()}`);
+      } else {
+        navigate(`/enroll/payment?${params.toString()}`);
+      }
+    } else {
+      navigate(`/enroll/signup?${params.toString()}`);
+    }
   };
 
   return (
