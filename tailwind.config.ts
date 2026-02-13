@@ -63,6 +63,9 @@ export default {
         sage: "hsl(var(--sage))",
         earth: "hsl(var(--earth))",
         cream: "hsl(var(--cream))",
+        magenta: "hsl(var(--magenta))",
+        ocean: "hsl(var(--ocean))",
+        terracotta: "hsl(var(--terracotta))",
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
