@@ -7,7 +7,7 @@ import {
 } from "@stripe/react-stripe-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { AlertCircle, Loader2, Lock, Check } from "lucide-react";
+import { AlertCircle, Lock, Check } from "lucide-react";
 import { TIERS, TierKey } from "@/lib/tiers";
 import { useAuth } from "@/contexts/AuthContext";
 import EnrollmentHeader from "@/components/enrollment/EnrollmentHeader";
@@ -64,7 +64,6 @@ export default function Payment() {
     return data.clientSecret;
   }, [tier, billing, user, tierInfo]);
 
-  // Wren is free — redirect to details
   useEffect(() => {
     if (tier === "wren") {
       navigate("/enroll/details?tier=wren&billing=monthly", { replace: true });
@@ -77,101 +76,106 @@ export default function Payment() {
     <div className="min-h-screen bg-background">
       <EnrollmentHeader currentStep={2} />
 
-      <main className="container mx-auto px-4 py-8 max-w-5xl">
-        <div className="grid lg:grid-cols-5 gap-8">
-          {/* LEFT: Order summary with branding */}
-          <div className="lg:col-span-2">
-            {/* Logo */}
-            <div className="mb-6">
-              <img src={logo} alt="13 Creators" className="h-10" />
+      <main className="container mx-auto px-4 py-10 max-w-6xl">
+        {canceled && (
+          <div className="flex items-start gap-3 bg-destructive/10 border border-destructive/30 rounded-xl p-4 mb-8 max-w-2xl mx-auto">
+            <AlertCircle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-destructive">Payment canceled</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                No charge was made. You can try again whenever you're ready.
+              </p>
             </div>
+          </div>
+        )}
 
-            {/* Tier card */}
-            <div className="bg-card border border-border rounded-2xl p-6 mb-6">
-              <div className="flex flex-col items-center text-center">
-                <img
-                  src={tierImage}
-                  alt={`${tierInfo.name} tier`}
-                  className="h-36 w-36 object-contain mb-4"
-                />
-                <h2 className="text-2xl font-display font-bold text-foreground">
-                  {tierInfo.name}
-                </h2>
-                <p className="text-sm text-muted-foreground mb-4">{tierInfo.subtitle}</p>
+        <div className="grid lg:grid-cols-12 gap-10 items-start">
+          {/* LEFT: Order summary */}
+          <div className="lg:col-span-4">
+            <div className="sticky top-8">
+              <div className="bg-gradient-to-br from-[hsl(45_40%_97%)] to-[hsl(35_25%_92%)] border border-border rounded-2xl overflow-hidden shadow-sm">
+                {/* Top accent bar */}
+                <div className="h-1.5 bg-gradient-to-r from-primary via-secondary to-primary" />
 
-                <div className="mb-4">
-                  <span className="text-4xl font-display font-bold text-foreground">
-                    ${billing === "annual" ? Math.round(tierInfo.annualPrice / 12) : tierInfo.monthlyPrice}
-                  </span>
-                  <span className="text-muted-foreground ml-1">/mo</span>
+                <div className="p-6">
+                  <img src={logo} alt="13 Creators" className="h-8 mb-6 opacity-80" />
+
+                  {/* Bird + tier info */}
+                  <div className="flex items-center gap-4 mb-5">
+                    <div className="h-20 w-20 rounded-full bg-background border-2 border-primary/20 flex items-center justify-center overflow-hidden shrink-0">
+                      <img
+                        src={tierImage}
+                        alt={`${tierInfo.name} tier`}
+                        className="h-16 w-16 object-contain"
+                      />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-display font-bold text-foreground leading-tight">
+                        {tierInfo.name}
+                      </h2>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
+                        {tierInfo.subtitle}
+                      </p>
+                      <div className="mt-1">
+                        <span className="text-2xl font-display font-bold text-primary">
+                          ${billing === "annual" ? Math.round(tierInfo.annualPrice / 12) : tierInfo.monthlyPrice}
+                        </span>
+                        <span className="text-sm text-muted-foreground">/mo</span>
+                      </div>
+                    </div>
+                  </div>
+
                   {billing === "annual" && tierInfo.annualPrice > 0 && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      ${tierInfo.annualPrice} billed annually
-                    </p>
+                    <div className="bg-secondary/10 text-foreground text-xs font-medium rounded-lg px-3 py-1.5 mb-4 inline-block">
+                      💰 Save ${tierInfo.monthlyPrice * 12 - tierInfo.annualPrice}/yr with annual billing
+                    </div>
                   )}
+
+                  <div className="border-t border-border/60 my-4" />
+
+                  <ul className="space-y-2.5">
+                    {tierInfo.features.map((f) => (
+                      <li key={f} className="flex items-start gap-2.5 text-sm text-foreground/85">
+                        <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                        <span>{f}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <div className="border-t border-border/60 my-4" />
+
+                  <div className="flex justify-between items-baseline">
+                    <span className="text-sm font-semibold text-foreground">Total today</span>
+                    <div className="text-right">
+                      <span className="text-lg font-display font-bold text-foreground">
+                        A${price}
+                      </span>
+                      <span className="text-xs text-muted-foreground ml-1">
+                        {billing === "annual" ? "/yr" : "/mo"}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <hr className="border-border my-4" />
-
-              <ul className="space-y-2">
-                {tierInfo.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-sm text-foreground">
-                    <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-
-              <hr className="border-border my-4" />
-
-              <div className="flex justify-between text-sm font-bold">
-                <span className="text-foreground">Total today</span>
-                <span className="text-foreground">
-                  A${price}
-                  <span className="font-normal text-muted-foreground ml-1">
-                    {billing === "annual" ? "/yr" : "/mo"}
-                  </span>
-                </span>
+              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground mt-4">
+                <Lock className="h-3.5 w-3.5" />
+                <span>Secured with 256-bit SSL encryption</span>
               </div>
-            </div>
-
-            {/* Security note */}
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Lock className="h-3.5 w-3.5" />
-              <span>Secured with 256-bit SSL encryption</span>
             </div>
           </div>
 
           {/* RIGHT: Embedded Stripe checkout */}
-          <div className="lg:col-span-3">
-            <h1 className="text-2xl font-display font-bold text-foreground mb-2">
-              Complete Payment
-            </h1>
-            <p className="text-sm text-muted-foreground mb-6">
-              Enter your payment details below to activate your{" "}
-              <span className="font-semibold text-foreground">{tierInfo.name}</span> membership.
-            </p>
-
-            {canceled && (
-              <div className="flex items-start gap-3 bg-destructive/10 border border-destructive/30 rounded-xl p-4 mb-6">
-                <AlertCircle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-sm font-semibold text-destructive">Payment canceled</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    No charge was made. You can try again whenever you're ready.
-                  </p>
-                </div>
+          <div className="lg:col-span-8">
+            <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+              <div className="min-h-[500px]">
+                <EmbeddedCheckoutProvider
+                  stripe={stripePromise}
+                  options={{ fetchClientSecret }}
+                >
+                  <EmbeddedCheckout />
+                </EmbeddedCheckoutProvider>
               </div>
-            )}
-
-            <div className="bg-card border border-border rounded-2xl p-6 min-h-[400px]">
-              <EmbeddedCheckoutProvider
-                stripe={stripePromise}
-                options={{ fetchClientSecret }}
-              >
-                <EmbeddedCheckout />
-              </EmbeddedCheckoutProvider>
             </div>
           </div>
         </div>
