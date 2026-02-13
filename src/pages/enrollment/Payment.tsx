@@ -44,6 +44,14 @@ export default function Payment() {
 
   const price = billing === "annual" ? tierInfo.annualPrice : tierInfo.monthlyPrice;
 
+  // If no email from auth or URL params, redirect to auth with returnTo
+  useEffect(() => {
+    if (!userEmail && !userId) {
+      const returnTo = encodeURIComponent(`/enroll/payment?tier=${tier}&billing=${billing}`);
+      navigate(`/auth?returnTo=${returnTo}`, { replace: true });
+    }
+  }, [userEmail, userId, tier, billing, navigate]);
+
   const fetchClientSecret = useCallback(async () => {
     const priceId = tierInfo.stripe?.price_id;
     if (!priceId) throw new Error("No Stripe price configured for this tier.");
