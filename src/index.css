@@ -119,3 +119,13 @@
     @apply font-display;
   }
 }
+
+/* Contain Stripe Embedded Checkout iframe */
+#stripe-checkout-container iframe {
+  max-width: 100% !important;
+  position: relative !important;
+}
+
+#stripe-checkout-container > div {
+  position: relative !important;
+}
