@@ -81,6 +81,7 @@ export default function Photos() {
   );
   const [submitting, setSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const cameraInputRef = useRef<HTMLInputElement | null>(null);
 
   const tier = params.get("tier") || "wren";
   const billing = params.get("billing") || "monthly";
@@ -486,12 +487,26 @@ export default function Photos() {
               ) : (
                 <>
                   <Camera className="h-8 w-8 text-muted-foreground mb-2" />
-                  <span className="text-xs text-muted-foreground font-medium">Tap to add photo</span>
+                  <span className="text-xs text-muted-foreground font-medium">Tap to upload photo</span>
                 </>
               )}
             </button>
           </div>
         </div>
+
+        {/* Take Photo button */}
+        {!photo.preview && (
+          <div className="flex justify-center mb-4">
+            <Button
+              variant="outline"
+              onClick={() => cameraInputRef.current?.click()}
+              className="rounded-full gap-2"
+            >
+              <Camera className="h-4 w-4" />
+              Take Photo with Camera
+            </Button>
+          </div>
+        )}
 
         {/* AI Review feedback */}
         <div className="mb-4">
@@ -502,6 +517,18 @@ export default function Photos() {
           ref={fileInputRef}
           type="file"
           accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) handleFileSelect(file);
+            e.target.value = "";
+          }}
+        />
+        <input
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
           className="hidden"
           onChange={(e) => {
             const file = e.target.files?.[0];
