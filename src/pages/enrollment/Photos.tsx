@@ -138,8 +138,8 @@ export default function Photos() {
     toast({ title: "All photos uploaded successfully!" });
     setSubmitting(false);
 
-    const nextParams = new URLSearchParams({ tier, billing });
-    navigate(`/enroll/booking?${nextParams.toString()}`);
+    // Booking page not yet built — go to dashboard for now
+    navigate("/dashboard");
   };
 
   return (
@@ -213,7 +213,7 @@ export default function Photos() {
                   <img
                     src={slot.guide}
                     alt={`Example: ${slot.label}`}
-                    className="w-full aspect-[3/4] object-cover opacity-80"
+                    className="w-full aspect-[3/4] object-contain bg-muted/40 opacity-80"
                   />
                   <p className="text-[9px] text-muted-foreground text-center py-1 bg-muted/40">Example</p>
                 </div>
