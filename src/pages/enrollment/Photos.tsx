@@ -1,6 +1,6 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { Camera, X, CheckCircle, AlertCircle, ArrowRight, ArrowLeft, Loader2, Eye } from "lucide-react";
+import { Camera, X, CheckCircle, AlertCircle, ArrowRight, ArrowLeft, Loader2, Eye, XCircle, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,12 +30,19 @@ const PHOTO_SLOTS = [
 
 type PhotoKey = typeof PHOTO_SLOTS[number]["key"];
 
+interface ReviewResult {
+  pass: boolean;
+  feedback: string;
+}
+
 interface PhotoState {
   file: File | null;
   preview: string | null;
   uploading: boolean;
   uploaded: boolean;
   error: string | null;
+  reviewing: boolean;
+  review: ReviewResult | null;
 }
 
 const initialPhotoState: PhotoState = {
@@ -44,9 +51,23 @@ const initialPhotoState: PhotoState = {
   uploading: false,
   uploaded: false,
   error: null,
+  reviewing: false,
+  review: null,
 };
 
 type ViewMode = "guidelines" | "wizard" | "review";
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      resolve(result.split(",")[1]); // strip data:...;base64,
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 export default function Photos() {
   const [params] = useSearchParams();
@@ -68,7 +89,33 @@ export default function Photos() {
   const photo = photos[slot.key];
   const completedCount = PHOTO_SLOTS.filter((s) => photos[s.key].file !== null).length;
   const allPhotosSelected = completedCount === PHOTO_SLOTS.length;
+  const allReviewsPassed = PHOTO_SLOTS.every((s) => photos[s.key].review?.pass === true);
   const uploadedCount = PHOTO_SLOTS.filter((s) => photos[s.key].uploaded).length;
+
+  const reviewPhoto = useCallback(async (key: PhotoKey, file: File) => {
+    setPhotos((p) => ({ ...p, [key]: { ...p[key], reviewing: true, review: null } }));
+
+    try {
+      const base64 = await fileToBase64(file);
+      const { data, error } = await supabase.functions.invoke("review-photo", {
+        body: { photo_type: key, image_base64: base64 },
+      });
+
+      if (error) throw error;
+
+      setPhotos((p) => ({
+        ...p,
+        [key]: { ...p[key], reviewing: false, review: data as ReviewResult },
+      }));
+    } catch (err) {
+      console.error("AI review error:", err);
+      // On error, auto-pass so user isn't blocked
+      setPhotos((p) => ({
+        ...p,
+        [key]: { ...p[key], reviewing: false, review: { pass: true, feedback: "Review unavailable — photo accepted." } },
+      }));
+    }
+  }, []);
 
   const handleFileSelect = (file: File) => {
     const key = slot.key;
@@ -81,7 +128,8 @@ export default function Photos() {
       return;
     }
     const preview = URL.createObjectURL(file);
-    setPhotos((p) => ({ ...p, [key]: { file, preview, uploading: false, uploaded: false, error: null } }));
+    setPhotos((p) => ({ ...p, [key]: { file, preview, uploading: false, uploaded: false, error: null, reviewing: false, review: null } }));
+    reviewPhoto(key, file);
   };
 
   const removePhoto = (key: PhotoKey) => {
@@ -142,6 +190,34 @@ export default function Photos() {
     navigate("/dashboard");
   };
 
+  // ─── AI REVIEW BADGE ───
+  const ReviewBadge = ({ state }: { state: PhotoState }) => {
+    if (state.reviewing) {
+      return (
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/60 rounded-full px-3 py-1.5">
+          <Sparkles className="h-3.5 w-3.5 animate-pulse" />
+          AI reviewing...
+        </div>
+      );
+    }
+    if (!state.review) return null;
+    return (
+      <div className={cn(
+        "flex items-start gap-1.5 text-xs rounded-xl px-3 py-2",
+        state.review.pass
+          ? "bg-forest/10 text-forest"
+          : "bg-destructive/10 text-destructive"
+      )}>
+        {state.review.pass ? (
+          <CheckCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+        ) : (
+          <XCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+        )}
+        <span>{state.review.feedback}</span>
+      </div>
+    );
+  };
+
   // ─── GUIDELINES ───
   if (viewMode === "guidelines") {
     return (
@@ -179,6 +255,16 @@ export default function Photos() {
             </ul>
           </div>
 
+          <div className="bg-card border border-border rounded-2xl p-4 mb-6">
+            <div className="flex items-center gap-2 text-sm text-foreground">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <strong>AI Photo Review</strong>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Each photo will be automatically checked by AI to ensure it meets the guidelines before submission.
+            </p>
+          </div>
+
           <div className="text-center">
             <Button onClick={() => setViewMode("wizard")} size="lg" className="rounded-full px-10 text-base font-semibold">
               I Understand — Start Photos <ArrowRight className="ml-2 h-4 w-4" />
@@ -191,25 +277,36 @@ export default function Photos() {
 
   // ─── REVIEW / COMPOSITE ───
   if (viewMode === "review") {
+    const anyFailed = PHOTO_SLOTS.some((s) => photos[s.key].review && !photos[s.key].review!.pass);
+
     return (
       <div className="min-h-screen bg-background">
         <EnrollmentHeader currentStep={4} />
         <main className="container mx-auto px-4 py-6 max-w-4xl">
           <div className="text-center mb-6">
             <h1 className="text-2xl font-display font-bold text-foreground mb-2">Review Your Photos</h1>
-            <p className="text-sm text-muted-foreground">Check that all photos are clear and match the guidelines before uploading.</p>
+            <p className="text-sm text-muted-foreground">
+              {anyFailed
+                ? "Some photos didn't pass AI review. Please re-take the flagged ones."
+                : "All photos look good! Check the layout below and submit when ready."}
+            </p>
           </div>
 
-          {/* Composite layout matching reference */}
+          {/* Composite layout */}
           <div className="bg-card border border-border rounded-2xl p-4 mb-6">
             <div className="grid grid-cols-6 gap-2">
-              {/* Row 1: 3 face photos (square) + 3 body photos (tall, row-span-2) */}
               {/* Face photos */}
               {(["face_front_closed", "face_front_smiling", "face_side"] as PhotoKey[]).map((key) => {
                 const s = PHOTO_SLOTS.find((x) => x.key === key)!;
+                const p = photos[key];
                 return (
                   <div key={key} className="relative aspect-square rounded-lg overflow-hidden bg-muted/30">
-                    <img src={photos[key].preview!} alt={s.label} className="w-full h-full object-cover" />
+                    <img src={p.preview!} alt={s.label} className="w-full h-full object-cover" />
+                    {p.review && !p.review.pass && (
+                      <div className="absolute inset-0 bg-destructive/20 flex items-center justify-center">
+                        <XCircle className="h-6 w-6 text-destructive" />
+                      </div>
+                    )}
                     <button
                       type="button"
                       onClick={() => { removePhoto(key); setViewMode("wizard"); setCurrentStep(PHOTO_SLOTS.findIndex((x) => x.key === key)); }}
@@ -225,9 +322,15 @@ export default function Photos() {
               {/* Body photos - tall */}
               {(["body_front", "body_side", "body_back"] as PhotoKey[]).map((key) => {
                 const s = PHOTO_SLOTS.find((x) => x.key === key)!;
+                const p = photos[key];
                 return (
                   <div key={key} className="relative row-span-2 rounded-lg overflow-hidden bg-muted/30">
-                    <img src={photos[key].preview!} alt={s.label} className="w-full h-full object-cover" />
+                    <img src={p.preview!} alt={s.label} className="w-full h-full object-cover" />
+                    {p.review && !p.review.pass && (
+                      <div className="absolute inset-0 bg-destructive/20 flex items-center justify-center">
+                        <XCircle className="h-6 w-6 text-destructive" />
+                      </div>
+                    )}
                     <button
                       type="button"
                       onClick={() => { removePhoto(key); setViewMode("wizard"); setCurrentStep(PHOTO_SLOTS.findIndex((x) => x.key === key)); }}
@@ -240,12 +343,18 @@ export default function Photos() {
                 );
               })}
 
-              {/* Row 2: feet + hands + empty */}
+              {/* Feet + hands */}
               {(["feet", "hands"] as PhotoKey[]).map((key) => {
                 const s = PHOTO_SLOTS.find((x) => x.key === key)!;
+                const p = photos[key];
                 return (
                   <div key={key} className="relative aspect-square rounded-lg overflow-hidden bg-muted/30">
-                    <img src={photos[key].preview!} alt={s.label} className="w-full h-full object-cover" />
+                    <img src={p.preview!} alt={s.label} className="w-full h-full object-cover" />
+                    {p.review && !p.review.pass && (
+                      <div className="absolute inset-0 bg-destructive/20 flex items-center justify-center">
+                        <XCircle className="h-6 w-6 text-destructive" />
+                      </div>
+                    )}
                     <button
                       type="button"
                       onClick={() => { removePhoto(key); setViewMode("wizard"); setCurrentStep(PHOTO_SLOTS.findIndex((x) => x.key === key)); }}
@@ -257,9 +366,32 @@ export default function Photos() {
                   </div>
                 );
               })}
-              <div /> {/* empty cell */}
+              <div />
             </div>
           </div>
+
+          {/* Per-photo feedback list */}
+          {anyFailed && (
+            <div className="space-y-2 mb-6">
+              {PHOTO_SLOTS.filter((s) => photos[s.key].review && !photos[s.key].review!.pass).map((s) => (
+                <div key={s.key} className="flex items-start gap-2 bg-destructive/5 border border-destructive/20 rounded-xl px-4 py-3">
+                  <XCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                  <div>
+                    <span className="text-sm font-medium text-foreground">{s.label}: </span>
+                    <span className="text-sm text-muted-foreground">{photos[s.key].review!.feedback}</span>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="ml-auto shrink-0 text-xs"
+                    onClick={() => { removePhoto(s.key); setViewMode("wizard"); setCurrentStep(PHOTO_SLOTS.findIndex((x) => x.key === s.key)); }}
+                  >
+                    Re-take
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Actions */}
           <div className="flex items-center gap-3 justify-center">
@@ -268,7 +400,7 @@ export default function Photos() {
             </Button>
             <Button
               onClick={handleSubmitAll}
-              disabled={submitting}
+              disabled={submitting || anyFailed}
               className="rounded-full px-8"
             >
               {submitting ? (
@@ -296,16 +428,21 @@ export default function Photos() {
             <span className="text-sm text-muted-foreground">{completedCount} / {PHOTO_SLOTS.length} added</span>
           </div>
           <div className="flex gap-1">
-            {PHOTO_SLOTS.map((s, i) => (
-              <button
-                key={s.key}
-                onClick={() => setCurrentStep(i)}
-                className={cn(
-                  "h-2 flex-1 rounded-full transition-all",
-                  i === currentStep ? "bg-primary" : photos[s.key].file ? "bg-forest/60" : "bg-muted"
-                )}
-              />
-            ))}
+            {PHOTO_SLOTS.map((s, i) => {
+              const p = photos[s.key];
+              const color = i === currentStep
+                ? "bg-primary"
+                : p.review?.pass === true
+                ? "bg-forest/60"
+                : p.review?.pass === false
+                ? "bg-destructive/60"
+                : p.file
+                ? "bg-primary/30"
+                : "bg-muted";
+              return (
+                <button key={s.key} onClick={() => setCurrentStep(i)} className={cn("h-2 flex-1 rounded-full transition-all", color)} />
+              );
+            })}
           </div>
         </div>
 
@@ -316,7 +453,7 @@ export default function Photos() {
         <p className="text-sm text-muted-foreground text-center mb-5">{slot.description}</p>
 
         {/* Guide vs Upload */}
-        <div className="grid grid-cols-2 gap-3 mb-6">
+        <div className="grid grid-cols-2 gap-3 mb-4">
           <div className="flex flex-col">
             <span className="text-xs font-semibold text-muted-foreground mb-1.5 text-center uppercase tracking-wide">Example</span>
             <div className="rounded-xl border border-border overflow-hidden bg-muted/20 flex-1">
@@ -356,6 +493,11 @@ export default function Photos() {
           </div>
         </div>
 
+        {/* AI Review feedback */}
+        <div className="mb-4">
+          <ReviewBadge state={photo} />
+        </div>
+
         <input
           ref={fileInputRef}
           type="file"
@@ -393,23 +535,38 @@ export default function Photos() {
 
         {/* Thumbnail strip */}
         <div className="flex gap-1.5 justify-center mt-6">
-          {PHOTO_SLOTS.map((s, i) => (
-            <button
-              key={s.key}
-              onClick={() => setCurrentStep(i)}
-              className={cn(
-                "w-9 h-9 rounded-lg overflow-hidden border-2 transition-all",
-                i === currentStep ? "border-primary" : "border-transparent",
-                !photos[s.key].file && "bg-muted/40"
-              )}
-            >
-              {photos[s.key].preview ? (
-                <img src={photos[s.key].preview!} alt="" className="w-full h-full object-cover" />
-              ) : (
-                <span className="text-[10px] text-muted-foreground flex items-center justify-center h-full">{i + 1}</span>
-              )}
-            </button>
-          ))}
+          {PHOTO_SLOTS.map((s, i) => {
+            const p = photos[s.key];
+            return (
+              <button
+                key={s.key}
+                onClick={() => setCurrentStep(i)}
+                className={cn(
+                  "w-9 h-9 rounded-lg overflow-hidden border-2 transition-all relative",
+                  i === currentStep ? "border-primary" : "border-transparent",
+                  !p.file && "bg-muted/40"
+                )}
+              >
+                {p.preview ? (
+                  <>
+                    <img src={p.preview} alt="" className="w-full h-full object-cover" />
+                    {p.review?.pass === false && (
+                      <div className="absolute inset-0 bg-destructive/30 flex items-center justify-center">
+                        <XCircle className="h-3 w-3 text-destructive" />
+                      </div>
+                    )}
+                    {p.review?.pass === true && (
+                      <div className="absolute bottom-0 right-0 bg-forest text-white rounded-tl-md p-px">
+                        <CheckCircle className="h-2.5 w-2.5" />
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <span className="text-[10px] text-muted-foreground flex items-center justify-center h-full">{i + 1}</span>
+                )}
+              </button>
+            );
+          })}
         </div>
       </main>
     </div>
