@@ -180,7 +180,10 @@ export default function Signup() {
             </Button>
             <p className="text-sm text-muted-foreground">
               Already have an account?{" "}
-              <Link to="/auth" className="text-primary font-semibold hover:underline">
+              <Link
+                to={`/auth?returnTo=${encodeURIComponent(`/enroll/payment?tier=${tier}&billing=${billing}`)}`}
+                className="text-primary font-semibold hover:underline"
+              >
                 Sign in
               </Link>
             </p>
