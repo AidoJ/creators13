@@ -7,6 +7,19 @@ import { ArrowRight, CreditCard, Loader2, AlertCircle } from "lucide-react";
 import { TIERS, TierKey } from "@/lib/tiers";
 import { useAuth } from "@/contexts/AuthContext";
 import EnrollmentHeader from "@/components/enrollment/EnrollmentHeader";
+import logo from "@/assets/13creators-logo.png";
+import birdWren from "@/assets/bird-wren.png";
+import birdRobin from "@/assets/bird-robin.png";
+import birdFalcon from "@/assets/bird-falcon.png";
+import birdOwl from "@/assets/bird-owl.png";
+
+
+const BIRD_IMAGES: Record<TierKey, string> = {
+  wren: birdWren,
+  robin: birdRobin,
+  falcon: birdFalcon,
+  owl: birdOwl,
+};
 
 export default function Payment() {
   const [params] = useSearchParams();
@@ -18,6 +31,7 @@ export default function Payment() {
   const billing = params.get("billing") || "monthly";
   const canceled = params.get("canceled") === "true";
   const tierInfo = TIERS[tier] || TIERS.robin;
+  const tierImage = BIRD_IMAGES[tier];
 
   const price = billing === "annual"
     ? tierInfo.annualPrice
@@ -69,7 +83,36 @@ export default function Payment() {
     <div className="min-h-screen bg-background">
       <EnrollmentHeader currentStep={2} />
 
-      <main className="container mx-auto px-4 py-10 max-w-md">
+      <main className="container mx-auto px-4 py-10 max-w-2xl">
+        {/* Logo */}
+        <div className="flex justify-center mb-8">
+          <img src={logo} alt="13 Creators" className="h-12" />
+        </div>
+
+        {/* Tier card display */}
+        <div className="bg-card border border-border rounded-2xl p-6 mb-8 overflow-hidden">
+          <div className="flex flex-col sm:flex-row gap-6 items-center">
+            {/* Tier image */}
+            <div className="flex-shrink-0">
+              <img
+                src={tierImage}
+                alt={`${tierInfo.name} tier`}
+                className="h-40 w-40 object-cover"
+              />
+            </div>
+
+            {/* Tier info */}
+            <div className="flex-1 text-center sm:text-left">
+              <h2 className="text-3xl font-display font-bold text-foreground mb-1">
+                {tierInfo.name}
+              </h2>
+              <p className="text-muted-foreground mb-3">
+                {tierInfo.subtitle}
+              </p>
+            </div>
+          </div>
+        </div>
+
         <div className="text-center mb-8">
           <h1 className="text-3xl font-display font-bold text-foreground mb-2">
             Complete Payment
