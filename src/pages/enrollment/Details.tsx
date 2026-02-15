@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -27,6 +27,7 @@ export default function Details() {
   const isPaymentSuccess = paymentStatus === "success" || paymentStatus === "skipped";
 
   const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
   const [showForm, setShowForm] = useState(!isPaymentSuccess);
 
   // Form state
@@ -44,6 +45,36 @@ export default function Details() {
   const [postalCode, setPostalCode] = useState("");
   const [country, setCountry] = useState("Australia");
   const [medicalHistory, setMedicalHistory] = useState("");
+
+  // Fetch existing profile data on mount
+  useEffect(() => {
+    if (!user) { setFetching(false); return; }
+    const load = async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("first_name, last_name, phone, date_of_birth, gender, height_cm, shoe_size, address_line1, address_line2, city, state, postal_code, country, medical_history")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (data) {
+        setFirstName(data.first_name || "");
+        setLastName(data.last_name || "");
+        setPhone(data.phone || "");
+        setDateOfBirth(data.date_of_birth || "");
+        setGender(data.gender || "");
+        setHeightCm(data.height_cm != null ? String(data.height_cm) : "");
+        setShoeSize(data.shoe_size || "");
+        setAddressLine1(data.address_line1 || "");
+        setAddressLine2(data.address_line2 || "");
+        setCity(data.city || "");
+        setState(data.state || "");
+        setPostalCode(data.postal_code || "");
+        setCountry(data.country || "Australia");
+        setMedicalHistory(data.medical_history || "");
+      }
+      setFetching(false);
+    };
+    load();
+  }, [user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,6 +117,14 @@ export default function Details() {
     const nextParams = new URLSearchParams({ tier, billing });
     navigate(`/enroll/photos?${nextParams.toString()}`);
   };
+
+  if (fetching) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   // Show confirmation first if arriving from payment
   if (isPaymentSuccess && !showForm) {
