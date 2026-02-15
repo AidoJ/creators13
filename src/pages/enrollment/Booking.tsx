@@ -78,7 +78,7 @@ export default function Booking() {
           <div 
             className="calendly-inline-widget" 
             data-url="https://calendly.com/creatortypes/ahara-chat?hide_event_type_details=1&hide_gdpr_block=1"
-            style={{ minHeight: "630px" }}
+            style={{ minWidth: "320px", height: "950px" }}
           />
         </div>
 
