@@ -307,6 +307,60 @@ export type Database = {
         }
         Relationships: []
       }
+      creator_types: {
+        Row: {
+          body_markers: Json | null
+          color_hex: string | null
+          created_at: string
+          creative_power: string | null
+          description: string | null
+          disaster_state: string | null
+          element: string
+          energy_pattern: string | null
+          family: string
+          icon_name: string | null
+          id: string
+          name: string
+          natural_power: string | null
+          sort_order: number | null
+          team_role: string | null
+        }
+        Insert: {
+          body_markers?: Json | null
+          color_hex?: string | null
+          created_at?: string
+          creative_power?: string | null
+          description?: string | null
+          disaster_state?: string | null
+          element: string
+          energy_pattern?: string | null
+          family: string
+          icon_name?: string | null
+          id?: string
+          name: string
+          natural_power?: string | null
+          sort_order?: number | null
+          team_role?: string | null
+        }
+        Update: {
+          body_markers?: Json | null
+          color_hex?: string | null
+          created_at?: string
+          creative_power?: string | null
+          description?: string | null
+          disaster_state?: string | null
+          element?: string
+          energy_pattern?: string | null
+          family?: string
+          icon_name?: string | null
+          id?: string
+          name?: string
+          natural_power?: string | null
+          sort_order?: number | null
+          team_role?: string | null
+        }
+        Relationships: []
+      }
       game_scores: {
         Row: {
           game_type: string | null
