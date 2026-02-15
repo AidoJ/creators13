@@ -558,6 +558,7 @@ export type Database = {
           medical_history: string | null
           phone: string | null
           postal_code: string | null
+          practitioner_code: string | null
           shoe_size: string | null
           state: string | null
           updated_at: string
@@ -584,6 +585,7 @@ export type Database = {
           medical_history?: string | null
           phone?: string | null
           postal_code?: string | null
+          practitioner_code?: string | null
           shoe_size?: string | null
           state?: string | null
           updated_at?: string
@@ -610,6 +612,7 @@ export type Database = {
           medical_history?: string | null
           phone?: string | null
           postal_code?: string | null
+          practitioner_code?: string | null
           shoe_size?: string | null
           state?: string | null
           updated_at?: string
@@ -649,6 +652,7 @@ export type Database = {
           current_period_start: string | null
           id: string
           payment_method: string | null
+          referral_code: string | null
           status: Database["public"]["Enums"]["subscription_status"]
           stripe_customer_id: string | null
           stripe_price_id: string | null
@@ -664,6 +668,7 @@ export type Database = {
           current_period_start?: string | null
           id?: string
           payment_method?: string | null
+          referral_code?: string | null
           status?: Database["public"]["Enums"]["subscription_status"]
           stripe_customer_id?: string | null
           stripe_price_id?: string | null
@@ -679,6 +684,7 @@ export type Database = {
           current_period_start?: string | null
           id?: string
           payment_method?: string | null
+          referral_code?: string | null
           status?: Database["public"]["Enums"]["subscription_status"]
           stripe_customer_id?: string | null
           stripe_price_id?: string | null
@@ -715,6 +721,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_practitioner_code: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
