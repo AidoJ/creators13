@@ -1,5 +1,5 @@
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { TIERS, TierKey } from "@/lib/tiers";
 import { Calendar, ArrowRight, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,19 @@ export default function Booking() {
       navigate(`/auth?returnTo=${returnTo}`, { replace: true });
     }
   }, [loading, user, tier, navigate]);
+
+  // Load Calendly widget script dynamically
+  useEffect(() => {
+    const existing = document.querySelector('script[src*="calendly.com"]');
+    if (existing) return;
+    const script = document.createElement("script");
+    script.src = "https://assets.calendly.com/assets/external/widget.js";
+    script.async = true;
+    document.body.appendChild(script);
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
 
   if (loading) {
     return (
@@ -129,12 +142,6 @@ export default function Booking() {
         </div>
       </main>
 
-      {/* Load Calendly widget script */}
-      <script 
-        type="text/javascript" 
-        src="https://assets.calendly.com/assets/external/widget.js" 
-        async
-      />
     </div>
   );
 }
