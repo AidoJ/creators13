@@ -118,7 +118,6 @@ export default function Dashboard() {
               { label: "Account created", done: true },
               { label: "Personal details added", done: step !== "plan_selected" && step !== "signed_up", action: () => navigate("/enroll/details"), actionLabel: step !== "plan_selected" && step !== "signed_up" ? "Edit" : "Add", icon: Pencil },
               { label: "Photos uploaded", done: photosUploaded, action: () => navigate("/enroll/photos"), actionLabel: photosUploaded ? "Re-upload" : "Upload", icon: Camera },
-              { label: "Zoom session booked", done: bookingMade, action: !bookingMade ? () => navigate(`/enroll/booking?tier=${subscription?.tier || "wren"}`) : undefined, actionLabel: "Book Now", icon: CalendarPlus },
               { label: "Profiling complete", done: isComplete },
             ].map((item) => (
               <div key={item.label} className="flex items-center justify-between gap-3 text-sm">
@@ -143,6 +142,45 @@ export default function Dashboard() {
                 )}
               </div>
             ))}
+
+            {/* Zoom session row — richer display */}
+            <div className="flex items-center justify-between gap-3 text-sm">
+              <div className="flex items-center gap-3">
+                {bookingMade ? (
+                  <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
+                ) : (
+                  <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
+                )}
+                <div>
+                  <span className={bookingMade ? "text-foreground" : "text-muted-foreground"}>
+                    Zoom session {bookingMade ? "booked" : "not booked"}
+                  </span>
+                  {booking?.scheduled_at && (
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {new Date(booking.scheduled_at).toLocaleDateString("en-AU", {
+                        weekday: "short",
+                        day: "numeric",
+                        month: "short",
+                      })}
+                      {" at "}
+                      {new Date(booking.scheduled_at).toLocaleTimeString("en-AU", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs text-primary hover:text-primary/80 h-7 px-2"
+                onClick={() => navigate(`/enroll/booking?tier=${subscription?.tier || "wren"}`)}
+              >
+                <CalendarPlus className="h-3 w-3 mr-1" />
+                {bookingMade ? "Reschedule" : "Book Now"}
+              </Button>
+            </div>
           </div>
         </div>
 
