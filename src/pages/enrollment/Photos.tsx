@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Camera, X, CheckCircle, AlertCircle, ArrowRight, ArrowLeft, Loader2, Eye, XCircle, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -43,6 +43,7 @@ interface PhotoState {
   error: string | null;
   reviewing: boolean;
   review: ReviewResult | null;
+  existingPath: string | null; // Track if loaded from storage
 }
 
 const initialPhotoState: PhotoState = {
@@ -53,6 +54,7 @@ const initialPhotoState: PhotoState = {
   error: null,
   reviewing: false,
   review: null,
+  existingPath: null,
 };
 
 type ViewMode = "guidelines" | "wizard" | "review";
@@ -80,6 +82,7 @@ export default function Photos() {
     Object.fromEntries(PHOTO_SLOTS.map((s) => [s.key, { ...initialPhotoState }])) as Record<PhotoKey, PhotoState>
   );
   const [submitting, setSubmitting] = useState(false);
+  const [loadingExisting, setLoadingExisting] = useState(true);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -88,10 +91,46 @@ export default function Photos() {
 
   const slot = PHOTO_SLOTS[currentStep];
   const photo = photos[slot.key];
-  const completedCount = PHOTO_SLOTS.filter((s) => photos[s.key].file !== null).length;
+  const completedCount = PHOTO_SLOTS.filter((s) => photos[s.key].file !== null || photos[s.key].existingPath !== null).length;
   const allPhotosSelected = completedCount === PHOTO_SLOTS.length;
   const allReviewsPassed = PHOTO_SLOTS.every((s) => photos[s.key].review?.pass === true);
-  const uploadedCount = PHOTO_SLOTS.filter((s) => photos[s.key].uploaded).length;
+  const uploadedCount = PHOTO_SLOTS.filter((s) => photos[s.key].uploaded || photos[s.key].existingPath !== null).length;
+
+  // Load existing photos from storage on mount
+  useEffect(() => {
+    if (!user) { setLoadingExisting(false); return; }
+    const loadExisting = async () => {
+      const { data: photoRows } = await supabase
+        .from("profiling_photos")
+        .select("photo_type, storage_path")
+        .eq("user_id", user.id);
+
+      if (photoRows && photoRows.length > 0) {
+        const updates: Partial<Record<PhotoKey, PhotoState>> = {};
+        for (const row of photoRows) {
+          const key = row.photo_type as PhotoKey;
+          if (!PHOTO_SLOTS.find((s) => s.key === key)) continue;
+          const { data: urlData } = supabase.storage.from("profiling-photos").getPublicUrl(row.storage_path);
+          if (urlData?.publicUrl) {
+            updates[key] = {
+              ...initialPhotoState,
+              preview: urlData.publicUrl,
+              uploaded: true,
+              existingPath: row.storage_path,
+              review: { pass: true, feedback: "Previously uploaded" },
+            };
+          }
+        }
+        if (Object.keys(updates).length > 0) {
+          setPhotos((p) => ({ ...p, ...updates }));
+          // Skip guidelines if returning to edit
+          setViewMode("wizard");
+        }
+      }
+      setLoadingExisting(false);
+    };
+    loadExisting();
+  }, [user]);
 
   const reviewPhoto = useCallback(async (key: PhotoKey, file: File) => {
     setPhotos((p) => ({ ...p, [key]: { ...p[key], reviewing: true, review: null } }));
@@ -129,12 +168,15 @@ export default function Photos() {
       return;
     }
     const preview = URL.createObjectURL(file);
-    setPhotos((p) => ({ ...p, [key]: { file, preview, uploading: false, uploaded: false, error: null, reviewing: false, review: null } }));
+    setPhotos((p) => ({ ...p, [key]: { file, preview, uploading: false, uploaded: false, error: null, reviewing: false, review: null, existingPath: null } }));
     reviewPhoto(key, file);
   };
 
   const removePhoto = (key: PhotoKey) => {
-    if (photos[key].preview) URL.revokeObjectURL(photos[key].preview!);
+    // Only revoke blob URLs, not storage URLs
+    if (photos[key].preview && photos[key].preview!.startsWith("blob:")) {
+      URL.revokeObjectURL(photos[key].preview!);
+    }
     setPhotos((p) => ({ ...p, [key]: { ...initialPhotoState } }));
   };
 
@@ -154,6 +196,8 @@ export default function Photos() {
 
     for (const s of PHOTO_SLOTS) {
       const p = photos[s.key];
+      // Skip if already uploaded and no new file selected
+      if (p.existingPath && !p.file) continue;
       if (!p.file || p.uploaded) continue;
 
       setPhotos((prev) => ({ ...prev, [s.key]: { ...prev[s.key], uploading: true, error: null } }));
@@ -219,6 +263,14 @@ export default function Photos() {
       </div>
     );
   };
+
+  if (loadingExisting) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   // ─── GUIDELINES ───
   if (viewMode === "guidelines") {
