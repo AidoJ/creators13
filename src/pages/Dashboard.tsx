@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { LogOut, Clock, Calendar, User, CheckCircle } from "lucide-react";
+import { LogOut, Clock, Calendar, User, CheckCircle, Pencil, Camera, CalendarPlus } from "lucide-react";
 import logo from "@/assets/13creators-logo.png";
 
 interface ProfileData {
@@ -24,6 +25,7 @@ interface SubData {
 
 export default function Dashboard() {
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [booking, setBooking] = useState<BookingData | null>(null);
   const [subscription, setSubscription] = useState<SubData | null>(null);
@@ -110,22 +112,35 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* Progress steps */}
-          <div className="space-y-2">
+          {/* Progress steps with actions */}
+          <div className="space-y-3">
             {[
               { label: "Account created", done: true },
-              { label: "Personal details added", done: step !== "plan_selected" && step !== "signed_up" },
-              { label: "Photos uploaded", done: photosUploaded },
-              { label: "Zoom session booked", done: bookingMade },
+              { label: "Personal details added", done: step !== "plan_selected" && step !== "signed_up", action: () => navigate("/enroll/details"), actionLabel: step !== "plan_selected" && step !== "signed_up" ? "Edit" : "Add", icon: Pencil },
+              { label: "Photos uploaded", done: photosUploaded, action: () => navigate("/enroll/photos"), actionLabel: photosUploaded ? "Re-upload" : "Upload", icon: Camera },
+              { label: "Zoom session booked", done: bookingMade, action: !bookingMade ? () => navigate(`/enroll/booking?tier=${subscription?.tier || "wren"}`) : undefined, actionLabel: "Book Now", icon: CalendarPlus },
               { label: "Profiling complete", done: isComplete },
             ].map((item) => (
-              <div key={item.label} className="flex items-center gap-3 text-sm">
-                {item.done ? (
-                  <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
-                ) : (
-                  <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
+              <div key={item.label} className="flex items-center justify-between gap-3 text-sm">
+                <div className="flex items-center gap-3">
+                  {item.done ? (
+                    <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
+                  ) : (
+                    <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
+                  )}
+                  <span className={item.done ? "text-foreground" : "text-muted-foreground"}>{item.label}</span>
+                </div>
+                {item.action && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs text-primary hover:text-primary/80 h-7 px-2"
+                    onClick={item.action}
+                  >
+                    {item.icon && <item.icon className="h-3 w-3 mr-1" />}
+                    {item.actionLabel}
+                  </Button>
                 )}
-                <span className={item.done ? "text-foreground" : "text-muted-foreground"}>{item.label}</span>
               </div>
             ))}
           </div>
@@ -167,11 +182,23 @@ export default function Dashboard() {
               )}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">
-              {photosUploaded
-                ? "Your photos are being reviewed. You'll be able to book once a practitioner has reviewed them."
-                : "Complete your photos to unlock booking."}
-            </p>
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                {photosUploaded
+                  ? "Your photos have been submitted. You can now book your profiling session."
+                  : "Complete your photos to unlock booking."}
+              </p>
+              {photosUploaded && !bookingMade && (
+                <Button
+                  size="sm"
+                  className="rounded-full"
+                  onClick={() => navigate(`/enroll/booking?tier=${subscription?.tier || "wren"}`)}
+                >
+                  <CalendarPlus className="h-4 w-4 mr-1" />
+                  Book Your Session
+                </Button>
+              )}
+            </div>
           )}
         </div>
       </main>
