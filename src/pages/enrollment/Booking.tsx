@@ -5,6 +5,7 @@ import { Calendar, ArrowRight, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import EnrollmentHeader from "@/components/enrollment/EnrollmentHeader";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Booking() {
   const [params] = useSearchParams();
@@ -92,7 +93,20 @@ export default function Booking() {
           </div>
         </div>
 
-        <div className="mt-8 text-center">
+        <div className="mt-8 text-center space-x-4">
+          <Button
+            onClick={async () => {
+              if (user) {
+                await supabase.from("profiles").update({ enrollment_step: "booking_made" }).eq("user_id", user.id);
+              }
+              navigate("/dashboard");
+            }}
+            size="lg"
+            className="rounded-full px-10 text-base font-semibold"
+          >
+            I've Booked — Go to Dashboard
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
           <Button
             onClick={() => navigate("/dashboard")}
             variant="outline"
