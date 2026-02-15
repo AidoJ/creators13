@@ -110,11 +110,13 @@ export default function Photos() {
         for (const row of photoRows) {
           const key = row.photo_type as PhotoKey;
           if (!PHOTO_SLOTS.find((s) => s.key === key)) continue;
-          const { data: urlData } = supabase.storage.from("profiling-photos").getPublicUrl(row.storage_path);
-          if (urlData?.publicUrl) {
+          const { data: urlData } = await supabase.storage
+            .from("profiling-photos")
+            .createSignedUrl(row.storage_path, 3600);
+          if (urlData?.signedUrl) {
             updates[key] = {
               ...initialPhotoState,
-              preview: urlData.publicUrl,
+              preview: urlData.signedUrl,
               uploaded: true,
               existingPath: row.storage_path,
               review: { pass: true, feedback: "Previously uploaded" },

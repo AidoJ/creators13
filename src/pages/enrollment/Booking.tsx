@@ -1,5 +1,5 @@
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { TIERS, TierKey } from "@/lib/tiers";
 import { Calendar, ArrowRight, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,23 @@ export default function Booking() {
 
   const tier = (params.get("tier") as TierKey) || "wren";
   const tierInfo = TIERS[tier] || TIERS.wren;
+  const [calendlyEventTime, setCalendlyEventTime] = useState<string | null>(null);
+  const [calendlyBooked, setCalendlyBooked] = useState(false);
+
+  // Listen for Calendly postMessage events to capture scheduled time
+  useEffect(() => {
+    const handleMessage = (e: MessageEvent) => {
+      if (e.data?.event === "calendly.event_scheduled") {
+        const startTime = e.data?.payload?.event?.start_time;
+        if (startTime) {
+          setCalendlyEventTime(startTime);
+        }
+        setCalendlyBooked(true);
+      }
+    };
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, []);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -110,10 +127,10 @@ export default function Booking() {
           <Button
             onClick={async () => {
               if (user) {
-                // Create a bookings row
                 await supabase.from("bookings").insert({
                   client_id: user.id,
                   status: "scheduled",
+                  scheduled_at: calendlyEventTime || null,
                 });
                 await supabase.from("profiles").update({ enrollment_step: "booking_made" }).eq("user_id", user.id);
               }
