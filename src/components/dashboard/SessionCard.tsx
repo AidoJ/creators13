@@ -8,10 +8,11 @@ interface SessionCardProps {
   zoomLink: string | null;
   photosUploaded: boolean;
   bookingMade: boolean;
+  hasBookingRecord: boolean;
   tier?: string | null;
 }
 
-export default function SessionCard({ scheduledAt, status, zoomLink, photosUploaded, bookingMade, tier }: SessionCardProps) {
+export default function SessionCard({ scheduledAt, status, zoomLink, photosUploaded, bookingMade, hasBookingRecord, tier }: SessionCardProps) {
   const navigate = useNavigate();
 
   return (
@@ -57,15 +58,34 @@ export default function SessionCard({ scheduledAt, status, zoomLink, photosUploa
         </div>
       ) : (
         <div className="space-y-2">
-          <p className="text-sm text-muted-foreground">
-            {photosUploaded
-              ? "Your photos are in — time to book your profiling session!"
-              : "Upload your photos to unlock booking."}
-          </p>
-          {photosUploaded && !bookingMade && (
-            <Button size="sm" className="rounded-full" onClick={() => navigate(`/enroll/booking?tier=${tier || "wren"}`)}>
-              <CalendarPlus className="h-3.5 w-3.5 mr-1" /> Book Your Session
-            </Button>
+          {hasBookingRecord ? (
+            <>
+              <p className="text-sm text-foreground font-semibold">
+                Session booked — awaiting schedule confirmation.
+              </p>
+              <p className="text-xs text-muted-foreground capitalize">Status: {status || "scheduled"}</p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs h-7 rounded-full"
+                onClick={() => navigate(`/enroll/booking?tier=${tier || "wren"}`)}
+              >
+                Reschedule
+              </Button>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-muted-foreground">
+                {photosUploaded
+                  ? "Your photos are in — time to book your profiling session!"
+                  : "Upload your photos to unlock booking."}
+              </p>
+              {photosUploaded && !bookingMade && (
+                <Button size="sm" className="rounded-full" onClick={() => navigate(`/enroll/booking?tier=${tier || "wren"}`)}>
+                  <CalendarPlus className="h-3.5 w-3.5 mr-1" /> Book Your Session
+                </Button>
+              )}
+            </>
           )}
         </div>
       )}

@@ -124,6 +124,7 @@ export default function Dashboard() {
               zoomLink={booking?.zoom_link || null}
               photosUploaded={photosUploaded}
               bookingMade={bookingMade}
+              hasBookingRecord={!!booking}
               tier={subscription?.tier}
             />
           </div>

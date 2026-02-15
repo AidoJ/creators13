@@ -33,13 +33,13 @@ export default function PhotoGalleryCard({ userId, photosUploaded }: PhotoGaller
         .select("photo_type, storage_path")
         .eq("user_id", userId);
 
-      if (data) {
+      if (data && data.length > 0) {
         const map: Record<string, string> = {};
         for (const row of data) {
-          const { data: urlData } = supabase.storage
+          const { data: urlData } = await supabase.storage
             .from("profiling-photos")
-            .getPublicUrl(row.storage_path);
-          if (urlData?.publicUrl) map[row.photo_type] = urlData.publicUrl;
+            .createSignedUrl(row.storage_path, 3600);
+          if (urlData?.signedUrl) map[row.photo_type] = urlData.signedUrl;
         }
         setPhotos(map);
       }
