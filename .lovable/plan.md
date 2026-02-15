@@ -80,8 +80,7 @@ Build the complete foundational architecture matching the mind map — **Website
 ### 7. LMS (Full Framework)
 - **Courses & Modules** — organized into sections with individual lessons
 - **Content Types** — video, text, audio, and photos
-- **Assessments** — quiz/test framework for practitioner training (content added by Trainer over time)
-- **Case Studies** — practitioners create case studies of profiled individuals, stored and browsable within LMS
+- **Case Studies** — practitioners create case studies of profiled individuals, with peer review and trainer sign-off workflow; the core training mechanism
 - **Training Materials** — downloadable resources and reference materials
 - **Progress Tracking** — per-user completion markers and advancement indicators
 - **Access Control** — only Trainees, Practitioners, and Trainer see training content
