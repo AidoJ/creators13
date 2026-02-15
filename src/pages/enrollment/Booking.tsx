@@ -93,10 +93,15 @@ export default function Booking() {
           </div>
         </div>
 
-        <div className="mt-8 text-center space-x-4">
+        <div className="mt-8 text-center space-y-3 sm:space-y-0 sm:space-x-4">
           <Button
             onClick={async () => {
               if (user) {
+                // Create a bookings row
+                await supabase.from("bookings").insert({
+                  client_id: user.id,
+                  status: "scheduled",
+                });
                 await supabase.from("profiles").update({ enrollment_step: "booking_made" }).eq("user_id", user.id);
               }
               navigate("/dashboard");
@@ -108,7 +113,13 @@ export default function Booking() {
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
           <Button
-            onClick={() => navigate("/dashboard")}
+            onClick={async () => {
+              if (user) {
+                // Still mark photos_uploaded step even if skipping booking
+                await supabase.from("profiles").update({ enrollment_step: "photos_uploaded" }).eq("user_id", user.id);
+              }
+              navigate("/dashboard");
+            }}
             variant="outline"
             size="lg"
             className="rounded-full px-10 text-base font-semibold"
