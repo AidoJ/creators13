@@ -57,6 +57,7 @@ serve(async (req) => {
 
     const tierValue = tier || "wren";
     const role = tierValue === "owl" ? "trainee" : "client";
+    const practitionerCode = body.practitioner_code || null;
 
     // Always create role + subscription records
     await supabaseClient.from("user_roles").upsert(
@@ -64,16 +65,42 @@ serve(async (req) => {
       { onConflict: "user_id,role" }
     );
 
+    const subData: Record<string, any> = {
+      user_id: userId,
+      tier: tierValue,
+      status: tierValue === "wren" ? "active" : "incomplete",
+      billing_period: billing || "monthly",
+    };
+    if (practitionerCode) subData.referral_code = practitionerCode;
+
     await supabaseClient.from("subscriptions").upsert(
-      {
-        user_id: userId,
-        tier: tierValue,
-        status: tierValue === "wren" ? "active" : "incomplete",
-        billing_period: billing || "monthly",
-      },
+      subData,
       { onConflict: "user_id" }
     );
     logStep("Created role + subscription records", { role, tier: tierValue });
+
+    // If practitioner code provided, link client to practitioner
+    if (practitionerCode) {
+      const { data: pracProfile } = await supabaseClient
+        .from("profiles")
+        .select("user_id")
+        .eq("practitioner_code", practitionerCode)
+        .maybeSingle();
+
+      if (pracProfile) {
+        await supabaseClient.from("client_practitioner").upsert(
+          {
+            client_id: userId,
+            practitioner_id: pracProfile.user_id,
+            active: true,
+          },
+          { onConflict: "client_id,practitioner_id" }
+        );
+        logStep("Linked client to practitioner", { practitionerId: pracProfile.user_id, code: practitionerCode });
+      } else {
+        logStep("Practitioner code not found", { code: practitionerCode });
+      }
+    }
 
     // Update profile enrollment_step
     await supabaseClient.from("profiles").update({
