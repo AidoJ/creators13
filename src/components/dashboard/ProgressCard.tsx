@@ -37,12 +37,12 @@ export default function ProgressCard({ step, isComplete, photosUploaded, booking
 
   const actionMap: Record<string, { icon: typeof Pencil; label: string; onClick: () => void } | null> = {
     account: null,
-    details: { icon: Pencil, label: hasDetails ? "Edit" : "Add", onClick: () => navigate("/enroll/details") },
-    photos: { icon: Camera, label: photosUploaded ? "Edit" : "Upload", onClick: () => navigate("/enroll/photos") },
+    details: { icon: Pencil, label: hasDetails ? "Edit" : "Add", onClick: () => navigate("/enroll/details?returnTo=/dashboard") },
+    photos: { icon: Camera, label: photosUploaded ? "Edit" : "Upload", onClick: () => navigate("/enroll/photos?returnTo=/dashboard") },
     booking: {
       icon: CalendarPlus,
       label: bookingMade ? "Reschedule" : "Book",
-      onClick: () => navigate(`/enroll/booking?tier=${tier || "wren"}`),
+      onClick: () => navigate(`/enroll/booking?tier=${tier || "wren"}&returnTo=/dashboard`),
     },
     complete: null,
   };

@@ -116,6 +116,14 @@ export default function Details() {
     }
 
     toast({ title: "Details saved!" });
+
+    // If returnTo is set (editing from dashboard), go back there
+    const returnTo = params.get("returnTo");
+    if (returnTo) {
+      navigate(returnTo);
+      return;
+    }
+
     const nextParams = new URLSearchParams({ tier, billing });
 
     // Check if this is a case study signup — route to consent first

@@ -26,7 +26,7 @@ export default function PersonalDetailsCard({ profile, hasDetails }: PersonalDet
     return (
       <div className="rounded-2xl border border-dashed border-border bg-card/50 p-6 text-center space-y-3">
         <p className="text-sm text-muted-foreground">Personal details not yet added.</p>
-        <Button size="sm" className="rounded-full" onClick={() => navigate("/enroll/details")}>
+        <Button size="sm" className="rounded-full" onClick={() => navigate("/enroll/details?returnTo=/dashboard")}>
           <Pencil className="h-3.5 w-3.5 mr-1" /> Add Your Details
         </Button>
       </div>
@@ -43,7 +43,7 @@ export default function PersonalDetailsCard({ profile, hasDetails }: PersonalDet
     <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
       <div className="flex items-center justify-between">
         <h2 className="text-base font-display font-bold text-foreground">Personal Details</h2>
-        <Button variant="ghost" size="sm" className="text-xs text-primary h-7 px-2" onClick={() => navigate("/enroll/details")}>
+        <Button variant="ghost" size="sm" className="text-xs text-primary h-7 px-2" onClick={() => navigate("/enroll/details?returnTo=/dashboard")}>
           <Pencil className="h-3 w-3 mr-1" /> Edit
         </Button>
       </div>
