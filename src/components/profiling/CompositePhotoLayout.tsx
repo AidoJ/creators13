@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, User } from "lucide-react";
+import { Loader2, User, X, ZoomIn } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 const PHOTO_ORDER = [
   { key: "face_front_closed", label: "Face Front" },
@@ -23,6 +24,7 @@ interface CompositePhotoLayoutProps {
 export default function CompositePhotoLayout({ userId, subjectName, className }: CompositePhotoLayoutProps) {
   const [photos, setPhotos] = useState<Record<string, string | null>>({});
   const [loading, setLoading] = useState(true);
+  const [zoomedPhoto, setZoomedPhoto] = useState<{ url: string; label: string } | null>(null);
 
   useEffect(() => {
     async function fetchPhotos() {
@@ -68,9 +70,16 @@ export default function CompositePhotoLayout({ userId, subjectName, className }:
   const PhotoCell = ({ photoKey, label, className: cellClass }: { photoKey: string; label: string; className?: string }) => {
     const url = photos[photoKey];
     return (
-      <div className={cn("overflow-hidden rounded-lg", cellClass)}>
+      <div className={cn("overflow-hidden rounded-lg group relative cursor-pointer", cellClass)}
+        onClick={() => url && setZoomedPhoto({ url, label })}
+      >
         {url ? (
-          <img src={url} alt={label} className="w-full h-full object-contain bg-muted/30" />
+          <>
+            <img src={url} alt={label} className="w-full h-full object-contain bg-muted/30" />
+            <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/10 transition-colors flex items-center justify-center">
+              <ZoomIn className="h-5 w-5 text-primary-foreground opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
+            </div>
+          </>
         ) : (
           <Placeholder label={label} />
         )}
@@ -104,6 +113,21 @@ export default function CompositePhotoLayout({ userId, subjectName, className }:
         <PhotoCell photoKey="hands" label="Hands" className="aspect-square" />
         <div /> {/* empty cell */}
       </div>
+
+      {/* Zoom dialog */}
+      <Dialog open={!!zoomedPhoto} onOpenChange={() => setZoomedPhoto(null)}>
+        <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh] p-2 flex flex-col items-center">
+          <DialogTitle className="text-sm font-medium text-foreground sr-only">{zoomedPhoto?.label}</DialogTitle>
+          <p className="text-xs text-muted-foreground mb-1">{zoomedPhoto?.label}</p>
+          {zoomedPhoto && (
+            <img
+              src={zoomedPhoto.url}
+              alt={zoomedPhoto.label}
+              className="max-w-full max-h-[80vh] object-contain rounded-lg"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
