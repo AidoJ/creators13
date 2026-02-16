@@ -7,6 +7,7 @@ import ClientDetail from "@/components/practitioner/ClientDetail";
 import CaseStudyForm from "@/components/practitioner/CaseStudyForm";
 import CaseStudyList from "@/components/practitioner/CaseStudyList";
 import ReferenceChartsPanel from "@/components/practitioner/ReferenceChartsPanel";
+import CompositePhotoLayout from "@/components/profiling/CompositePhotoLayout";
 import InviteClientForm from "@/components/practitioner/InviteClientForm";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -100,6 +101,7 @@ export default function PractitionerDashboard() {
                         <Button variant="ghost" size="sm" onClick={() => setShowCaseStudy(false)} className="text-xs">
                           <ArrowLeft className="h-3 w-3 mr-1" /> Back to Client Detail
                         </Button>
+                        <CompositePhotoLayout userId={selectedClientId} subjectName={`${selectedClientName}'s Profiling Photos`} />
                         <CaseStudyForm clientId={selectedClientId} clientName={selectedClientName} onSaved={() => setShowCaseStudy(false)} />
                       </>
                     )}
