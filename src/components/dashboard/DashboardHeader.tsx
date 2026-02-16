@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { LogOut, LayoutDashboard, Users, Shield } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 import logo from "@/assets/13creators-logo.png";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -41,7 +42,7 @@ export default function DashboardHeader({ email, onSignOut }: DashboardHeaderPro
   ];
 
   return (
-    <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-30">
+    <header className="border-b border-primary/20 bg-gradient-to-r from-primary/5 via-card/95 to-secondary/5 backdrop-blur-sm sticky top-0 z-30 shadow-sm">
       <div className="container mx-auto flex items-center justify-between h-14 px-4">
         <div className="flex items-center gap-4">
           <a href="/" className="flex items-center gap-2">
@@ -51,9 +52,14 @@ export default function DashboardHeader({ email, onSignOut }: DashboardHeaderPro
             {navItems.filter(n => n.show).map(item => (
               <Button
                 key={item.path}
-                variant={location.pathname === item.path ? "secondary" : "ghost"}
+                variant={location.pathname === item.path ? "default" : "ghost"}
                 size="sm"
-                className="text-xs h-8"
+                className={cn(
+                  "text-xs h-8 transition-all",
+                  location.pathname === item.path
+                    ? "bg-primary text-primary-foreground shadow-md shadow-primary/25"
+                    : "hover:bg-primary/10 hover:text-primary"
+                )}
                 onClick={() => navigate(item.path)}
               >
                 <item.icon className="h-3.5 w-3.5 mr-1" />

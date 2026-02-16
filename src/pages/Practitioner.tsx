@@ -51,12 +51,15 @@ export default function PractitionerDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-b from-background via-background to-primary/5">
       <DashboardHeader email={user?.email} onSignOut={signOut} />
 
       <main className="container mx-auto px-4 py-8 max-w-6xl space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <h1 className="text-2xl font-display font-bold text-foreground">Practitioner Dashboard</h1>
+          <div>
+            <h1 className="text-2xl font-display font-bold text-foreground">Practitioner Dashboard</h1>
+            <p className="text-sm text-muted-foreground mt-1">Manage clients, create assessments, and access training resources.</p>
+          </div>
 
           {/* Practitioner code display */}
           {practitionerCode && (
