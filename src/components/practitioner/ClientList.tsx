@@ -1,0 +1,157 @@
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { Users, ChevronRight, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+
+interface ClientRow {
+  client_id: string;
+  profile: {
+    first_name: string | null;
+    last_name: string | null;
+    email: string | null;
+    enrollment_step: string | null;
+  } | null;
+  creatorType: string | null;
+}
+
+interface ClientListProps {
+  onSelectClient: (clientId: string) => void;
+  selectedClientId: string | null;
+}
+
+export default function ClientList({ onSelectClient, selectedClientId }: ClientListProps) {
+  const { user } = useAuth();
+  const [clients, setClients] = useState<ClientRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    if (!user) return;
+
+    async function fetchClients() {
+      // Get assigned client IDs
+      const { data: assignments } = await supabase
+        .from("client_practitioner")
+        .select("client_id")
+        .eq("practitioner_id", user!.id)
+        .eq("active", true);
+
+      if (!assignments || assignments.length === 0) {
+        setLoading(false);
+        return;
+      }
+
+      const clientIds = assignments.map(a => a.client_id);
+
+      // Fetch profiles for those clients
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, first_name, last_name, email, enrollment_step")
+        .in("user_id", clientIds);
+
+      // Fetch creator type profiles
+      const { data: creatorProfiles } = await supabase
+        .from("creator_type_profiles")
+        .select("user_id, primary_type")
+        .in("user_id", clientIds);
+
+      const rows: ClientRow[] = clientIds.map(cid => {
+        const prof = profiles?.find(p => p.user_id === cid) || null;
+        const ct = creatorProfiles?.find(c => c.user_id === cid);
+        return {
+          client_id: cid,
+          profile: prof ? {
+            first_name: prof.first_name,
+            last_name: prof.last_name,
+            email: prof.email,
+            enrollment_step: prof.enrollment_step,
+          } : null,
+          creatorType: ct?.primary_type || null,
+        };
+      });
+
+      setClients(rows);
+      setLoading(false);
+    }
+
+    fetchClients();
+  }, [user]);
+
+  const filtered = clients.filter(c => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    const name = `${c.profile?.first_name || ""} ${c.profile?.last_name || ""}`.toLowerCase();
+    return name.includes(q) || (c.profile?.email || "").toLowerCase().includes(q);
+  });
+
+  const stepLabel = (step: string | null) => {
+    if (!step) return "Not Started";
+    return step.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  const stepColor = (step: string | null) => {
+    if (step === "complete") return "bg-green-500/10 text-green-600 border-green-500/20";
+    if (step === "photos_uploaded" || step === "booking_made") return "bg-amber-500/10 text-amber-600 border-amber-500/20";
+    return "bg-muted/50 text-muted-foreground border-border";
+  };
+
+  return (
+    <div className="rounded-2xl border border-border bg-card">
+      <div className="p-4 border-b border-border flex items-center gap-2">
+        <Users className="h-5 w-5 text-primary" />
+        <h2 className="text-lg font-display font-bold text-foreground">My Clients</h2>
+        <span className="ml-auto text-sm text-muted-foreground">{clients.length}</span>
+      </div>
+
+      <div className="p-3">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search clients..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+      </div>
+
+      <div className="max-h-[400px] overflow-y-auto">
+        {loading ? (
+          <div className="p-6 text-center text-muted-foreground text-sm">Loading clients…</div>
+        ) : filtered.length === 0 ? (
+          <div className="p-6 text-center text-muted-foreground text-sm">
+            {clients.length === 0 ? "No clients assigned yet." : "No matching clients."}
+          </div>
+        ) : (
+          filtered.map(client => (
+            <button
+              key={client.client_id}
+              onClick={() => onSelectClient(client.client_id)}
+              className={`w-full text-left px-4 py-3 border-b border-border last:border-0 hover:bg-accent/50 transition-colors flex items-center gap-3 ${
+                selectedClientId === client.client_id ? "bg-accent/30" : ""
+              }`}
+            >
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-foreground truncate">
+                  {client.profile?.first_name || "Unknown"} {client.profile?.last_name || ""}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">{client.profile?.email || ""}</p>
+              </div>
+              <Badge variant="outline" className={`text-[10px] flex-shrink-0 ${stepColor(client.profile?.enrollment_step || null)}`}>
+                {stepLabel(client.profile?.enrollment_step || null)}
+              </Badge>
+              {client.creatorType && (
+                <Badge variant="secondary" className="text-[10px] flex-shrink-0 capitalize">
+                  {client.creatorType}
+                </Badge>
+              )}
+              <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            </button>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
