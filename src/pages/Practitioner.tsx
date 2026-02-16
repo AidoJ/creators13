@@ -9,10 +9,11 @@ import CaseStudyList from "@/components/practitioner/CaseStudyList";
 import ReferenceChartsPanel from "@/components/practitioner/ReferenceChartsPanel";
 import CompositePhotoLayout from "@/components/profiling/CompositePhotoLayout";
 import InviteClientForm from "@/components/practitioner/InviteClientForm";
+import CaseStudyPipeline from "@/components/practitioner/CaseStudyPipeline";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, ArrowLeft, Users, ClipboardList, Copy, CheckCircle, UserPlus, FolderOpen, BarChart3 } from "lucide-react";
+import { FileText, ArrowLeft, Users, ClipboardList, Copy, CheckCircle, UserPlus, FolderOpen, BarChart3, Gauge } from "lucide-react";
 import ResourceLibrary from "@/components/practitioner/ResourceLibrary";
 import { toast } from "@/hooks/use-toast";
 
@@ -23,6 +24,7 @@ export default function PractitionerDashboard() {
   const [showCaseStudy, setShowCaseStudy] = useState(false);
   const [practitionerCode, setPractitionerCode] = useState<string | null>(null);
   const [codeCopied, setCodeCopied] = useState(false);
+  const [activeTab, setActiveTab] = useState("pipeline");
 
   useEffect(() => {
     if (!user) return;
@@ -39,6 +41,13 @@ export default function PractitionerDashboard() {
   function handleSelectClient(clientId: string) {
     setSelectedClientId(clientId);
     setShowCaseStudy(false);
+  }
+
+  function handleStartCaseStudy(clientId: string, clientName: string) {
+    setSelectedClientId(clientId);
+    setSelectedClientName(clientName);
+    setShowCaseStudy(true);
+    setActiveTab("clients");
   }
 
   function handleCopyCode() {
@@ -73,14 +82,26 @@ export default function PractitionerDashboard() {
           )}
         </div>
 
-        <Tabs defaultValue="clients">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
+            <TabsTrigger value="pipeline"><Gauge className="h-3.5 w-3.5 mr-1" />Pipeline</TabsTrigger>
             <TabsTrigger value="clients"><Users className="h-3.5 w-3.5 mr-1" />Clients</TabsTrigger>
             <TabsTrigger value="invitations"><UserPlus className="h-3.5 w-3.5 mr-1" />Invite</TabsTrigger>
-            <TabsTrigger value="cases"><ClipboardList className="h-3.5 w-3.5 mr-1" />My Case Studies</TabsTrigger>
+            <TabsTrigger value="cases"><ClipboardList className="h-3.5 w-3.5 mr-1" />Case Studies</TabsTrigger>
             <TabsTrigger value="resources"><FolderOpen className="h-3.5 w-3.5 mr-1" />Resources</TabsTrigger>
-            <TabsTrigger value="charts"><BarChart3 className="h-3.5 w-3.5 mr-1" />Reference Charts</TabsTrigger>
+            <TabsTrigger value="charts"><BarChart3 className="h-3.5 w-3.5 mr-1" />Charts</TabsTrigger>
           </TabsList>
+
+          {/* ======= PIPELINE TAB ======= */}
+          <TabsContent value="pipeline" className="mt-4">
+            <CaseStudyPipeline
+              onSelectClient={(clientId) => {
+                handleSelectClient(clientId);
+                setActiveTab("clients");
+              }}
+              onStartCaseStudy={handleStartCaseStudy}
+            />
+          </TabsContent>
 
           {/* ======= CLIENTS TAB ======= */}
           <TabsContent value="clients" className="mt-4">
