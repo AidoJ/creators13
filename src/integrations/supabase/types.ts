@@ -187,6 +187,39 @@ export type Database = {
         }
         Relationships: []
       }
+      client_invitations: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          invite_token: string
+          name: string
+          phone: string | null
+          practitioner_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          invite_token?: string
+          name: string
+          phone?: string | null
+          practitioner_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          invite_token?: string
+          name?: string
+          phone?: string | null
+          practitioner_id?: string
+          status?: string
+        }
+        Relationships: []
+      }
       client_practitioner: {
         Row: {
           active: boolean | null
@@ -597,6 +630,7 @@ export type Database = {
           address_line1: string | null
           address_line2: string | null
           avatar_url: string | null
+          case_study_consent_at: string | null
           city: string | null
           country: string | null
           created_at: string
@@ -613,6 +647,9 @@ export type Database = {
           phone: string | null
           postal_code: string | null
           practitioner_code: string | null
+          practitioner_status:
+            | Database["public"]["Enums"]["practitioner_status"]
+            | null
           shoe_size: string | null
           state: string | null
           updated_at: string
@@ -622,6 +659,7 @@ export type Database = {
           address_line1?: string | null
           address_line2?: string | null
           avatar_url?: string | null
+          case_study_consent_at?: string | null
           city?: string | null
           country?: string | null
           created_at?: string
@@ -640,6 +678,9 @@ export type Database = {
           phone?: string | null
           postal_code?: string | null
           practitioner_code?: string | null
+          practitioner_status?:
+            | Database["public"]["Enums"]["practitioner_status"]
+            | null
           shoe_size?: string | null
           state?: string | null
           updated_at?: string
@@ -649,6 +690,7 @@ export type Database = {
           address_line1?: string | null
           address_line2?: string | null
           avatar_url?: string | null
+          case_study_consent_at?: string | null
           city?: string | null
           country?: string | null
           created_at?: string
@@ -667,6 +709,9 @@ export type Database = {
           phone?: string | null
           postal_code?: string | null
           practitioner_code?: string | null
+          practitioner_status?:
+            | Database["public"]["Enums"]["practitioner_status"]
+            | null
           shoe_size?: string | null
           state?: string | null
           updated_at?: string
@@ -813,6 +858,7 @@ export type Database = {
         | "delivered"
         | "cancelled"
         | "refunded"
+      practitioner_status: "in_progress" | "paused" | "cancelled" | "certified"
       product_type: "physical" | "digital"
       subscription_status:
         | "active"
@@ -980,6 +1026,7 @@ export const Constants = {
         "cancelled",
         "refunded",
       ],
+      practitioner_status: ["in_progress", "paused", "cancelled", "certified"],
       product_type: ["physical", "digital"],
       subscription_status: [
         "active",
