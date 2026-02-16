@@ -6,6 +6,7 @@ import ClientList from "@/components/practitioner/ClientList";
 import ClientDetail from "@/components/practitioner/ClientDetail";
 import CaseStudyForm from "@/components/practitioner/CaseStudyForm";
 import CaseStudyList from "@/components/practitioner/CaseStudyList";
+import ReferenceChartsPanel from "@/components/practitioner/ReferenceChartsPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -53,6 +54,7 @@ export default function PractitionerDashboard() {
       <main className="container mx-auto px-4 py-8 max-w-6xl space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <h1 className="text-2xl font-display font-bold text-foreground">Practitioner Dashboard</h1>
+          <ReferenceChartsPanel />
 
           {/* Practitioner code display */}
           {practitionerCode && (
