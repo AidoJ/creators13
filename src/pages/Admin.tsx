@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Users, Shield, ChevronDown, ChevronUp, UserPlus, FileText, CheckCircle, XCircle, Clock, Link2, BarChart3 } from "lucide-react";
+import { Search, Users, Shield, ChevronDown, ChevronUp, UserPlus, FileText, CheckCircle, XCircle, Clock, Link2, BarChart3, Eye, EyeOff } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
 import CreateUserForm from "@/components/admin/CreateUserForm";
@@ -39,6 +39,8 @@ interface CaseStudyRow {
   practitioner_name: string;
   subject_name: string;
   creator_types_identified: string[] | null;
+  description: string | null;
+  profiling_notes: string | null;
   created_at: string;
 }
 
@@ -61,6 +63,7 @@ export default function AdminDashboard() {
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const [addingRole, setAddingRole] = useState<{ userId: string; role: AppRole } | null>(null);
   const [activeTab, setActiveTab] = useState("users");
+  const [expandedCaseStudy, setExpandedCaseStudy] = useState<string | null>(null);
 
   const fetchUsers = useCallback(async () => {
     const [profilesRes, rolesRes, subsRes] = await Promise.all([
@@ -98,7 +101,7 @@ export default function AdminDashboard() {
 
   const fetchCaseStudies = useCallback(async () => {
     const { data } = await supabase.from("case_studies")
-      .select("id, title, status, practitioner_id, subject_user_id, creator_types_identified, created_at")
+      .select("id, title, status, practitioner_id, subject_user_id, creator_types_identified, description, profiling_notes, created_at")
       .order("created_at", { ascending: false });
 
     if (!data) return;
@@ -116,6 +119,8 @@ export default function AdminDashboard() {
       practitioner_name: nameMap[d.practitioner_id] || "Unknown",
       subject_name: d.subject_user_id ? (nameMap[d.subject_user_id] || "Unknown") : "—",
       creator_types_identified: d.creator_types_identified,
+      description: d.description,
+      profiling_notes: d.profiling_notes,
       created_at: d.created_at,
     })));
   }, []);
@@ -336,38 +341,69 @@ export default function AdminDashboard() {
               <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground text-sm">No case studies yet.</div>
             ) : (
               <div className="space-y-3">
-                {caseStudies.map(cs => (
-                  <div key={cs.id} className="rounded-xl border border-border bg-card p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-foreground truncate">{cs.title}</h4>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          By {cs.practitioner_name} · Subject: {cs.subject_name} · {new Date(cs.created_at).toLocaleDateString("en-AU")}
-                        </p>
-                        {cs.creator_types_identified && cs.creator_types_identified.length > 0 && (
-                          <div className="flex gap-1 mt-1.5">
-                            {cs.creator_types_identified.map(t => (
-                              <Badge key={t} variant="secondary" className="text-[10px] capitalize">{t}</Badge>
-                            ))}
+                {caseStudies.map(cs => {
+                  const isExpanded = expandedCaseStudy === cs.id;
+                  return (
+                    <div key={cs.id} className="rounded-xl border border-border bg-card overflow-hidden">
+                      <div className="p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-foreground truncate">{cs.title}</h4>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              By {cs.practitioner_name} · Subject: {cs.subject_name} · {new Date(cs.created_at).toLocaleDateString("en-AU")}
+                            </p>
+                            {cs.creator_types_identified && cs.creator_types_identified.length > 0 && (
+                              <div className="flex gap-1 mt-1.5">
+                                {cs.creator_types_identified.map(t => (
+                                  <Badge key={t} variant="secondary" className="text-[10px] capitalize">{t}</Badge>
+                                ))}
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <CaseStudyStatusBadge status={cs.status} />
-                        {cs.status === "submitted" && (
-                          <>
-                            <Button size="sm" variant="outline" className="h-7 text-xs text-green-600" onClick={() => handleCaseStudyAction(cs.id, "approved")}>
-                              <CheckCircle className="h-3 w-3 mr-1" />Approve
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <CaseStudyStatusBadge status={cs.status} />
+                            <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setExpandedCaseStudy(isExpanded ? null : cs.id)}>
+                              {isExpanded ? <EyeOff className="h-3 w-3 mr-1" /> : <Eye className="h-3 w-3 mr-1" />}
+                              {isExpanded ? "Hide" : "View"}
                             </Button>
-                            <Button size="sm" variant="outline" className="h-7 text-xs text-amber-600" onClick={() => handleCaseStudyAction(cs.id, "revision_requested")}>
-                              <XCircle className="h-3 w-3 mr-1" />Revise
-                            </Button>
-                          </>
-                        )}
+                            {cs.status === "submitted" && (
+                              <>
+                                <Button size="sm" variant="outline" className="h-7 text-xs text-green-600" onClick={() => handleCaseStudyAction(cs.id, "approved")}>
+                                  <CheckCircle className="h-3 w-3 mr-1" />Approve
+                                </Button>
+                                <Button size="sm" variant="outline" className="h-7 text-xs text-amber-600" onClick={() => handleCaseStudyAction(cs.id, "revision_requested")}>
+                                  <XCircle className="h-3 w-3 mr-1" />Revise
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </div>
                       </div>
+
+                      {isExpanded && (
+                        <div className="border-t border-border bg-muted/20 p-4 space-y-4">
+                          {cs.description && (
+                            <div>
+                              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Description</p>
+                              <p className="text-sm text-foreground whitespace-pre-wrap">{cs.description}</p>
+                            </div>
+                          )}
+                          {cs.profiling_notes && (
+                            <div>
+                              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Profiling Notes</p>
+                              <div className="text-sm text-foreground whitespace-pre-wrap bg-card rounded-lg border border-border p-3 max-h-96 overflow-y-auto">
+                                {cs.profiling_notes}
+                              </div>
+                            </div>
+                          )}
+                          {(!cs.description && !cs.profiling_notes) && (
+                            <p className="text-sm text-muted-foreground italic">No assessment notes have been added yet.</p>
+                          )}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </TabsContent>
