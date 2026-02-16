@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,7 @@ export default function Signup() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const tier = (params.get("tier") as TierKey) || "wren";
   const billing = params.get("billing") || "monthly";
@@ -26,6 +28,9 @@ export default function Signup() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showVerification, setShowVerification] = useState(false);
   const [createdUserId, setCreatedUserId] = useState("");
+
+  // If user arrives already authenticated (e.g. after email verification redirect), show "I'm Verified"
+  const arrivedVerified = !!user && !showVerification && !loading;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,10 +47,18 @@ export default function Signup() {
     setLoading(true);
 
     // 1. Create auth account
+    // Build redirect URL back to this signup page so verification lands on "I'm Verified"
+    const verifyParams = new URLSearchParams({ tier, billing });
+    if (caseStudy) {
+      verifyParams.set("case_study", "true");
+      verifyParams.set("practitioner_code", practitionerCode);
+    }
+    const redirectUrl = `${window.location.origin}/enroll/signup?${verifyParams.toString()}`;
+
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: window.location.origin },
+      options: { emailRedirectTo: redirectUrl },
     });
 
     if (authError) {
@@ -94,14 +107,48 @@ export default function Signup() {
 
   const handleContinue = () => {
     const nextParams = new URLSearchParams({ tier, billing });
-    nextParams.set("uid", createdUserId);
-    nextParams.set("email", email);
+    if (createdUserId) nextParams.set("uid", createdUserId);
+    else if (user) nextParams.set("uid", user.id);
+    if (email) nextParams.set("email", email);
+    else if (user?.email) nextParams.set("email", user.email);
+    if (caseStudy) {
+      nextParams.set("case_study", "true");
+      nextParams.set("practitioner_code", practitionerCode);
+    }
     if (tier === "wren") {
       navigate(`/enroll/details?${nextParams.toString()}`);
     } else {
       navigate(`/enroll/payment?${nextParams.toString()}`);
     }
   };
+
+  // Show "I'm Verified" screen when user arrives from email verification redirect
+  if (arrivedVerified) {
+    return (
+      <div className="min-h-screen bg-background">
+        <EnrollmentHeader currentStep={1} />
+        <main className="container mx-auto px-4 py-10 max-w-md text-center">
+          <div className="bg-card border border-border rounded-2xl p-8 space-y-6">
+            <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+              <MailCheck className="h-8 w-8 text-primary" />
+            </div>
+            <h1 className="text-2xl font-display font-bold text-foreground">Email Verified!</h1>
+            <p className="text-muted-foreground">
+              Your email has been confirmed. Click below to continue with {tier === "wren" ? "your profile details" : "payment"}.
+            </p>
+            <Button
+              onClick={handleContinue}
+              size="lg"
+              className="rounded-full px-10 text-base font-semibold"
+            >
+              Continue
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   if (showVerification) {
     return (

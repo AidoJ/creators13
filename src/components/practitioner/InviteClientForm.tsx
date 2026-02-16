@@ -54,7 +54,7 @@ export default function InviteClientForm({ practitionerCode }: InviteClientFormP
       practitioner_code: practitionerCode || "",
       invite: token,
     });
-    return `${base}/enroll/signup?${params.toString()}`;
+    return `${base}/enroll?${params.toString()}`;
   }
 
   async function handleSubmit(e: React.FormEvent) {
