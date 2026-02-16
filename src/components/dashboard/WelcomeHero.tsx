@@ -27,10 +27,11 @@ export default function WelcomeHero({ firstName, tier, subscriptionStatus, statu
   const birdSrc = tier ? TIER_BIRDS[tier] : null;
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-card via-card to-primary/5 p-6 sm:p-8">
-      {/* Decorative background circle */}
-      <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-primary/5 blur-2xl" />
-      <div className="absolute -bottom-12 -left-12 w-36 h-36 rounded-full bg-secondary/10 blur-2xl" />
+    <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-card to-secondary/10 p-6 sm:p-8 shadow-lg shadow-primary/5">
+      {/* Decorative background elements */}
+      <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-primary/10 blur-2xl" />
+      <div className="absolute -bottom-12 -left-12 w-36 h-36 rounded-full bg-secondary/15 blur-2xl" />
+      <div className="absolute top-1/2 right-1/4 w-24 h-24 rounded-full bg-accent/10 blur-xl" />
 
       <div className="relative flex items-start justify-between gap-4">
         <div className="space-y-2">
