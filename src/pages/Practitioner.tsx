@@ -11,7 +11,8 @@ import InviteClientForm from "@/components/practitioner/InviteClientForm";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, ArrowLeft, Users, ClipboardList, Copy, CheckCircle, UserPlus } from "lucide-react";
+import { FileText, ArrowLeft, Users, ClipboardList, Copy, CheckCircle, UserPlus, FolderOpen } from "lucide-react";
+import ResourceLibrary from "@/components/practitioner/ResourceLibrary";
 import { toast } from "@/hooks/use-toast";
 
 export default function PractitionerDashboard() {
@@ -74,6 +75,7 @@ export default function PractitionerDashboard() {
             <TabsTrigger value="clients"><Users className="h-3.5 w-3.5 mr-1" />Clients</TabsTrigger>
             <TabsTrigger value="invitations"><UserPlus className="h-3.5 w-3.5 mr-1" />Invite</TabsTrigger>
             <TabsTrigger value="cases"><ClipboardList className="h-3.5 w-3.5 mr-1" />My Case Studies</TabsTrigger>
+            <TabsTrigger value="resources"><FolderOpen className="h-3.5 w-3.5 mr-1" />Resources</TabsTrigger>
           </TabsList>
 
           {/* ======= CLIENTS TAB ======= */}
@@ -127,6 +129,11 @@ export default function PractitionerDashboard() {
           {/* ======= CASE STUDIES TAB ======= */}
           <TabsContent value="cases" className="mt-4">
             {user && <CaseStudyList practitionerId={user.id} />}
+          </TabsContent>
+
+          {/* ======= RESOURCES TAB ======= */}
+          <TabsContent value="resources" className="mt-4">
+            <ResourceLibrary />
           </TabsContent>
         </Tabs>
       </main>
