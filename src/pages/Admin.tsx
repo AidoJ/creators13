@@ -13,6 +13,7 @@ import { toast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
 import CreateUserForm from "@/components/admin/CreateUserForm";
 import ResourceUploadPanel from "@/components/admin/ResourceUploadPanel";
+import CompositePhotoLayout from "@/components/profiling/CompositePhotoLayout";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 type EnrollmentStep = Database["public"]["Enums"]["enrollment_step"];
@@ -40,6 +41,7 @@ interface CaseStudyRow {
   practitioner_id: string;
   practitioner_name: string;
   subject_name: string;
+  subject_user_id: string | null;
   creator_types_identified: string[] | null;
   description: string | null;
   profiling_notes: string | null;
@@ -122,6 +124,7 @@ export default function AdminDashboard() {
       practitioner_id: d.practitioner_id,
       practitioner_name: nameMap[d.practitioner_id] || "Unknown",
       subject_name: d.subject_user_id ? (nameMap[d.subject_user_id] || "Unknown") : "—",
+      subject_user_id: d.subject_user_id,
       creator_types_identified: d.creator_types_identified,
       description: d.description,
       profiling_notes: d.profiling_notes,
@@ -396,6 +399,12 @@ export default function AdminDashboard() {
 
                       {isExpanded && (
                         <div className="border-t border-border bg-muted/20 p-4 space-y-4">
+                          {cs.subject_user_id && (
+                            <CompositePhotoLayout
+                              userId={cs.subject_user_id}
+                              subjectName={`${cs.subject_name}'s Profiling Photos`}
+                            />
+                          )}
                           {cs.description && (
                             <div>
                               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Description</p>
