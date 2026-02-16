@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FileText, Sparkles, Clock, CheckCircle, AlertCircle, Eye, EyeOff, MessageSquare } from "lucide-react";
+import CompositePhotoLayout from "@/components/profiling/CompositePhotoLayout";
 import type { Database } from "@/integrations/supabase/types";
 
 type CaseStudyStatus = Database["public"]["Enums"]["case_study_status"];
@@ -149,6 +150,14 @@ export default function CaseStudyList({ practitionerId }: CaseStudyListProps) {
                 )}
                 {(!cs.description && !cs.profiling_notes && !hasRevisionNotes) && (
                   <p className="text-sm text-muted-foreground italic">No assessment notes recorded.</p>
+                )}
+
+                {/* Inline client photos */}
+                {cs.subject_user_id && (
+                  <CompositePhotoLayout
+                    userId={cs.subject_user_id}
+                    subjectName={`${cs.subject_name}'s Profiling Photos`}
+                  />
                 )}
               </div>
             )}
