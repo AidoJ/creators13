@@ -11,7 +11,7 @@ import InviteClientForm from "@/components/practitioner/InviteClientForm";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, ArrowLeft, Users, ClipboardList, Copy, CheckCircle, UserPlus, FolderOpen } from "lucide-react";
+import { FileText, ArrowLeft, Users, ClipboardList, Copy, CheckCircle, UserPlus, FolderOpen, BarChart3 } from "lucide-react";
 import ResourceLibrary from "@/components/practitioner/ResourceLibrary";
 import { toast } from "@/hooks/use-toast";
 
@@ -56,7 +56,6 @@ export default function PractitionerDashboard() {
       <main className="container mx-auto px-4 py-8 max-w-6xl space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <h1 className="text-2xl font-display font-bold text-foreground">Practitioner Dashboard</h1>
-          <ReferenceChartsPanel />
 
           {/* Practitioner code display */}
           {practitionerCode && (
@@ -76,6 +75,7 @@ export default function PractitionerDashboard() {
             <TabsTrigger value="invitations"><UserPlus className="h-3.5 w-3.5 mr-1" />Invite</TabsTrigger>
             <TabsTrigger value="cases"><ClipboardList className="h-3.5 w-3.5 mr-1" />My Case Studies</TabsTrigger>
             <TabsTrigger value="resources"><FolderOpen className="h-3.5 w-3.5 mr-1" />Resources</TabsTrigger>
+            <TabsTrigger value="charts"><BarChart3 className="h-3.5 w-3.5 mr-1" />Reference Charts</TabsTrigger>
           </TabsList>
 
           {/* ======= CLIENTS TAB ======= */}
@@ -134,6 +134,11 @@ export default function PractitionerDashboard() {
           {/* ======= RESOURCES TAB ======= */}
           <TabsContent value="resources" className="mt-4">
             <ResourceLibrary />
+          </TabsContent>
+
+          {/* ======= REFERENCE CHARTS TAB ======= */}
+          <TabsContent value="charts" className="mt-4">
+            <ReferenceChartsPanel />
           </TabsContent>
         </Tabs>
       </main>
