@@ -25,6 +25,7 @@ interface UserRow {
   email: string | null;
   enrollment_step: EnrollmentStep | null;
   practitioner_code: string | null;
+  practitioner_status: string | null;
   roles: AppRole[];
   tier: string | null;
   sub_status: string | null;
@@ -63,7 +64,7 @@ export default function AdminDashboard() {
 
   const fetchUsers = useCallback(async () => {
     const [profilesRes, rolesRes, subsRes] = await Promise.all([
-      supabase.from("profiles").select("user_id, first_name, last_name, email, enrollment_step, practitioner_code").order("created_at", { ascending: false }),
+      supabase.from("profiles").select("user_id, first_name, last_name, email, enrollment_step, practitioner_code, practitioner_status").order("created_at", { ascending: false }),
       supabase.from("user_roles").select("user_id, role"),
       supabase.from("subscriptions").select("user_id, tier, status"),
     ]);
@@ -88,6 +89,7 @@ export default function AdminDashboard() {
       email: p.email,
       enrollment_step: p.enrollment_step,
       practitioner_code: p.practitioner_code,
+      practitioner_status: (p as any).practitioner_status || null,
       roles: roleMap[p.user_id] || [],
       tier: subMap[p.user_id]?.tier || null,
       sub_status: subMap[p.user_id]?.status || null,
@@ -179,6 +181,16 @@ export default function AdminDashboard() {
     } else {
       toast({ title: action === "approved" ? "Case study approved" : "Revision requested" });
       await fetchCaseStudies();
+    }
+  }
+
+  async function handlePractitionerStatus(userId: string, status: string) {
+    const { error } = await supabase.from("profiles").update({ practitioner_status: status } as any).eq("user_id", userId);
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Status updated", description: `Set to ${status.replace(/_/g, " ")}` });
+      await fetchUsers();
     }
   }
 
@@ -309,6 +321,7 @@ export default function AdminDashboard() {
                       <UserTableRow key={u.user_id} user={u} isExpanded={expandedUser === u.user_id}
                         onToggle={() => setExpandedUser(expandedUser === u.user_id ? null : u.user_id)}
                         onAddRole={handleAddRole} onRemoveRole={handleRemoveRole} addingRole={addingRole} stepLabel={stepLabel}
+                        onStatusChange={handlePractitionerStatus}
                       />
                     ))}
                   </tbody>
@@ -444,15 +457,24 @@ function CaseStudyStatusBadge({ status }: { status: CaseStudyStatus }) {
   return <Badge variant="outline" className={`text-[10px] ${s.class}`}>{s.label}</Badge>;
 }
 
-function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, addingRole, stepLabel }: {
+function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, addingRole, stepLabel, onStatusChange }: {
   user: UserRow; isExpanded: boolean; onToggle: () => void;
   onAddRole: (userId: string, role: AppRole) => void;
   onRemoveRole: (userId: string, role: AppRole) => void;
   addingRole: { userId: string; role: AppRole } | null;
   stepLabel: (s: string | null) => string;
+  onStatusChange: (userId: string, status: string) => void;
 }) {
   const [selectedRole, setSelectedRole] = useState<AppRole | "">("");
   const availableRoles = ALL_ROLES.filter(r => !u.roles.includes(r));
+  const isPractitioner = u.roles.includes("practitioner") || u.roles.includes("trainee");
+
+  const statusColors: Record<string, string> = {
+    in_progress: "bg-amber-500/10 text-amber-600 border-amber-500/20",
+    paused: "bg-muted/50 text-muted-foreground border-border",
+    cancelled: "bg-destructive/10 text-destructive border-destructive/20",
+    certified: "bg-green-500/10 text-green-600 border-green-500/20",
+  };
 
   return (
     <>
@@ -504,6 +526,34 @@ function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, 
                     onClick={e => { e.stopPropagation(); if (selectedRole) { onAddRole(u.user_id, selectedRole as AppRole); setSelectedRole(""); } }}>
                     Add
                   </Button>
+                </div>
+              )}
+
+              {/* Practitioner certification status */}
+              {isPractitioner && (
+                <div className="pt-2 border-t border-border space-y-2">
+                  <p className="text-xs font-medium text-foreground">Certification Status</p>
+                  <div className="flex items-center gap-2">
+                    {u.practitioner_status && (
+                      <Badge variant="outline" className={`text-[10px] capitalize ${statusColors[u.practitioner_status] || ""}`}>
+                        {u.practitioner_status.replace(/_/g, " ")}
+                      </Badge>
+                    )}
+                    <Select
+                      value={u.practitioner_status || ""}
+                      onValueChange={v => onStatusChange(u.user_id, v)}
+                    >
+                      <SelectTrigger className="w-40 h-8 text-xs">
+                        <SelectValue placeholder="Set status…" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="in_progress" className="text-xs">In Progress</SelectItem>
+                        <SelectItem value="paused" className="text-xs">Paused</SelectItem>
+                        <SelectItem value="cancelled" className="text-xs">Cancelled</SelectItem>
+                        <SelectItem value="certified" className="text-xs">Certified</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               )}
             </div>

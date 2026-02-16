@@ -1,7 +1,7 @@
 import logo from "@/assets/13creators-logo.png";
 import { cn } from "@/lib/utils";
 
-const STEPS = ["Plan", "Signup", "Payment", "Details", "Photos", "Booking"] as const;
+const STEPS = ["Plan", "Signup", "Payment", "Details", "Consent", "Photos", "Booking"] as const;
 
 interface EnrollmentHeaderProps {
   currentStep: number; // 0-indexed

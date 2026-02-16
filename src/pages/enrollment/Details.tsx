@@ -115,7 +115,34 @@ export default function Details() {
 
     toast({ title: "Details saved!" });
     const nextParams = new URLSearchParams({ tier, billing });
-    navigate(`/enroll/photos?${nextParams.toString()}`);
+
+    // Check if this is a case study signup — route to consent first
+    const isCaseStudy = params.get("case_study") === "true" || false;
+    // Also check if referral_code exists in subscription (indicates case study)
+    let needsConsent = isCaseStudy;
+    if (!needsConsent && user) {
+      const { data: sub } = await supabase
+        .from("subscriptions")
+        .select("referral_code")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (sub?.referral_code) needsConsent = true;
+    }
+    // Check if already consented
+    if (needsConsent && user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("case_study_consent_at")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (profile?.case_study_consent_at) needsConsent = false;
+    }
+
+    if (needsConsent) {
+      navigate(`/enroll/consent?${nextParams.toString()}`);
+    } else {
+      navigate(`/enroll/photos?${nextParams.toString()}`);
+    }
   };
 
   if (fetching) {

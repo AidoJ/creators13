@@ -276,7 +276,7 @@ export default function Photos() {
   if (viewMode === "guidelines") {
     return (
       <div className="min-h-screen bg-background">
-        <EnrollmentHeader currentStep={4} />
+        <EnrollmentHeader currentStep={5} />
         <main className="container mx-auto px-4 py-10 max-w-lg">
           <div className="text-center mb-6">
             <h1 className="text-3xl font-display font-bold text-foreground mb-3">How To Take Your Photos</h1>
@@ -335,7 +335,7 @@ export default function Photos() {
 
     return (
       <div className="min-h-screen bg-background">
-        <EnrollmentHeader currentStep={4} />
+        <EnrollmentHeader currentStep={5} />
         <main className="container mx-auto px-4 py-6 max-w-4xl">
            <div className="text-center mb-6">
              <h1 className="text-2xl font-display font-bold text-foreground mb-2">Review Your Photos</h1>
@@ -472,7 +472,7 @@ export default function Photos() {
   // ─── WIZARD ───
   return (
     <div className="min-h-screen bg-background">
-      <EnrollmentHeader currentStep={4} />
+      <EnrollmentHeader currentStep={5} />
 
       <main className="container mx-auto px-4 py-6 max-w-lg">
         {/* Progress */}
