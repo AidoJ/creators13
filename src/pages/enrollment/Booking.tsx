@@ -139,7 +139,8 @@ export default function Booking() {
                 });
                 await supabase.from("profiles").update({ enrollment_step: "booking_made" }).eq("user_id", user.id);
               }
-              navigate("/dashboard");
+              const returnTo = params.get("returnTo");
+              navigate(returnTo || "/dashboard");
             }}
             size="lg"
             className="rounded-full px-10 text-base font-semibold"

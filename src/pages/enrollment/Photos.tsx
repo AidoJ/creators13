@@ -232,8 +232,14 @@ export default function Photos() {
     await supabase.from("profiles").update({ enrollment_step: "photos_uploaded" }).eq("user_id", user.id);
     toast({ title: "All photos uploaded successfully!" });
     setSubmitting(false);
-    const nextParams = new URLSearchParams({ tier, billing });
-    navigate(`/enroll/booking?${nextParams.toString()}`);
+
+    const returnTo = params.get("returnTo");
+    if (returnTo) {
+      navigate(returnTo);
+    } else {
+      const nextParams = new URLSearchParams({ tier, billing });
+      navigate(`/enroll/booking?${nextParams.toString()}`);
+    }
   };
 
   // ─── AI REVIEW BADGE ───
