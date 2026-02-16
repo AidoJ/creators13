@@ -8,10 +8,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Users, Shield, ChevronDown, ChevronUp, UserPlus, FileText, CheckCircle, XCircle, Clock, Link2, BarChart3, Eye, EyeOff } from "lucide-react";
+import { Search, Users, Shield, ChevronDown, ChevronUp, UserPlus, FileText, CheckCircle, XCircle, Clock, Link2, BarChart3, Eye, EyeOff, FolderOpen } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
 import CreateUserForm from "@/components/admin/CreateUserForm";
+import ResourceUploadPanel from "@/components/admin/ResourceUploadPanel";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 type EnrollmentStep = Database["public"]["Enums"]["enrollment_step"];
@@ -302,6 +303,7 @@ export default function AdminDashboard() {
             <TabsTrigger value="users"><Users className="h-3.5 w-3.5 mr-1" />Users</TabsTrigger>
             <TabsTrigger value="cases"><FileText className="h-3.5 w-3.5 mr-1" />Case Studies {pendingCaseStudies > 0 && <Badge className="ml-1 h-5 text-[10px]" variant="destructive">{pendingCaseStudies}</Badge>}</TabsTrigger>
             <TabsTrigger value="assignments"><Link2 className="h-3.5 w-3.5 mr-1" />Assignments</TabsTrigger>
+            <TabsTrigger value="resources"><FolderOpen className="h-3.5 w-3.5 mr-1" />Resources</TabsTrigger>
           </TabsList>
 
           {/* ======= USERS TAB ======= */}
@@ -519,6 +521,11 @@ export default function AdminDashboard() {
                 </tbody>
               </table>
             </div>
+          </TabsContent>
+
+          {/* ======= RESOURCES TAB ======= */}
+          <TabsContent value="resources" className="space-y-4">
+            <ResourceUploadPanel />
           </TabsContent>
         </Tabs>
       </main>
