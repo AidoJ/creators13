@@ -8,31 +8,31 @@ const CHARTS = [
     id: "summary",
     label: "Summary",
     title: "Cheat Sheet ~ 13 Creators Summary",
-    file: "/charts/cheat-sheet-summary.pdf",
+    image: "/charts/cheat-sheet-summary.jpg",
   },
   {
     id: "families",
     label: "Families",
     title: "Chart ~ Creator Families",
-    file: "/charts/creator-families.pdf",
+    image: "/charts/creator-families.jpg",
   },
   {
     id: "energies",
     label: "Energies",
     title: "Chart ~ Concentration of Energies",
-    file: "/charts/concentration-of-energies.pdf",
+    image: "/charts/concentration-of-energies.jpg",
   },
   {
     id: "shapes",
     label: "Shapes",
     title: "Chart ~ Creator Shapes",
-    file: "/charts/creator-shapes.pdf",
+    image: "/charts/creator-shapes.jpg",
   },
   {
     id: "roles",
     label: "Roles",
     title: "Chart ~ Bodies Families Roles",
-    file: "/charts/bodies-families-roles.pdf",
+    image: "/charts/bodies-families-roles.jpg",
   },
 ];
 
@@ -60,13 +60,12 @@ export default function ReferenceChartsPanel() {
           </TabsList>
 
           {CHARTS.map((chart) => (
-            <TabsContent key={chart.id} value={chart.id} className="mt-2 px-6">
-              <h3 className="text-sm font-semibold text-foreground mb-2">{chart.title}</h3>
-              <iframe
-                src={chart.file}
-                title={chart.title}
-                className="w-full rounded-lg border border-border bg-muted/20"
-                style={{ height: "calc(100vh - 200px)" }}
+            <TabsContent key={chart.id} value={chart.id} className="mt-2 px-6 pb-6">
+              <h3 className="text-sm font-semibold text-foreground mb-3">{chart.title}</h3>
+              <img
+                src={chart.image}
+                alt={chart.title}
+                className="w-full rounded-lg border border-border"
               />
             </TabsContent>
           ))}
