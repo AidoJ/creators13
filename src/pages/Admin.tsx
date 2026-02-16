@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, Users, Shield, ChevronDown, ChevronUp, UserPlus, FileText, CheckCircle, XCircle, Clock, Link2, BarChart3 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
+import CreateUserForm from "@/components/admin/CreateUserForm";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 type EnrollmentStep = Database["public"]["Enums"]["enrollment_step"];
@@ -279,6 +280,7 @@ export default function AdminDashboard() {
 
           {/* ======= USERS TAB ======= */}
           <TabsContent value="users" className="space-y-4">
+            <CreateUserForm onCreated={fetchUsers} />
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Search by name, email, or practitioner code…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
