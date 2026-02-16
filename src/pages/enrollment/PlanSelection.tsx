@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Check, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,10 +23,17 @@ const birdImages: Record<TierKey, string> = {
 export default function PlanSelection() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [selectedTier, setSelectedTier] = useState<TierKey | null>(null);
-  const [annual, setAnnual] = useState(false);
-  const [isCaseStudy, setIsCaseStudy] = useState(false);
-  const [practitionerCode, setPractitionerCode] = useState("");
+  const [searchParams] = useSearchParams();
+
+  // Pre-fill from URL params (e.g. invite links)
+  const urlTier = searchParams.get("tier") as TierKey | null;
+  const urlCaseStudy = searchParams.get("case_study") === "true";
+  const urlPractitionerCode = searchParams.get("practitioner_code") || "";
+
+  const [selectedTier, setSelectedTier] = useState<TierKey | null>(urlTier);
+  const [annual, setAnnual] = useState(searchParams.get("billing") === "annual");
+  const [isCaseStudy, setIsCaseStudy] = useState(urlCaseStudy);
+  const [practitionerCode, setPractitionerCode] = useState(urlPractitionerCode);
 
   const handleContinue = () => {
     if (!selectedTier) return;
