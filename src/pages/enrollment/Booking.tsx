@@ -21,8 +21,13 @@ export default function Booking() {
   useEffect(() => {
     const handleMessage = (e: MessageEvent) => {
       if (e.data?.event === "calendly.event_scheduled") {
-        const startTime = e.data?.payload?.event?.start_time;
-        if (startTime) {
+        // Calendly payload can have start_time at different paths
+        const startTime =
+          e.data?.payload?.event?.start_time ||
+          e.data?.payload?.invitee?.start_time ||
+          e.data?.payload?.event?.uri; // fallback
+        console.log("[Booking] Calendly event_scheduled payload:", JSON.stringify(e.data?.payload));
+        if (startTime && startTime.includes("T")) {
           setCalendlyEventTime(startTime);
         }
         setCalendlyBooked(true);

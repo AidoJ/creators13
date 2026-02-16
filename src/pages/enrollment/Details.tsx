@@ -85,26 +85,28 @@ export default function Details() {
 
     setLoading(true);
 
+    const profileData = {
+      user_id: user.id,
+      first_name: firstName || null,
+      last_name: lastName || null,
+      display_name: `${firstName} ${lastName}`.trim() || null,
+      phone: phone || null,
+      date_of_birth: dateOfBirth || null,
+      gender: gender || null,
+      height_cm: heightCm ? Number(heightCm) : null,
+      shoe_size: shoeSize || null,
+      address_line1: addressLine1 || null,
+      address_line2: addressLine2 || null,
+      city: city || null,
+      state: state || null,
+      postal_code: postalCode || null,
+      country: country || null,
+      medical_history: medicalHistory || null,
+    };
+
     const { error } = await supabase
       .from("profiles")
-      .update({
-        first_name: firstName || null,
-        last_name: lastName || null,
-        display_name: `${firstName} ${lastName}`.trim() || null,
-        phone: phone || null,
-        date_of_birth: dateOfBirth || null,
-        gender: gender || null,
-        height_cm: heightCm ? Number(heightCm) : null,
-        shoe_size: shoeSize || null,
-        address_line1: addressLine1 || null,
-        address_line2: addressLine2 || null,
-        city: city || null,
-        state: state || null,
-        postal_code: postalCode || null,
-        country: country || null,
-        medical_history: medicalHistory || null,
-      })
-      .eq("user_id", user.id);
+      .upsert(profileData, { onConflict: "user_id" });
 
     setLoading(false);
 

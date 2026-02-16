@@ -102,11 +102,19 @@ serve(async (req) => {
       }
     }
 
-    // Update profile enrollment_step
-    await supabaseClient.from("profiles").update({
-      enrollment_step: "signed_up",
-    }).eq("user_id", userId);
-    logStep("Updated profile enrollment_step");
+    // Upsert profile enrollment_step (in case trigger didn't fire)
+    await supabaseClient.from("profiles").upsert(
+      { user_id: userId, email: userEmail, enrollment_step: "signed_up" },
+      { onConflict: "user_id" }
+    );
+    logStep("Upserted profile enrollment_step");
+
+    // If invitation exists for this email, mark as accepted
+    await supabaseClient.from("client_invitations")
+      .update({ status: "accepted" })
+      .eq("email", userEmail)
+      .eq("status", "pending");
+    logStep("Checked/updated invitations");
 
     // FREE TIER: no Stripe needed, return success directly
     if (!priceId || tierValue === "wren") {
