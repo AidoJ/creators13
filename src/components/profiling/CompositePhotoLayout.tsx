@@ -70,7 +70,7 @@ export default function CompositePhotoLayout({ userId, subjectName, className }:
     return (
       <div className={cn("overflow-hidden rounded-lg", cellClass)}>
         {url ? (
-          <img src={url} alt={label} className="w-full h-full object-cover" />
+          <img src={url} alt={label} className="w-full h-full object-contain bg-muted/30" />
         ) : (
           <Placeholder label={label} />
         )}
