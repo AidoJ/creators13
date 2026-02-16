@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -41,6 +42,7 @@ interface CaseStudyRow {
   creator_types_identified: string[] | null;
   description: string | null;
   profiling_notes: string | null;
+  reviewer_notes: string | null;
   created_at: string;
 }
 
@@ -64,6 +66,7 @@ export default function AdminDashboard() {
   const [addingRole, setAddingRole] = useState<{ userId: string; role: AppRole } | null>(null);
   const [activeTab, setActiveTab] = useState("users");
   const [expandedCaseStudy, setExpandedCaseStudy] = useState<string | null>(null);
+  const [revisionNotes, setRevisionNotes] = useState<Record<string, string>>({});
 
   const fetchUsers = useCallback(async () => {
     const [profilesRes, rolesRes, subsRes] = await Promise.all([
@@ -101,7 +104,7 @@ export default function AdminDashboard() {
 
   const fetchCaseStudies = useCallback(async () => {
     const { data } = await supabase.from("case_studies")
-      .select("id, title, status, practitioner_id, subject_user_id, creator_types_identified, description, profiling_notes, created_at")
+      .select("id, title, status, practitioner_id, subject_user_id, creator_types_identified, description, profiling_notes, reviewer_notes, created_at")
       .order("created_at", { ascending: false });
 
     if (!data) return;
@@ -121,6 +124,7 @@ export default function AdminDashboard() {
       creator_types_identified: d.creator_types_identified,
       description: d.description,
       profiling_notes: d.profiling_notes,
+      reviewer_notes: (d as any).reviewer_notes || null,
       created_at: d.created_at,
     })));
   }, []);
@@ -175,16 +179,21 @@ export default function AdminDashboard() {
     }
   }
 
-  async function handleCaseStudyAction(id: string, action: "approved" | "revision_requested") {
-    const { error } = await supabase.from("case_studies").update({
+  async function handleCaseStudyAction(id: string, action: "approved" | "revision_requested", notes?: string) {
+    const updateData: Record<string, any> = {
       status: action,
       reviewed_by: user?.id,
       reviewed_at: new Date().toISOString(),
-    }).eq("id", id);
+    };
+    if (action === "revision_requested" && notes) {
+      updateData.reviewer_notes = notes;
+    }
+    const { error } = await supabase.from("case_studies").update(updateData).eq("id", id);
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: action === "approved" ? "Case study approved" : "Revision requested" });
+      toast({ title: action === "approved" ? "Case study approved" : "Revision requested with notes" });
+      setRevisionNotes(prev => { const n = { ...prev }; delete n[id]; return n; });
       await fetchCaseStudies();
     }
   }
@@ -371,7 +380,10 @@ export default function AdminDashboard() {
                                 <Button size="sm" variant="outline" className="h-7 text-xs text-green-600" onClick={() => handleCaseStudyAction(cs.id, "approved")}>
                                   <CheckCircle className="h-3 w-3 mr-1" />Approve
                                 </Button>
-                                <Button size="sm" variant="outline" className="h-7 text-xs text-amber-600" onClick={() => handleCaseStudyAction(cs.id, "revision_requested")}>
+                                <Button size="sm" variant="outline" className="h-7 text-xs text-amber-600" onClick={() => {
+                                  setExpandedCaseStudy(cs.id);
+                                  setRevisionNotes(prev => ({ ...prev, [cs.id]: prev[cs.id] || "" }));
+                                }}>
                                   <XCircle className="h-3 w-3 mr-1" />Revise
                                 </Button>
                               </>
@@ -398,6 +410,38 @@ export default function AdminDashboard() {
                           )}
                           {(!cs.description && !cs.profiling_notes) && (
                             <p className="text-sm text-muted-foreground italic">No assessment notes have been added yet.</p>
+                          )}
+                          {cs.reviewer_notes && cs.status !== "submitted" && (
+                            <div>
+                              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Previous Reviewer Notes</p>
+                              <div className="text-sm text-foreground whitespace-pre-wrap bg-amber-500/5 rounded-lg border border-amber-500/20 p-3">
+                                {cs.reviewer_notes}
+                              </div>
+                            </div>
+                          )}
+                          {revisionNotes[cs.id] !== undefined && cs.status === "submitted" && (
+                            <div className="border-t border-border pt-4 space-y-2">
+                              <p className="text-xs font-semibold text-foreground">Revision Notes for Practitioner</p>
+                              <Textarea
+                                value={revisionNotes[cs.id]}
+                                onChange={e => setRevisionNotes(prev => ({ ...prev, [cs.id]: e.target.value }))}
+                                rows={4}
+                                placeholder="Explain what needs to be revised, specific areas to focus on, and that they need to submit a new assessment form…"
+                              />
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  disabled={!revisionNotes[cs.id]?.trim()}
+                                  onClick={() => handleCaseStudyAction(cs.id, "revision_requested", revisionNotes[cs.id])}
+                                >
+                                  <XCircle className="h-3 w-3 mr-1" />Submit Revision Request
+                                </Button>
+                                <Button size="sm" variant="ghost" onClick={() => setRevisionNotes(prev => { const n = { ...prev }; delete n[cs.id]; return n; })}>
+                                  Cancel
+                                </Button>
+                              </div>
+                            </div>
                           )}
                         </div>
                       )}
