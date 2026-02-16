@@ -1,7 +1,12 @@
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
+import { LogOut, LayoutDashboard, Users, Shield } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/13creators-logo.png";
+import type { Database } from "@/integrations/supabase/types";
+
+type AppRole = Database["public"]["Enums"]["app_role"];
 
 interface DashboardHeaderProps {
   email?: string;
@@ -9,12 +14,54 @@ interface DashboardHeaderProps {
 }
 
 export default function DashboardHeader({ email, onSignOut }: DashboardHeaderProps) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [roles, setRoles] = useState<AppRole[]>([]);
+
+  useEffect(() => {
+    async function fetchRoles() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id);
+      if (data) setRoles(data.map(r => r.role));
+    }
+    fetchRoles();
+  }, []);
+
+  const isPractitioner = roles.some(r => ["practitioner", "trainee", "trainer"].includes(r));
+  const isTrainer = roles.includes("trainer");
+
+  const navItems = [
+    { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard, show: true },
+    { label: "Practitioner", path: "/practitioner", icon: Users, show: isPractitioner },
+    { label: "Admin", path: "/admin", icon: Shield, show: isTrainer },
+  ];
+
   return (
     <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-30">
       <div className="container mx-auto flex items-center justify-between h-14 px-4">
-        <a href="/" className="flex items-center gap-2">
-          <img src={logo} alt="13 Creators" className="h-7" />
-        </a>
+        <div className="flex items-center gap-4">
+          <a href="/" className="flex items-center gap-2">
+            <img src={logo} alt="13 Creators" className="h-7" />
+          </a>
+          <nav className="hidden sm:flex items-center gap-1">
+            {navItems.filter(n => n.show).map(item => (
+              <Button
+                key={item.path}
+                variant={location.pathname === item.path ? "secondary" : "ghost"}
+                size="sm"
+                className="text-xs h-8"
+                onClick={() => navigate(item.path)}
+              >
+                <item.icon className="h-3.5 w-3.5 mr-1" />
+                {item.label}
+              </Button>
+            ))}
+          </nav>
+        </div>
         <div className="flex items-center gap-3">
           <span className="text-xs text-muted-foreground hidden sm:inline">{email}</span>
           <Button variant="ghost" size="sm" className="text-xs h-8" onClick={onSignOut}>
