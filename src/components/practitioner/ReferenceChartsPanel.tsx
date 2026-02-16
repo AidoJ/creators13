@@ -65,7 +65,9 @@ export default function ReferenceChartsPanel() {
               <img
                 src={chart.image}
                 alt={chart.title}
-                className="w-full rounded-lg border border-border"
+                className={`w-full rounded-lg border border-border ${
+                  chart.id === "shapes" || chart.id === "roles" ? "rotate-90 origin-center my-[25%]" : ""
+                }`}
               />
             </TabsContent>
           ))}
