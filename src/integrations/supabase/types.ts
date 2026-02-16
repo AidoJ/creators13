@@ -152,6 +152,7 @@ export type Database = {
           profiling_notes: string | null
           reviewed_at: string | null
           reviewed_by: string | null
+          reviewer_notes: string | null
           status: Database["public"]["Enums"]["case_study_status"] | null
           subject_user_id: string | null
           title: string
@@ -166,6 +167,7 @@ export type Database = {
           profiling_notes?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          reviewer_notes?: string | null
           status?: Database["public"]["Enums"]["case_study_status"] | null
           subject_user_id?: string | null
           title: string
@@ -180,6 +182,7 @@ export type Database = {
           profiling_notes?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          reviewer_notes?: string | null
           status?: Database["public"]["Enums"]["case_study_status"] | null
           subject_user_id?: string | null
           title?: string
