@@ -14,6 +14,8 @@ import Payment from "./pages/enrollment/Payment";
 import Details from "./pages/enrollment/Details";
 import Photos from "./pages/enrollment/Photos";
 import Booking from "./pages/enrollment/Booking";
+import PractitionerDashboard from "./pages/Practitioner";
+import RoleGuard from "@/components/RoleGuard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +37,7 @@ const App = () => (
             <Route path="/enroll/photos" element={<ProtectedRoute><Photos /></ProtectedRoute>} />
             <Route path="/enroll/booking" element={<ProtectedRoute><Booking /></ProtectedRoute>} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/practitioner" element={<ProtectedRoute><RoleGuard allowedRoles={["practitioner", "trainee", "trainer"]}><PractitionerDashboard /></RoleGuard></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
