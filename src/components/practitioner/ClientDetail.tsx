@@ -32,9 +32,10 @@ interface CreatorTypeData {
 
 interface ClientDetailProps {
   clientId: string;
+  onClientNameLoaded?: (name: string) => void;
 }
 
-export default function ClientDetail({ clientId }: ClientDetailProps) {
+export default function ClientDetail({ clientId, onClientNameLoaded }: ClientDetailProps) {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [booking, setBooking] = useState<BookingData | null>(null);
   const [creatorType, setCreatorType] = useState<CreatorTypeData | null>(null);
@@ -48,13 +49,17 @@ export default function ClientDetail({ clientId }: ClientDetailProps) {
         supabase.from("bookings").select("scheduled_at, status, zoom_link").eq("client_id", clientId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("creator_type_profiles").select("primary_type, secondary_type, profiled_at").eq("user_id", clientId).maybeSingle(),
       ]);
-      if (profileRes.data) setProfile(profileRes.data);
+      if (profileRes.data) {
+        setProfile(profileRes.data);
+        const name = `${profileRes.data.first_name || ""} ${profileRes.data.last_name || ""}`.trim();
+        onClientNameLoaded?.(name || "Unknown");
+      }
       if (bookingRes.data) setBooking(bookingRes.data);
       if (ctRes.data) setCreatorType(ctRes.data);
       setLoading(false);
     }
     fetchClientData();
-  }, [clientId]);
+  }, [clientId, onClientNameLoaded]);
 
   if (loading) {
     return <div className="text-center py-12 text-muted-foreground text-sm">Loading client details…</div>;
