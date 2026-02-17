@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Users, Shield, ChevronDown, ChevronUp, UserPlus, FileText, CheckCircle, XCircle, Clock, Link2, BarChart3, Eye, EyeOff, FolderOpen } from "lucide-react";
+import { Search, Users, Shield, ChevronDown, ChevronUp, UserPlus, FileText, CheckCircle, XCircle, Clock, Link2, BarChart3, Eye, EyeOff, FolderOpen, GitBranch } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
 import CreateUserForm from "@/components/admin/CreateUserForm";
@@ -203,7 +203,7 @@ export default function AdminDashboard() {
   }
 
   async function handlePractitionerStatus(userId: string, status: string) {
-    const { error } = await supabase.from("profiles").update({ practitioner_status: status } as any).eq("user_id", userId);
+    const { error } = await supabase.from("profiles").update({ practitioner_status: status as Database["public"]["Enums"]["practitioner_status"] }).eq("user_id", userId);
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
@@ -304,6 +304,7 @@ export default function AdminDashboard() {
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-4">
             <TabsTrigger value="users"><Users className="h-3.5 w-3.5 mr-1" />Users</TabsTrigger>
+            <TabsTrigger value="pipeline"><GitBranch className="h-3.5 w-3.5 mr-1" />Pipeline</TabsTrigger>
             <TabsTrigger value="cases"><FileText className="h-3.5 w-3.5 mr-1" />Case Studies {pendingCaseStudies > 0 && <Badge className="ml-1 h-5 text-[10px]" variant="destructive">{pendingCaseStudies}</Badge>}</TabsTrigger>
             <TabsTrigger value="assignments"><Link2 className="h-3.5 w-3.5 mr-1" />Assignments</TabsTrigger>
             <TabsTrigger value="resources"><FolderOpen className="h-3.5 w-3.5 mr-1" />Resources</TabsTrigger>
@@ -347,6 +348,11 @@ export default function AdminDashboard() {
                 </table>
               </div>
             </div>
+          </TabsContent>
+
+          {/* ======= PIPELINE TAB ======= */}
+          <TabsContent value="pipeline" className="space-y-4">
+            <TrainerCaseStudyPipeline caseStudies={caseStudies} users={users} />
           </TabsContent>
 
           {/* ======= CASE STUDIES TAB ======= */}
@@ -553,6 +559,127 @@ function CaseStudyStatusBadge({ status }: { status: CaseStudyStatus }) {
   return <Badge variant="outline" className={`text-[10px] ${s.class}`}>{s.label}</Badge>;
 }
 
+function TrainerCaseStudyPipeline({ caseStudies, users }: { caseStudies: CaseStudyRow[]; users: UserRow[] }) {
+  const practitioners = users.filter(u => u.roles.includes("practitioner") || u.roles.includes("trainee") || u.roles.includes("trainer"));
+
+  const STAGES = [
+    { key: "draft", label: "In Progress", icon: Clock, dotColor: "bg-orange-500", cardColor: "bg-orange-500/10 text-orange-600 border-orange-500/20" },
+    { key: "submitted", label: "Submitted", icon: FileText, dotColor: "bg-blue-500", cardColor: "bg-blue-500/10 text-blue-600 border-blue-500/20" },
+    { key: "revision_requested", label: "Needs Revision", icon: XCircle, dotColor: "bg-red-500", cardColor: "bg-red-500/10 text-red-600 border-red-500/20" },
+    { key: "approved", label: "Approved", icon: CheckCircle, dotColor: "bg-green-500", cardColor: "bg-green-500/10 text-green-600 border-green-500/20" },
+  ] as const;
+
+  const byStatus: Record<string, CaseStudyRow[]> = {};
+  caseStudies.forEach(cs => {
+    if (!byStatus[cs.status]) byStatus[cs.status] = [];
+    byStatus[cs.status].push(cs);
+  });
+
+  const total = caseStudies.length;
+
+  // Group by practitioner for overview
+  const pracMap: Record<string, { name: string; status: string | null; counts: Record<string, number>; total: number }> = {};
+  practitioners.forEach(p => {
+    pracMap[p.user_id] = {
+      name: `${p.first_name || ""} ${p.last_name || ""}`.trim() || "Unknown",
+      status: p.practitioner_status,
+      counts: {},
+      total: 0,
+    };
+  });
+  caseStudies.forEach(cs => {
+    if (pracMap[cs.practitioner_id]) {
+      pracMap[cs.practitioner_id].counts[cs.status] = (pracMap[cs.practitioner_id].counts[cs.status] || 0) + 1;
+      pracMap[cs.practitioner_id].total += 1;
+    }
+  });
+
+  const pracStatusColors: Record<string, string> = {
+    in_progress: "bg-orange-500/10 text-orange-600 border-orange-500/20",
+    paused: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+    cancelled: "bg-red-500/10 text-red-600 border-red-500/20",
+    certified: "bg-green-500/10 text-green-600 border-green-500/20",
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Global pipeline summary */}
+      <div className="rounded-2xl border border-border bg-card p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <GitBranch className="h-5 w-5 text-primary" />
+          <h2 className="text-lg font-display font-bold text-foreground">Global Case Study Pipeline</h2>
+          <Badge variant="outline" className="ml-auto text-xs">{total} total</Badge>
+        </div>
+
+        {/* Progress bar */}
+        <div className="h-2 rounded-full bg-muted overflow-hidden flex">
+          {STAGES.map(stage => {
+            const count = byStatus[stage.key]?.length || 0;
+            const pct = total > 0 ? (count / total) * 100 : 0;
+            if (pct === 0) return null;
+            return <div key={stage.key} className={`${stage.dotColor} h-full`} style={{ width: `${pct}%` }} title={`${stage.label}: ${count}`} />;
+          })}
+        </div>
+
+        {/* Stage counts */}
+        <div className="grid grid-cols-4 gap-2 mt-4">
+          {STAGES.map(stage => {
+            const count = byStatus[stage.key]?.length || 0;
+            const StageIcon = stage.icon;
+            return (
+              <div key={stage.key} className={`rounded-xl border p-3 text-center transition-all ${count > 0 ? stage.cardColor : "bg-muted/20 text-muted-foreground/40 border-border/50"}`}>
+                <StageIcon className="h-4 w-4 mx-auto mb-1" />
+                <div className="text-xl font-bold">{count}</div>
+                <div className="text-[10px] font-medium leading-tight">{stage.label}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Per-practitioner breakdown */}
+      <div className="rounded-2xl border border-border bg-card p-5">
+        <h3 className="text-sm font-semibold text-foreground mb-3">Practitioner Progress</h3>
+        <div className="space-y-2">
+          {Object.entries(pracMap)
+            .filter(([, p]) => p.total > 0 || p.status)
+            .sort((a, b) => b[1].total - a[1].total)
+            .map(([id, p]) => (
+              <div key={id} className="flex items-center gap-3 rounded-lg bg-muted/20 border border-border px-3 py-2">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-foreground">{p.name}</span>
+                    {p.status && (
+                      <Badge variant="outline" className={`text-[10px] capitalize ${pracStatusColors[p.status] || ""}`}>
+                        {p.status.replace(/_/g, " ")}
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="flex gap-2 mt-1">
+                    {STAGES.map(stage => {
+                      const count = p.counts[stage.key] || 0;
+                      if (count === 0) return null;
+                      return (
+                        <span key={stage.key} className={`text-[10px] px-1.5 py-0.5 rounded-full border ${stage.cardColor}`}>
+                          {stage.label}: {count}
+                        </span>
+                      );
+                    })}
+                    {p.total === 0 && <span className="text-[10px] text-muted-foreground">No case studies yet</span>}
+                  </div>
+                </div>
+                <span className="text-lg font-bold text-foreground">{p.total}</span>
+              </div>
+            ))}
+          {Object.values(pracMap).every(p => p.total === 0 && !p.status) && (
+            <p className="text-sm text-muted-foreground text-center py-4">No practitioners with case studies yet.</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, addingRole, stepLabel, onStatusChange }: {
   user: UserRow; isExpanded: boolean; onToggle: () => void;
   onAddRole: (userId: string, role: AppRole) => void;
@@ -566,9 +693,9 @@ function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, 
   const isPractitioner = u.roles.includes("practitioner") || u.roles.includes("trainee");
 
   const statusColors: Record<string, string> = {
-    in_progress: "bg-amber-500/10 text-amber-600 border-amber-500/20",
-    paused: "bg-muted/50 text-muted-foreground border-border",
-    cancelled: "bg-destructive/10 text-destructive border-destructive/20",
+    in_progress: "bg-orange-500/10 text-orange-600 border-orange-500/20",
+    paused: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+    cancelled: "bg-red-500/10 text-red-600 border-red-500/20",
     certified: "bg-green-500/10 text-green-600 border-green-500/20",
   };
 
