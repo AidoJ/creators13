@@ -15,6 +15,7 @@ import CreateUserForm from "@/components/admin/CreateUserForm";
 import ResourceUploadPanel from "@/components/admin/ResourceUploadPanel";
 import CompositePhotoLayout from "@/components/profiling/CompositePhotoLayout";
 import CaseStudyFormDataView from "@/components/admin/CaseStudyFormDataView";
+import BodyOutlineSVG from "@/components/practitioner/BodyOutlineSVG";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 type EnrollmentStep = Database["public"]["Enums"]["enrollment_step"];
@@ -425,11 +426,14 @@ export default function AdminDashboard() {
                           {cs.body_drawing_path && (
                             <div>
                               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Body Drawing</p>
-                              <img
-                                src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/profiling-photos/${cs.body_drawing_path}`}
-                                alt="Body drawing"
-                                className="max-w-md rounded-lg border border-border"
-                              />
+                              <div className="relative max-w-[400px] bg-white rounded-lg border border-border overflow-hidden" style={{ aspectRatio: "400/800" }}>
+                                <BodyOutlineSVG className="absolute inset-0 w-full h-full text-foreground/60 pointer-events-none z-0" />
+                                <img
+                                  src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/profiling-photos/${cs.body_drawing_path}`}
+                                  alt="Body drawing annotations"
+                                  className="absolute inset-0 w-full h-full object-contain z-10"
+                                />
+                              </div>
                             </div>
                           )}
 
