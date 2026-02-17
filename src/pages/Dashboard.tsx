@@ -12,6 +12,7 @@ import SessionCard from "@/components/dashboard/SessionCard";
 import CreatorProfileCard from "@/components/dashboard/CreatorProfileCard";
 import UpsellBanner from "@/components/dashboard/UpsellBanner";
 import ClientFAQSection from "@/components/dashboard/ClientFAQSection";
+import SubscriptionCard from "@/components/dashboard/SubscriptionCard";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface ProfileData {
@@ -138,6 +139,9 @@ export default function Dashboard() {
             )}
           </div>
         </div>
+
+        {/* Subscription details — full width */}
+        <SubscriptionCard />
 
         {/* Creator Profile — full width */}
         {user && (
