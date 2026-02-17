@@ -116,7 +116,7 @@ export default function Signup() {
       nextParams.set("practitioner_code", practitionerCode);
     }
     if (tier === "wren") {
-      navigate(`/enroll/details?${nextParams.toString()}`);
+      navigate(`/enroll/practitioner?${nextParams.toString()}`);
     } else {
       navigate(`/enroll/payment?${nextParams.toString()}`);
     }

@@ -35,6 +35,7 @@ export default function Payment() {
   const tier = (params.get("tier") as TierKey) || "robin";
   const billing = params.get("billing") || "monthly";
   const canceled = params.get("canceled") === "true";
+  const isUpgrade = params.get("upgrade") === "true";
   const tierInfo = TIERS[tier] || TIERS.robin;
   const tierImage = BIRD_IMAGES[tier];
 
@@ -64,7 +65,7 @@ export default function Payment() {
         tier,
         billing,
         embedded: true,
-        successUrl: `${window.location.origin}/enroll/practitioner?tier=${tier}&billing=${billing}&payment=success`,
+        successUrl: `${window.location.origin}/enroll/practitioner?tier=${tier}&billing=${billing}&payment=success${isUpgrade ? "&upgrade=true" : ""}`,
       },
     });
 
