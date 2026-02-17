@@ -370,6 +370,7 @@ export type Database = {
           id: string
           name: string
           natural_power: string | null
+          profile_content: Json | null
           sort_order: number | null
           team_role: string | null
         }
@@ -387,6 +388,7 @@ export type Database = {
           id?: string
           name: string
           natural_power?: string | null
+          profile_content?: Json | null
           sort_order?: number | null
           team_role?: string | null
         }
@@ -404,6 +406,7 @@ export type Database = {
           id?: string
           name?: string
           natural_power?: string | null
+          profile_content?: Json | null
           sort_order?: number | null
           team_role?: string | null
         }
