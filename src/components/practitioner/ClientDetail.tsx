@@ -18,6 +18,7 @@ interface ProfileData {
   city: string | null;
   state: string | null;
   country: string | null;
+  case_study_consent_at: string | null;
 }
 
 interface BookingData {
@@ -47,7 +48,7 @@ export default function ClientDetail({ clientId, onClientNameLoaded }: ClientDet
     async function fetchClientData() {
       setLoading(true);
       const [profileRes, bookingRes, ctRes] = await Promise.all([
-        supabase.from("profiles").select("first_name, last_name, email, enrollment_step, date_of_birth, gender, height_cm, shoe_size, city, state, country").eq("user_id", clientId).maybeSingle(),
+        supabase.from("profiles").select("first_name, last_name, email, enrollment_step, date_of_birth, gender, height_cm, shoe_size, city, state, country, case_study_consent_at").eq("user_id", clientId).maybeSingle(),
         supabase.from("bookings").select("scheduled_at, status, zoom_link").eq("client_id", clientId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("creator_type_profiles").select("primary_type, secondary_type, profiled_at").eq("user_id", clientId).maybeSingle(),
       ]);
@@ -96,6 +97,12 @@ export default function ClientDetail({ clientId, onClientNameLoaded }: ClientDet
                   {creatorType.primary_type}
                 </Badge>
               )}
+              <Badge
+                variant="outline"
+                className={`text-xs ${profile.case_study_consent_at ? "bg-green-500/10 text-green-600 border-green-500/20" : "bg-muted/50 text-muted-foreground border-border"}`}
+              >
+                Consent: {profile.case_study_consent_at ? "Given" : "Not Given"}
+              </Badge>
             </div>
           </div>
         </div>

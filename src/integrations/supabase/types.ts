@@ -322,6 +322,8 @@ export type Database = {
           profiled_by: string | null
           profiling_data: Json | null
           secondary_type: string | null
+          type_3: string | null
+          type_4: string | null
           updated_at: string
           user_id: string
         }
@@ -333,6 +335,8 @@ export type Database = {
           profiled_by?: string | null
           profiling_data?: Json | null
           secondary_type?: string | null
+          type_3?: string | null
+          type_4?: string | null
           updated_at?: string
           user_id: string
         }
@@ -344,6 +348,8 @@ export type Database = {
           profiled_by?: string | null
           profiling_data?: Json | null
           secondary_type?: string | null
+          type_3?: string | null
+          type_4?: string | null
           updated_at?: string
           user_id?: string
         }
