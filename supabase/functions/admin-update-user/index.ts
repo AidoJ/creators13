@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { createClient } from "npm:@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,9 +14,9 @@ serve(async (req) => {
   try {
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      { auth: { autoRefreshToken: false, persistSession: false } }
     );
-
     // Verify caller is a trainer
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("No authorization header");
@@ -39,7 +39,7 @@ serve(async (req) => {
 
     // Password reset
     if (new_password) {
-      const { error } = await supabaseAdmin.auth.admin.updateUser(target_user_id, {
+      const { error } = await supabaseAdmin.auth.admin.updateUserById(target_user_id, {
         password: new_password,
       });
       if (error) throw new Error(`Password update failed: ${error.message}`);
