@@ -13,9 +13,10 @@ import CaseStudyPipeline from "@/components/practitioner/CaseStudyPipeline";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, ArrowLeft, Users, ClipboardList, Copy, CheckCircle, UserPlus, FolderOpen, BarChart3, Gauge } from "lucide-react";
+import { FileText, ArrowLeft, Users, ClipboardList, Copy, CheckCircle, UserPlus, FolderOpen, BarChart3, Gauge, HelpCircle } from "lucide-react";
 import ResourceLibrary from "@/components/practitioner/ResourceLibrary";
 import { toast } from "@/hooks/use-toast";
+import FAQPanel from "@/components/practitioner/FAQPanel";
 
 export default function PractitionerDashboard() {
   const { user, signOut } = useAuth();
@@ -101,6 +102,7 @@ export default function PractitionerDashboard() {
             <TabsTrigger value="cases"><ClipboardList className="h-3.5 w-3.5 mr-1" />Case Studies</TabsTrigger>
             <TabsTrigger value="resources"><FolderOpen className="h-3.5 w-3.5 mr-1" />Resources</TabsTrigger>
             <TabsTrigger value="charts"><BarChart3 className="h-3.5 w-3.5 mr-1" />Charts</TabsTrigger>
+            <TabsTrigger value="faqs"><HelpCircle className="h-3.5 w-3.5 mr-1" />FAQs</TabsTrigger>
           </TabsList>
 
           {/* ======= PIPELINE TAB ======= */}
@@ -181,6 +183,11 @@ export default function PractitionerDashboard() {
           {/* ======= REFERENCE CHARTS TAB ======= */}
           <TabsContent value="charts" className="mt-4">
             <ReferenceChartsPanel />
+          </TabsContent>
+
+          {/* ======= FAQs TAB ======= */}
+          <TabsContent value="faqs" className="mt-4">
+            <FAQPanel />
           </TabsContent>
         </Tabs>
       </main>
