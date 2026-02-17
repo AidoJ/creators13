@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import CompositePhotoLayout from "@/components/profiling/CompositePhotoLayout";
+import CreatorTypeAssignmentForm from "@/components/practitioner/CreatorTypeAssignmentForm";
+import ClientSubscriptionCard from "@/components/practitioner/ClientSubscriptionCard";
 import { User, Calendar, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
@@ -152,6 +154,12 @@ export default function ClientDetail({ clientId, onClientNameLoaded }: ClientDet
           )}
         </div>
       )}
+
+      {/* Subscription info */}
+      <ClientSubscriptionCard clientId={clientId} />
+
+      {/* Creator Type Assignment */}
+      <CreatorTypeAssignmentForm clientId={clientId} clientName={fullName} />
 
       {/* Photo composite */}
       <CompositePhotoLayout userId={clientId} subjectName={`${fullName}'s Profiling Photos`} />
