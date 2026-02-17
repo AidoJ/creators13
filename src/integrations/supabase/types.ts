@@ -144,9 +144,11 @@ export type Database = {
       }
       case_studies: {
         Row: {
+          body_drawing_path: string | null
           created_at: string
           creator_types_identified: string[] | null
           description: string | null
+          form_data: Json | null
           id: string
           practitioner_id: string
           profiling_notes: string | null
@@ -159,9 +161,11 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          body_drawing_path?: string | null
           created_at?: string
           creator_types_identified?: string[] | null
           description?: string | null
+          form_data?: Json | null
           id?: string
           practitioner_id: string
           profiling_notes?: string | null
@@ -174,9 +178,11 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          body_drawing_path?: string | null
           created_at?: string
           creator_types_identified?: string[] | null
           description?: string | null
+          form_data?: Json | null
           id?: string
           practitioner_id?: string
           profiling_notes?: string | null
