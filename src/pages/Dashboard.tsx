@@ -11,6 +11,7 @@ import ProgressCard from "@/components/dashboard/ProgressCard";
 import SessionCard from "@/components/dashboard/SessionCard";
 import CreatorProfileCard from "@/components/dashboard/CreatorProfileCard";
 import UpsellBanner from "@/components/dashboard/UpsellBanner";
+import ClientFAQSection from "@/components/dashboard/ClientFAQSection";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface ProfileData {
@@ -64,7 +65,7 @@ export default function Dashboard() {
   const isComplete = step === "complete";
   const photosUploaded = step === "photos_uploaded" || step === "booking_made" || isComplete;
   const bookingMade = step === "booking_made" || isComplete;
-  const hasDetails = !!step && step !== "plan_selected" && step !== "signed_up";
+  const hasDetails = !!(profile?.first_name && profile?.date_of_birth && profile?.gender && profile?.height_cm);
 
   const statusLabel = isComplete ? "Complete" : photosUploaded ? "In Review" : "In Progress";
   const statusColor = isComplete
@@ -142,6 +143,9 @@ export default function Dashboard() {
         {user && (
           <CreatorProfileCard userId={user.id} isComplete={isComplete} />
         )}
+
+        {/* FAQs — full width */}
+        <ClientFAQSection />
       </main>
     </div>
   );

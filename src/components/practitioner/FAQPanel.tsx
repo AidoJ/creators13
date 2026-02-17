@@ -19,6 +19,7 @@ export default function FAQPanel() {
     supabase
       .from("faqs")
       .select("id, category, question, answer, sort_order")
+      .eq("audience", "practitioner")
       .order("sort_order", { ascending: true })
       .then(({ data }) => {
         setFaqs((data as FAQ[]) || []);
