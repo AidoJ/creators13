@@ -54,7 +54,7 @@ export default function CreatorTypeAssignmentForm({ clientId, clientName }: Crea
     async function load() {
       const [typesRes, profileRes, subRes, caseStudyRes] = await Promise.all([
         supabase.from("creator_types").select("name, family, element, color_hex").order("sort_order"),
-        supabase.from("creator_type_profiles").select("id, primary_type, secondary_type, profiling_data").eq("user_id", clientId).maybeSingle(),
+        supabase.from("creator_type_profiles").select("id, primary_type, secondary_type, profiling_data").eq("user_id", clientId).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("subscriptions").select("tier").eq("user_id", clientId).maybeSingle(),
         supabase.from("case_studies").select("id").eq("subject_user_id", clientId).limit(1),
       ]);
@@ -96,14 +96,8 @@ export default function CreatorTypeAssignmentForm({ clientId, clientName }: Crea
       } as unknown as Record<string, never>,
     };
 
-    let error;
-    if (existingProfileId) {
-      const res = await supabase.from("creator_type_profiles").update(payload).eq("id", existingProfileId);
-      error = res.error;
-    } else {
-      const res = await supabase.from("creator_type_profiles").insert(payload);
-      error = res.error;
-    }
+    const res = await supabase.from("creator_type_profiles").upsert(payload, { onConflict: "user_id" });
+    const error = res.error;
 
     setSaving(false);
     if (error) {
