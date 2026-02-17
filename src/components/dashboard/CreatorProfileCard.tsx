@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Sparkles, Lock, Zap, AlertTriangle, Eye } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const GLYPH_IMPORTS: Record<string, () => Promise<{ default: string }>> = {
   lava: () => import("@/assets/glyph-lava.png"),
@@ -57,7 +58,7 @@ interface CreatorTypeInfo {
 export default function CreatorProfileCard({ userId }: CreatorProfileCardProps) {
   const [profile, setProfile] = useState<ProfileResult | null>(null);
   const [typeInfos, setTypeInfos] = useState<CreatorTypeInfo[]>([]);
-  const [glyphUrl, setGlyphUrl] = useState<string | null>(null);
+  const [glyphUrls, setGlyphUrls] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -95,14 +96,19 @@ export default function CreatorProfileCard({ userId }: CreatorProfileCardProps) 
           .map(n => typesData.find(d => d.name.toLowerCase() === n.toLowerCase()))
           .filter(Boolean) as CreatorTypeInfo[];
         setTypeInfos(ordered);
-      }
 
-      const key = profile!.primary_type!.toLowerCase();
-      if (GLYPH_IMPORTS[key]) {
-        try {
-          const mod = await GLYPH_IMPORTS[key]();
-          setGlyphUrl(mod.default);
-        } catch { /* no glyph */ }
+        // Load glyphs for all types
+        const urls: Record<string, string> = {};
+        for (const info of ordered) {
+          const key = info.name.toLowerCase();
+          if (GLYPH_IMPORTS[key]) {
+            try {
+              const mod = await GLYPH_IMPORTS[key]();
+              urls[key] = mod.default;
+            } catch { /* no glyph */ }
+          }
+        }
+        setGlyphUrls(urls);
       }
     }
     fetchTypeInfo();
@@ -112,166 +118,202 @@ export default function CreatorProfileCard({ userId }: CreatorProfileCardProps) 
 
   const primaryInfo = typeInfos[0];
 
-  if (profile?.primary_type && primaryInfo) {
-    const color = primaryInfo.color_hex || "hsl(var(--primary))";
-    const content = primaryInfo.profile_content;
-
+  if (!profile?.primary_type || !primaryInfo) {
     return (
-      <div
-        className="rounded-2xl border bg-gradient-to-br from-card via-card to-secondary/5 p-6 space-y-6"
-        style={{ borderColor: `${color}30` }}
-      >
-        {/* Header */}
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-secondary" />
-          <h2 className="text-lg font-display font-bold text-foreground">Your Creator Type{typeInfos.length > 1 ? "s" : ""}</h2>
-        </div>
-
-        {/* Hero: glyph + name + meta */}
-        <div className="flex flex-col md:flex-row items-center gap-6">
-          {glyphUrl && (
-            <div className="flex-shrink-0">
-              <div
-                className="w-28 h-28 rounded-full flex items-center justify-center p-3"
-                style={{ backgroundColor: `${color}15` }}
-              >
-                <img src={glyphUrl} alt={primaryInfo.name} className="w-full h-full object-contain" />
-              </div>
-            </div>
-          )}
-
-          <div className="flex-1 text-center md:text-left space-y-2">
-            <p className="text-3xl font-display font-bold capitalize" style={{ color }}>
-              {primaryInfo.name}
-            </p>
-            {content?.tagline && (
-              <p className="text-base italic text-muted-foreground">{content.tagline}</p>
-            )}
-            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-              <span><span className="font-semibold text-foreground">Family:</span> {primaryInfo.family}</span>
-              <span><span className="font-semibold text-foreground">Element:</span> {primaryInfo.element}</span>
-              {primaryInfo.team_role && (
-                <span><span className="font-semibold text-foreground">Team Role:</span> {primaryInfo.team_role}</span>
-              )}
-            </div>
-            {profile.profiled_at && (
-              <p className="text-xs text-muted-foreground">
-                Profiled on {new Date(profile.profiled_at).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })}
-              </p>
-            )}
+      <div className="rounded-2xl border border-border bg-gradient-to-br from-card via-card to-primary/3 p-6 relative overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full bg-primary/8 blur-3xl" />
+        <div className="relative text-center space-y-3 py-4">
+          <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+            <Lock className="h-5 w-5 text-primary/60" />
+          </div>
+          <h2 className="text-lg font-display font-bold text-foreground">Your Creator Type</h2>
+          <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+            Your profile is being assessed by your practitioner. Results will appear here once assigned!
+          </p>
+          <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-secondary bg-secondary/10 px-3 py-1.5 rounded-full">
+            <Sparkles className="h-3 w-3" /> Coming Soon
           </div>
         </div>
-
-        {/* Additional assigned types */}
-        {typeInfos.length > 1 && (
-          <div className="space-y-1">
-            {typeInfos.slice(1).map((info, idx) => (
-              <p key={info.name} className="text-sm text-muted-foreground">
-                Creator Type {idx + 2}: <span className="font-semibold text-foreground capitalize">{info.name}</span>
-                <span className="ml-1 text-xs">({info.family} · {info.element})</span>
-              </p>
-            ))}
-          </div>
-        )}
-
-        {/* Magical Qualities & Challenges */}
-        {content && (content.magical_qualities || content.challenges) && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {content.magical_qualities && content.magical_qualities.length > 0 && (
-              <div className="rounded-xl p-4 space-y-2" style={{ backgroundColor: `${color}08` }}>
-                <div className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
-                  <Zap className="h-4 w-4" style={{ color }} />
-                  Magical Qualities
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {content.magical_qualities.map(q => (
-                    <span key={q} className="text-xs font-medium px-2.5 py-1 rounded-full border" style={{ borderColor: `${color}40`, color }}>
-                      {q}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-            {content.challenges && content.challenges.length > 0 && (
-              <div className="rounded-xl bg-muted/40 p-4 space-y-2">
-                <div className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
-                  <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-                  Challenges
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {content.challenges.map(c => (
-                    <span key={c} className="text-xs font-medium px-2.5 py-1 rounded-full border border-border text-muted-foreground">
-                      {c}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Key Physical Features */}
-        {content?.physical_features && content.physical_features.length > 0 && (
-          <div className="rounded-xl border border-border p-4 space-y-2">
-            <div className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
-              <Eye className="h-4 w-4 text-secondary" />
-              Key Physical Features
-            </div>
-            <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1 pl-1">
-              {content.physical_features.map(f => (
-                <li key={f}>{f}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* Description */}
-        {content?.description && (
-          <div className="space-y-2">
-            <p className="text-sm leading-relaxed text-foreground/90 whitespace-pre-line">
-              {content.description}
-            </p>
-          </div>
-        )}
-
-        {/* Natural State */}
-        {content?.natural_state && (
-          <div className="rounded-xl p-4 space-y-3" style={{ backgroundColor: `${color}06`, borderLeft: `3px solid ${color}` }}>
-            <p className="text-sm font-display font-bold text-foreground">
-              {content.natural_state.title && <>{content.natural_state.title} — </>}
-              When you embody <span className="capitalize" style={{ color }}>{primaryInfo.name}</span> in its Natural State…
-            </p>
-            {content.natural_state.traits && (
-              <ul className="space-y-2">
-                {content.natural_state.traits.map((t, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-foreground/85">
-                    <span className="mt-1 flex-shrink-0 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
-                    {t}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )}
       </div>
     );
   }
 
+  const defaultColor = primaryInfo.color_hex || "hsl(var(--primary))";
+
   return (
-    <div className="rounded-2xl border border-border bg-gradient-to-br from-card via-card to-primary/3 p-6 relative overflow-hidden">
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full bg-primary/8 blur-3xl" />
-      <div className="relative text-center space-y-3 py-4">
-        <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-          <Lock className="h-5 w-5 text-primary/60" />
-        </div>
-        <h2 className="text-lg font-display font-bold text-foreground">Your Creator Type</h2>
-        <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-          Your profile is being assessed by your practitioner. Results will appear here once assigned!
-        </p>
-        <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-secondary bg-secondary/10 px-3 py-1.5 rounded-full">
-          <Sparkles className="h-3 w-3" /> Coming Soon
+    <div
+      className="rounded-2xl border bg-gradient-to-br from-card via-card to-secondary/5 p-6 space-y-4"
+      style={{ borderColor: `${defaultColor}30` }}
+    >
+      <div className="flex items-center gap-2">
+        <Sparkles className="h-5 w-5 text-secondary" />
+        <h2 className="text-lg font-display font-bold text-foreground">
+          Your Creator Type{typeInfos.length > 1 ? "s" : ""}
+        </h2>
+        {profile.profiled_at && (
+          <span className="ml-auto text-xs text-muted-foreground">
+            Profiled {new Date(profile.profiled_at).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })}
+          </span>
+        )}
+      </div>
+
+      {typeInfos.length === 1 ? (
+        <TypePanel info={primaryInfo} glyphUrl={glyphUrls[primaryInfo.name.toLowerCase()]} slotLabel="Primary" />
+      ) : (
+        <Tabs defaultValue={primaryInfo.name.toLowerCase()} className="w-full">
+          <TabsList className="w-full flex">
+            {typeInfos.map((info, idx) => {
+              const color = info.color_hex || "hsl(var(--primary))";
+              const glyph = glyphUrls[info.name.toLowerCase()];
+              const labels = ["Primary", "Secondary", "Type 3", "Type 4"];
+              return (
+                <TabsTrigger
+                  key={info.name}
+                  value={info.name.toLowerCase()}
+                  className="flex-1 flex items-center gap-2 data-[state=active]:shadow-sm"
+                >
+                  {glyph && (
+                    <img src={glyph} alt="" className="w-5 h-5 object-contain" />
+                  )}
+                  <span className="capitalize font-semibold" style={{ color }}>{info.name}</span>
+                  <span className="hidden sm:inline text-[10px] text-muted-foreground">({labels[idx]})</span>
+                </TabsTrigger>
+              );
+            })}
+          </TabsList>
+
+          {typeInfos.map((info, idx) => {
+            const labels = ["Primary", "Secondary", "Type 3", "Type 4"];
+            return (
+              <TabsContent key={info.name} value={info.name.toLowerCase()} className="mt-4">
+                <TypePanel
+                  info={info}
+                  glyphUrl={glyphUrls[info.name.toLowerCase()]}
+                  slotLabel={labels[idx]}
+                />
+              </TabsContent>
+            );
+          })}
+        </Tabs>
+      )}
+    </div>
+  );
+}
+
+/* ─── Single type panel (reused per tab) ─── */
+function TypePanel({ info, glyphUrl, slotLabel }: { info: CreatorTypeInfo; glyphUrl?: string; slotLabel: string }) {
+  const color = info.color_hex || "hsl(var(--primary))";
+  const content = info.profile_content;
+
+  return (
+    <div className="space-y-5">
+      {/* Hero row */}
+      <div className="flex flex-col sm:flex-row items-center gap-5">
+        {glyphUrl && (
+          <div
+            className="w-24 h-24 rounded-full flex items-center justify-center p-3 flex-shrink-0"
+            style={{ backgroundColor: `${color}15` }}
+          >
+            <img src={glyphUrl} alt={info.name} className="w-full h-full object-contain" />
+          </div>
+        )}
+        <div className="flex-1 text-center sm:text-left space-y-1.5">
+          <div className="flex items-center gap-2 justify-center sm:justify-start">
+            <p className="text-2xl font-display font-bold capitalize" style={{ color }}>
+              {info.name}
+            </p>
+            <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border" style={{ borderColor: `${color}40`, color }}>
+              {slotLabel}
+            </span>
+          </div>
+          {content?.tagline && (
+            <p className="text-sm italic text-muted-foreground">{content.tagline}</p>
+          )}
+          <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
+            <span><span className="font-semibold text-foreground">Family:</span> {info.family}</span>
+            <span><span className="font-semibold text-foreground">Element:</span> {info.element}</span>
+            {info.team_role && <span><span className="font-semibold text-foreground">Team Role:</span> {info.team_role}</span>}
+          </div>
         </div>
       </div>
+
+      {/* Qualities & Challenges */}
+      {content && (content.magical_qualities || content.challenges) && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {content.magical_qualities && content.magical_qualities.length > 0 && (
+            <div className="rounded-xl p-3 space-y-2" style={{ backgroundColor: `${color}08` }}>
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                <Zap className="h-3.5 w-3.5" style={{ color }} />
+                Magical Qualities
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {content.magical_qualities.map(q => (
+                  <span key={q} className="text-[11px] font-medium px-2 py-0.5 rounded-full border" style={{ borderColor: `${color}40`, color }}>
+                    {q}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          {content.challenges && content.challenges.length > 0 && (
+            <div className="rounded-xl bg-muted/40 p-3 space-y-2">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                <AlertTriangle className="h-3.5 w-3.5 text-muted-foreground" />
+                Challenges
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {content.challenges.map(c => (
+                  <span key={c} className="text-[11px] font-medium px-2 py-0.5 rounded-full border border-border text-muted-foreground">
+                    {c}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Physical Features */}
+      {content?.physical_features && content.physical_features.length > 0 && (
+        <div className="rounded-xl border border-border p-3 space-y-2">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+            <Eye className="h-3.5 w-3.5 text-secondary" />
+            Key Physical Features
+          </div>
+          <ul className="list-disc list-inside text-xs text-muted-foreground space-y-0.5 pl-1">
+            {content.physical_features.map(f => (
+              <li key={f}>{f}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Description */}
+      {content?.description && (
+        <p className="text-sm leading-relaxed text-foreground/90 whitespace-pre-line">
+          {content.description}
+        </p>
+      )}
+
+      {/* Natural State */}
+      {content?.natural_state && (
+        <div className="rounded-xl p-4 space-y-2.5" style={{ backgroundColor: `${color}06`, borderLeft: `3px solid ${color}` }}>
+          <p className="text-sm font-display font-bold text-foreground">
+            {content.natural_state.title && <>{content.natural_state.title} — </>}
+            When you embody <span className="capitalize" style={{ color }}>{info.name}</span> in its Natural State…
+          </p>
+          {content.natural_state.traits && (
+            <ul className="space-y-1.5">
+              {content.natural_state.traits.map((t, i) => (
+                <li key={i} className="flex items-start gap-2 text-xs text-foreground/85">
+                  <span className="mt-1 flex-shrink-0 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
+                  {t}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
     </div>
   );
 }
