@@ -158,42 +158,37 @@ export default function CreatorProfileCard({ userId }: CreatorProfileCardProps) 
       </div>
 
       {typeInfos.length === 1 ? (
-        <TypePanel info={primaryInfo} glyphUrl={glyphUrls[primaryInfo.name.toLowerCase()]} slotLabel="Primary" />
+        <TypePanel info={primaryInfo} glyphUrl={glyphUrls[primaryInfo.name.toLowerCase()]} slotLabel="Type 1" />
       ) : (
         <Tabs defaultValue={primaryInfo.name.toLowerCase()} className="w-full">
           <TabsList className="w-full flex">
             {typeInfos.map((info, idx) => {
-              const color = info.color_hex || "hsl(var(--primary))";
               const glyph = glyphUrls[info.name.toLowerCase()];
-              const labels = ["Primary", "Secondary", "Type 3", "Type 4"];
               return (
                 <TabsTrigger
                   key={info.name}
                   value={info.name.toLowerCase()}
-                  className="flex-1 flex items-center gap-2 data-[state=active]:shadow-sm"
+                  className="flex-1 flex items-center gap-2 data-[state=active]:shadow-sm text-white"
                 >
                   {glyph && (
                     <img src={glyph} alt="" className="w-5 h-5 object-contain" />
                   )}
-                  <span className="capitalize font-semibold" style={{ color }}>{info.name}</span>
-                  <span className="hidden sm:inline text-[10px] text-muted-foreground">({labels[idx]})</span>
+                  <span className="capitalize font-semibold">{info.name}</span>
+                  <span className="hidden sm:inline text-[10px] opacity-75">(Type {idx + 1})</span>
                 </TabsTrigger>
               );
             })}
           </TabsList>
 
-          {typeInfos.map((info, idx) => {
-            const labels = ["Primary", "Secondary", "Type 3", "Type 4"];
-            return (
+          {typeInfos.map((info, idx) => (
               <TabsContent key={info.name} value={info.name.toLowerCase()} className="mt-4">
                 <TypePanel
                   info={info}
                   glyphUrl={glyphUrls[info.name.toLowerCase()]}
-                  slotLabel={labels[idx]}
+                  slotLabel={`Type ${idx + 1}`}
                 />
               </TabsContent>
-            );
-          })}
+            ))}
         </Tabs>
       )}
     </div>
