@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { Upload, Loader2, Trash2, FileText, Video, Music, Image, File } from "lucide-react";
+import { Upload, Loader2, Trash2, FileText, Video, Music, Image, File, ExternalLink } from "lucide-react";
 
 interface Resource {
   id: string;
@@ -25,6 +25,7 @@ const RESOURCE_TYPES = [
   { value: "document", label: "Document / PDF", icon: FileText },
   { value: "audio", label: "Audio", icon: Music },
   { value: "image", label: "Image", icon: Image },
+  { value: "url", label: "URL / Link", icon: ExternalLink },
 ];
 
 function formatBytes(bytes: number | null) {
@@ -51,6 +52,7 @@ export default function ResourceUploadPanel() {
   const [description, setDescription] = useState("");
   const [resourceType, setResourceType] = useState("document");
   const [file, setFile] = useState<File | null>(null);
+  const [urlValue, setUrlValue] = useState("");
 
   const fetchResources = useCallback(async () => {
     const { data } = await supabase
@@ -64,13 +66,35 @@ export default function ResourceUploadPanel() {
   useEffect(() => { fetchResources(); }, [fetchResources]);
 
   async function handleUpload() {
-    if (!file || !title.trim() || !user) return;
+    if (!title.trim() || !user) return;
+
+    if (resourceType === "url") {
+      if (!urlValue.trim()) return;
+      const { error: dbError } = await supabase.from("training_resources").insert({
+        title: title.trim(),
+        description: description.trim() || null,
+        resource_type: "url",
+        storage_path: urlValue.trim(),
+        file_name: urlValue.trim(),
+        file_size_bytes: null,
+        mime_type: "text/uri-list",
+        uploaded_by: user.id,
+      });
+      if (dbError) {
+        toast({ title: "Save failed", description: dbError.message, variant: "destructive" });
+      } else {
+        toast({ title: "Link saved" });
+        setTitle(""); setDescription(""); setUrlValue(""); setResourceType("document");
+        await fetchResources();
+      }
+      return;
+    }
+
+    if (!file) return;
     setUploading(true);
 
-    const ext = file.name.split(".").pop();
     const storagePath = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
 
-    // Upload to storage
     const { error: storageError } = await supabase.storage
       .from("training-resources")
       .upload(storagePath, file);
@@ -81,7 +105,6 @@ export default function ResourceUploadPanel() {
       return;
     }
 
-    // Save metadata
     const { error: dbError } = await supabase.from("training_resources").insert({
       title: title.trim(),
       description: description.trim() || null,
@@ -97,10 +120,7 @@ export default function ResourceUploadPanel() {
       toast({ title: "Save failed", description: dbError.message, variant: "destructive" });
     } else {
       toast({ title: "Resource uploaded" });
-      setTitle("");
-      setDescription("");
-      setFile(null);
-      setResourceType("document");
+      setTitle(""); setDescription(""); setFile(null); setResourceType("document");
       await fetchResources();
     }
     setUploading(false);
@@ -155,20 +175,27 @@ export default function ResourceUploadPanel() {
           <Textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} placeholder="Brief description of this resource…" />
         </div>
 
-        <div>
-          <label className="text-xs font-medium text-muted-foreground">File *</label>
-          <Input
-            type="file"
-            onChange={e => setFile(e.target.files?.[0] || null)}
-            className="mt-1"
-            accept="video/*,audio/*,application/pdf,image/*,.doc,.docx,.ppt,.pptx"
-          />
-          {file && <p className="text-xs text-muted-foreground mt-1">{file.name} ({formatBytes(file.size)})</p>}
-        </div>
+        {resourceType === "url" ? (
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">URL *</label>
+            <Input value={urlValue} onChange={e => setUrlValue(e.target.value)} placeholder="https://example.com/resource" type="url" />
+          </div>
+        ) : (
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">File *</label>
+            <Input
+              type="file"
+              onChange={e => setFile(e.target.files?.[0] || null)}
+              className="mt-1"
+              accept="video/*,audio/*,application/pdf,image/*,.doc,.docx,.ppt,.pptx"
+            />
+            {file && <p className="text-xs text-muted-foreground mt-1">{file.name} ({formatBytes(file.size)})</p>}
+          </div>
+        )}
 
-        <Button onClick={handleUpload} disabled={!title.trim() || !file || uploading}>
+        <Button onClick={handleUpload} disabled={!title.trim() || (resourceType === "url" ? !urlValue.trim() : !file) || uploading}>
           {uploading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Upload className="h-4 w-4 mr-1" />}
-          Upload Resource
+          {resourceType === "url" ? "Save Link" : "Upload Resource"}
         </Button>
       </div>
 
