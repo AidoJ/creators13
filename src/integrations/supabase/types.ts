@@ -406,6 +406,7 @@ export type Database = {
       faqs: {
         Row: {
           answer: string
+          audience: string
           category: string
           created_at: string
           id: string
@@ -415,6 +416,7 @@ export type Database = {
         }
         Insert: {
           answer: string
+          audience?: string
           category: string
           created_at?: string
           id?: string
@@ -424,6 +426,7 @@ export type Database = {
         }
         Update: {
           answer?: string
+          audience?: string
           category?: string
           created_at?: string
           id?: string
