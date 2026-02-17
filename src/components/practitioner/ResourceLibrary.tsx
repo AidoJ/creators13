@@ -27,6 +27,7 @@ const TYPE_CONFIG: Record<string, { icon: typeof File; color: string }> = {
   audio: { icon: Music, color: "text-purple-500" },
   document: { icon: FileText, color: "text-amber-500" },
   image: { icon: Image, color: "text-green-500" },
+  url: { icon: ExternalLink, color: "text-cyan-500" },
 };
 
 export default function ResourceLibrary() {
@@ -51,6 +52,10 @@ export default function ResourceLibrary() {
   }
 
   function handleOpen(resource: Resource) {
+    if (resource.resource_type === "url") {
+      window.open(resource.storage_path, "_blank");
+      return;
+    }
     const url = getPublicUrl(resource.storage_path);
     if (resource.resource_type === "video" || resource.resource_type === "audio") {
       setPreviewUrl(url);
@@ -111,7 +116,11 @@ export default function ResourceLibrary() {
                 </div>
               </div>
               <div className="flex gap-2 mt-3">
-                {(r.resource_type === "video" || r.resource_type === "audio") ? (
+                {r.resource_type === "url" ? (
+                  <Button variant="outline" size="sm" className="h-7 text-xs flex-1" onClick={() => handleOpen(r)}>
+                    <ExternalLink className="h-3 w-3 mr-1" />Open Link
+                  </Button>
+                ) : (r.resource_type === "video" || r.resource_type === "audio") ? (
                   <Button variant="outline" size="sm" className="h-7 text-xs flex-1" onClick={() => handleOpen(r)}>
                     <Play className="h-3 w-3 mr-1" />Play
                   </Button>
@@ -120,11 +129,13 @@ export default function ResourceLibrary() {
                     <ExternalLink className="h-3 w-3 mr-1" />Open
                   </Button>
                 )}
-                <Button variant="ghost" size="sm" className="h-7 w-7 p-0" asChild>
-                  <a href={getPublicUrl(r.storage_path)} download={r.file_name}>
-                    <Download className="h-3 w-3" />
-                  </a>
-                </Button>
+                {r.resource_type !== "url" && (
+                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0" asChild>
+                    <a href={getPublicUrl(r.storage_path)} download={r.file_name}>
+                      <Download className="h-3 w-3" />
+                    </a>
+                  </Button>
+                )}
               </div>
             </div>
           );
