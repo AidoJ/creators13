@@ -49,18 +49,23 @@ export default function CreatorTypeAssignmentForm({ clientId, clientName }: Crea
   const [loading, setLoading] = useState(true);
   const [clientTier, setClientTier] = useState<TierKey | null>(null);
   const [isCaseStudy, setIsCaseStudy] = useState(false);
+  const [isCertified, setIsCertified] = useState(false);
 
   useEffect(() => {
     async function load() {
-      const [typesRes, profileRes, subRes, caseStudyRes] = await Promise.all([
+      const [typesRes, profileRes, subRes, caseStudyRes, practitionerProfileRes] = await Promise.all([
         supabase.from("creator_types").select("name, family, element, color_hex").order("sort_order"),
         supabase.from("creator_type_profiles").select("id, primary_type, secondary_type, profiling_data").eq("user_id", clientId).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("subscriptions").select("tier").eq("user_id", clientId).maybeSingle(),
         supabase.from("case_studies").select("id").eq("subject_user_id", clientId).limit(1),
+        user ? supabase.from("profiles").select("practitioner_status").eq("user_id", user.id).maybeSingle() : Promise.resolve({ data: null }),
       ]);
       if (typesRes.data) setCreatorTypes(typesRes.data);
       if (subRes.data) setClientTier(subRes.data.tier as TierKey);
       if (caseStudyRes.data && caseStudyRes.data.length > 0) setIsCaseStudy(true);
+      if (practitionerProfileRes.data) {
+        setIsCertified(practitionerProfileRes.data.practitioner_status === "certified");
+      }
       if (profileRes.data) {
         setExistingProfileId(profileRes.data.id);
         const data = profileRes.data.profiling_data as Record<string, unknown> | null;
@@ -110,6 +115,20 @@ export default function CreatorTypeAssignmentForm({ clientId, clientName }: Crea
   };
 
   if (loading) return <div className="text-sm text-muted-foreground text-center py-4">Loading…</div>;
+
+  if (!isCertified) {
+    return (
+      <div className="rounded-2xl border border-border bg-card p-5 space-y-2">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-5 w-5 text-muted-foreground" />
+          <h3 className="text-lg font-display font-bold text-foreground">Assign Creator Type</h3>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Creator type assignment is only available to certified practitioners. Please complete your certification to unlock this feature.
+        </p>
+      </div>
+    );
+  }
 
   const grouped = creatorTypes.reduce<Record<string, CreatorType[]>>((acc, ct) => {
     (acc[ct.family] = acc[ct.family] || []).push(ct);
