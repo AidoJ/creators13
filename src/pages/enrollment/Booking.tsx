@@ -89,7 +89,7 @@ export default function Booking() {
             <div className="space-y-2">
               <h3 className="font-semibold text-foreground">What to Expect</h3>
               <p className="text-sm text-muted-foreground">
-                Our Creator Types expert will review your photos and discuss how your unique profile aligns with the 12 Creator Types. This session typically takes 45-60 minutes and is conducted via Zoom.
+                Our Creator Types expert will review your photos and discuss how your unique profile aligns with the 13 Creator Types. This session typically takes 45-60 minutes and is conducted via Zoom.
               </p>
             </div>
           </div>

@@ -27,7 +27,8 @@ export default function PractitionerSelection() {
 
   const tier = (params.get("tier") as TierKey) || "wren";
   const billing = params.get("billing") || "monthly";
-  const isUpgrade = params.get("upgrade") === "true";
+  const isUpgradeParam = params.get("upgrade") === "true";
+  const paymentSuccess = params.get("payment") === "success" || params.get("payment") === "skipped";
 
   const [practitioners, setPractitioners] = useState<PractitionerOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,6 +36,7 @@ export default function PractitionerSelection() {
   const [currentPractitionerId, setCurrentPractitionerId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
+  const [isUpgrade, setIsUpgrade] = useState(isUpgradeParam);
 
   // Wren allows in_progress practitioners; paid tiers require certified only
   const allowInProgress = tier === "wren";
@@ -49,6 +51,17 @@ export default function PractitionerSelection() {
 
     async function fetchData() {
       setLoading(true);
+
+      // Detect upgrade: check if user already has details + photos
+      if (!isUpgradeParam) {
+        const [{ data: profile }, { data: photos }] = await Promise.all([
+          supabase.from("profiles").select("first_name, date_of_birth").eq("user_id", user!.id).maybeSingle(),
+          supabase.from("profiling_photos").select("id").eq("user_id", user!.id).limit(1),
+        ]);
+        if (profile?.first_name && profile?.date_of_birth && (photos?.length || 0) > 0) {
+          setIsUpgrade(true);
+        }
+      }
 
       // Fetch current assignment
       const { data: assignment } = await supabase
@@ -83,7 +96,7 @@ export default function PractitionerSelection() {
 
       const eligible = profiles.filter(p => {
         if (!practitionerUserIds.has(p.user_id)) return false;
-        if (p.user_id === user!.id) return false; // Can't select yourself
+        if (p.user_id === user!.id) return false;
         const status = p.practitioner_status;
         if (allowInProgress) {
           return status === "certified" || status === "in_progress";
@@ -158,6 +171,16 @@ export default function PractitionerSelection() {
       <EnrollmentHeader currentStep={3} />
 
       <main className="container mx-auto px-4 py-10 max-w-lg">
+        {paymentSuccess && (
+          <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 mb-6 text-center">
+            <div className="flex items-center justify-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              <p className="text-sm font-semibold text-green-600">Payment Successful!</p>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">Now select your practitioner to continue.</p>
+          </div>
+        )}
+
         <div className="text-center mb-8">
           <div className="mx-auto w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-4">
             <UserCheck className="h-7 w-7 text-primary" />
