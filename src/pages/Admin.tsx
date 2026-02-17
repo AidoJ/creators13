@@ -32,6 +32,7 @@ interface UserRow {
   enrollment_step: EnrollmentStep | null;
   practitioner_code: string | null;
   practitioner_status: string | null;
+  training_started_at: string | null;
   roles: AppRole[];
   tier: string | null;
   sub_status: string | null;
@@ -78,7 +79,7 @@ export default function AdminDashboard() {
 
   const fetchUsers = useCallback(async () => {
     const [profilesRes, rolesRes, subsRes] = await Promise.all([
-      supabase.from("profiles").select("user_id, first_name, last_name, email, enrollment_step, practitioner_code, practitioner_status").order("created_at", { ascending: false }),
+      supabase.from("profiles").select("user_id, first_name, last_name, email, enrollment_step, practitioner_code, practitioner_status, training_started_at").order("created_at", { ascending: false }),
       supabase.from("user_roles").select("user_id, role"),
       supabase.from("subscriptions").select("user_id, tier, status"),
     ]);
@@ -104,6 +105,7 @@ export default function AdminDashboard() {
       enrollment_step: p.enrollment_step,
       practitioner_code: p.practitioner_code,
       practitioner_status: (p as any).practitioner_status || null,
+      training_started_at: (p as any).training_started_at || null,
       roles: roleMap[p.user_id] || [],
       tier: subMap[p.user_id]?.tier || null,
       sub_status: subMap[p.user_id]?.status || null,
@@ -335,6 +337,7 @@ export default function AdminDashboard() {
                       <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Name</th>
                       <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Email</th>
                       <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Tier</th>
+                      <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Cohort</th>
                       <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Enrollment</th>
                       <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Roles</th>
                       <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Prac Code</th>
@@ -343,14 +346,14 @@ export default function AdminDashboard() {
                   </thead>
                   <tbody>
                     {loading ? (
-                      <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">Loading…</td></tr>
+                      <tr><td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">Loading…</td></tr>
                     ) : filtered.length === 0 ? (
-                      <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">No users found.</td></tr>
+                      <tr><td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">No users found.</td></tr>
                     ) : filtered.map(u => (
                       <UserTableRow key={u.user_id} user={u} isExpanded={expandedUser === u.user_id}
                         onToggle={() => setExpandedUser(expandedUser === u.user_id ? null : u.user_id)}
                         onAddRole={handleAddRole} onRemoveRole={handleRemoveRole} addingRole={addingRole} stepLabel={stepLabel}
-                        onStatusChange={handlePractitionerStatus}
+                        onStatusChange={handlePractitionerStatus} onRefresh={fetchUsers}
                       />
                     ))}
                   </tbody>
@@ -641,11 +644,15 @@ function TrainerCaseStudyPipeline({ caseStudies, users }: { caseStudies: CaseStu
   const total = caseStudies.length;
 
   // Group by practitioner for overview
-  const pracMap: Record<string, { name: string; status: string | null; counts: Record<string, number>; total: number }> = {};
+  const pracMap: Record<string, { name: string; status: string | null; cohort: string | null; counts: Record<string, number>; total: number }> = {};
   practitioners.forEach(p => {
+    const cohort = p.training_started_at
+      ? new Date(p.training_started_at).toLocaleDateString("en-AU", { month: "long", year: "numeric" })
+      : null;
     pracMap[p.user_id] = {
       name: `${p.first_name || ""} ${p.last_name || ""}`.trim() || "Unknown",
       status: p.practitioner_status,
+      cohort,
       counts: {},
       total: 0,
     };
@@ -663,6 +670,23 @@ function TrainerCaseStudyPipeline({ caseStudies, users }: { caseStudies: CaseStu
     cancelled: "bg-red-500/10 text-red-600 border-red-500/20",
     certified: "bg-green-500/10 text-green-600 border-green-500/20",
   };
+
+  // Group practitioners by cohort
+  const cohortGroups: Record<string, typeof pracMap> = {};
+  Object.entries(pracMap)
+    .filter(([, p]) => p.total > 0 || p.status)
+    .forEach(([id, p]) => {
+      const key = p.cohort || "Unassigned";
+      if (!cohortGroups[key]) cohortGroups[key] = {};
+      cohortGroups[key][id] = p;
+    });
+
+  // Sort cohorts chronologically (most recent first), "Unassigned" last
+  const sortedCohorts = Object.keys(cohortGroups).sort((a, b) => {
+    if (a === "Unassigned") return 1;
+    if (b === "Unassigned") return -1;
+    return b.localeCompare(a);
+  });
 
   return (
     <div className="space-y-4">
@@ -700,60 +724,76 @@ function TrainerCaseStudyPipeline({ caseStudies, users }: { caseStudies: CaseStu
         </div>
       </div>
 
-      {/* Per-practitioner breakdown */}
+      {/* Per-cohort practitioner breakdown */}
       <div className="rounded-2xl border border-border bg-card p-5">
-        <h3 className="text-sm font-semibold text-foreground mb-3">Practitioner Progress</h3>
-        <div className="space-y-2">
-          {Object.entries(pracMap)
-            .filter(([, p]) => p.total > 0 || p.status)
-            .sort((a, b) => b[1].total - a[1].total)
-            .map(([id, p]) => (
-              <div key={id} className="flex items-center gap-3 rounded-lg bg-muted/20 border border-border px-3 py-2">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-foreground">{p.name}</span>
-                    {p.status && (
-                      <Badge variant="outline" className={`text-[10px] capitalize ${pracStatusColors[p.status] || ""}`}>
-                        {p.status.replace(/_/g, " ")}
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="flex gap-2 mt-1">
-                    {STAGES.map(stage => {
-                      const count = p.counts[stage.key] || 0;
-                      if (count === 0) return null;
-                      return (
-                        <span key={stage.key} className={`text-[10px] px-1.5 py-0.5 rounded-full border ${stage.cardColor}`}>
-                          {stage.label}: {count}
-                        </span>
-                      );
-                    })}
-                    {p.total === 0 && <span className="text-[10px] text-muted-foreground">No case studies yet</span>}
-                  </div>
+        <h3 className="text-sm font-semibold text-foreground mb-3">Practitioner Progress by Cohort</h3>
+        {sortedCohorts.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-4">No practitioners with case studies yet.</p>
+        ) : (
+          <div className="space-y-5">
+            {sortedCohorts.map(cohort => (
+              <div key={cohort}>
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge variant="secondary" className="text-xs font-semibold">{cohort}</Badge>
+                  <span className="text-[10px] text-muted-foreground">{Object.keys(cohortGroups[cohort]).length} member{Object.keys(cohortGroups[cohort]).length !== 1 ? "s" : ""}</span>
                 </div>
-                <span className="text-lg font-bold text-foreground">{p.total}</span>
+                <div className="space-y-2">
+                  {Object.entries(cohortGroups[cohort])
+                    .sort((a, b) => b[1].total - a[1].total)
+                    .map(([id, p]) => (
+                      <div key={id} className="flex items-center gap-3 rounded-lg bg-muted/20 border border-border px-3 py-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-foreground">{p.name}</span>
+                            {p.status && (
+                              <Badge variant="outline" className={`text-[10px] capitalize ${pracStatusColors[p.status] || ""}`}>
+                                {p.status.replace(/_/g, " ")}
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex gap-2 mt-1">
+                            {STAGES.map(stage => {
+                              const count = p.counts[stage.key] || 0;
+                              if (count === 0) return null;
+                              return (
+                                <span key={stage.key} className={`text-[10px] px-1.5 py-0.5 rounded-full border ${stage.cardColor}`}>
+                                  {stage.label}: {count}
+                                </span>
+                              );
+                            })}
+                            {p.total === 0 && <span className="text-[10px] text-muted-foreground">No case studies yet</span>}
+                          </div>
+                        </div>
+                        <span className="text-lg font-bold text-foreground">{p.total}</span>
+                      </div>
+                    ))}
+                </div>
               </div>
             ))}
-          {Object.values(pracMap).every(p => p.total === 0 && !p.status) && (
-            <p className="text-sm text-muted-foreground text-center py-4">No practitioners with case studies yet.</p>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, addingRole, stepLabel, onStatusChange }: {
+function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, addingRole, stepLabel, onStatusChange, onRefresh }: {
   user: UserRow; isExpanded: boolean; onToggle: () => void;
   onAddRole: (userId: string, role: AppRole) => void;
   onRemoveRole: (userId: string, role: AppRole) => void;
   addingRole: { userId: string; role: AppRole } | null;
   stepLabel: (s: string | null) => string;
   onStatusChange: (userId: string, status: string) => void;
+  onRefresh: () => void;
 }) {
   const [selectedRole, setSelectedRole] = useState<AppRole | "">("");
+  const [trainingDate, setTrainingDate] = useState(u.training_started_at || "");
   const availableRoles = ALL_ROLES.filter(r => !u.roles.includes(r));
   const isPractitioner = u.roles.includes("practitioner") || u.roles.includes("trainee");
+
+  const cohortLabel = u.training_started_at
+    ? new Date(u.training_started_at).toLocaleDateString("en-AU", { month: "short", year: "numeric" })
+    : null;
 
   const statusColors: Record<string, string> = {
     in_progress: "bg-orange-500/10 text-orange-600 border-orange-500/20",
@@ -762,6 +802,16 @@ function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, 
     certified: "bg-green-500/10 text-green-600 border-green-500/20",
   };
 
+  async function handleSaveTrainingDate() {
+    const { error } = await supabase.from("profiles").update({ training_started_at: trainingDate || null } as any).eq("user_id", u.user_id);
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Training date updated" });
+      onRefresh();
+    }
+  }
+
   return (
     <>
       <tr className="border-b border-border hover:bg-accent/30 transition-colors cursor-pointer" onClick={onToggle}>
@@ -769,6 +819,9 @@ function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, 
         <td className="px-4 py-2.5 text-muted-foreground text-xs">{u.email || "—"}</td>
         <td className="px-4 py-2.5">
           {u.tier ? <Badge variant="secondary" className="text-[10px] capitalize">{u.tier}</Badge> : <span className="text-xs text-muted-foreground">—</span>}
+        </td>
+        <td className="px-4 py-2.5">
+          {cohortLabel ? <Badge variant="outline" className="text-[10px]">{cohortLabel}</Badge> : <span className="text-xs text-muted-foreground">—</span>}
         </td>
         <td className="px-4 py-2.5">
           <Badge variant="outline" className="text-[10px] capitalize">{stepLabel(u.enrollment_step)}</Badge>
@@ -801,7 +854,7 @@ function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, 
       </tr>
       {isExpanded && (
         <tr className="bg-muted/10">
-          <td colSpan={7} className="px-4 py-4">
+          <td colSpan={8} className="px-4 py-4">
             <div className="space-y-3">
               <p className="text-xs font-medium text-foreground">Manage Roles</p>
               <div className="flex flex-wrap gap-2">
@@ -853,6 +906,23 @@ function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, 
                         <SelectItem value="certified" className="text-xs">Certified</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  {/* Training cohort date */}
+                  <div className="pt-2 space-y-1">
+                    <p className="text-xs font-medium text-foreground">Training Cohort (Start Date)</p>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="month"
+                        value={trainingDate ? trainingDate.slice(0, 7) : ""}
+                        onChange={e => setTrainingDate(e.target.value ? `${e.target.value}-01` : "")}
+                        className="w-44 h-8 text-xs"
+                      />
+                      <Button size="sm" className="h-8 text-xs" onClick={e => { e.stopPropagation(); handleSaveTrainingDate(); }}>
+                        <Save className="h-3 w-3 mr-1" />Save
+                      </Button>
+                      {cohortLabel && <Badge variant="outline" className="text-[10px]">{cohortLabel}</Badge>}
+                    </div>
                   </div>
                 </div>
               )}

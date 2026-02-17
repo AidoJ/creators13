@@ -694,6 +694,7 @@ export type Database = {
             | null
           shoe_size: string | null
           state: string | null
+          training_started_at: string | null
           updated_at: string
           user_id: string
         }
@@ -725,6 +726,7 @@ export type Database = {
             | null
           shoe_size?: string | null
           state?: string | null
+          training_started_at?: string | null
           updated_at?: string
           user_id: string
         }
@@ -756,6 +758,7 @@ export type Database = {
             | null
           shoe_size?: string | null
           state?: string | null
+          training_started_at?: string | null
           updated_at?: string
           user_id?: string
         }
