@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Check, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -35,7 +36,7 @@ export default function PlanSelection() {
   const [isCaseStudy, setIsCaseStudy] = useState(urlCaseStudy);
   const [practitionerCode, setPractitionerCode] = useState(urlPractitionerCode);
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (!selectedTier) return;
     if (selectedTier === "wren" && isCaseStudy && !practitionerCode.trim()) return;
 
@@ -48,10 +49,27 @@ export default function PlanSelection() {
       params.set("practitioner_code", practitionerCode.trim());
     }
 
-    // If already logged in, skip signup and go directly to payment (or details for free tier)
+    // If already logged in, check if this is an upgrade (has existing details + photos)
     if (user) {
+      const [{ data: profile }, { data: photos }] = await Promise.all([
+        supabase.from("profiles").select("first_name, date_of_birth").eq("user_id", user.id).maybeSingle(),
+        supabase.from("profiling_photos").select("id").eq("user_id", user.id).limit(1),
+      ]);
+
+      const hasDetails = !!(profile?.first_name && profile?.date_of_birth);
+      const hasPhotos = (photos?.length || 0) > 0;
+
+      if (hasDetails && hasPhotos) {
+        params.set("upgrade", "true");
+      }
+
       if (selectedTier === "wren") {
-        navigate(`/enroll/details?${params.toString()}`);
+        // Wren with case study goes to details; otherwise practitioner selection
+        if (isCaseStudy) {
+          navigate(`/enroll/details?${params.toString()}`);
+        } else {
+          navigate(`/enroll/practitioner?${params.toString()}`);
+        }
       } else {
         navigate(`/enroll/payment?${params.toString()}`);
       }

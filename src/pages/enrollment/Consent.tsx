@@ -59,7 +59,7 @@ export default function Consent() {
 
   return (
     <div className="min-h-screen bg-background">
-      <EnrollmentHeader currentStep={4} />
+      <EnrollmentHeader currentStep={5} />
 
       <main className="container mx-auto px-4 py-10 max-w-lg">
         <div className="text-center mb-8">
