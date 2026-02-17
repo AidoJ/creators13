@@ -26,6 +26,7 @@ interface ProfileData {
   city: string | null;
   state: string | null;
   country: string | null;
+  case_study_consent_at: string | null;
 }
 
 interface BookingData {
@@ -50,7 +51,7 @@ export default function Dashboard() {
     if (!user) return;
     const fetchData = async () => {
       const [profileRes, bookingRes, subRes] = await Promise.all([
-        supabase.from("profiles").select("first_name, last_name, enrollment_step, date_of_birth, gender, height_cm, shoe_size, city, state, country").eq("user_id", user.id).maybeSingle(),
+        supabase.from("profiles").select("first_name, last_name, enrollment_step, date_of_birth, gender, height_cm, shoe_size, city, state, country, case_study_consent_at").eq("user_id", user.id).maybeSingle(),
         supabase.from("bookings").select("scheduled_at, status, zoom_link").eq("client_id", user.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("subscriptions").select("tier, status").eq("user_id", user.id).maybeSingle(),
       ]);
@@ -134,6 +135,20 @@ export default function Dashboard() {
           {/* Right column */}
           <div className="space-y-5">
             <PersonalDetailsCard profile={profile} hasDetails={hasDetails} />
+            {/* Consent status */}
+            {profile?.case_study_consent_at && (
+              <div className="rounded-2xl border border-green-500/20 bg-green-500/5 p-4 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0">
+                  <span className="text-green-600 text-sm">✓</span>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">Case Study Consent Given</p>
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(profile.case_study_consent_at).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })}
+                  </p>
+                </div>
+              </div>
+            )}
             {user && (
               <PhotoGalleryCard userId={user.id} photosUploaded={photosUploaded} />
             )}

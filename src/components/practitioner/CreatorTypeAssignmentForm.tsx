@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Sparkles, Save, Loader2, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import type { TierKey } from "@/lib/tiers";
 
 interface CreatorType {
   name: string;
@@ -19,30 +20,56 @@ interface CreatorTypeAssignmentFormProps {
   clientName: string;
 }
 
+// Tier-based type slot limits
+const TIER_TYPE_LIMITS: Record<string, number> = {
+  wren: 1,
+  robin: 2,
+  falcon: 4,
+  owl: 4,
+};
+
+// Case study participants get 2 slots (for wren)
+function getMaxSlots(tier: TierKey | null, isCaseStudy: boolean): number {
+  if (!tier) return 1;
+  const base = TIER_TYPE_LIMITS[tier] || 1;
+  // Wren case study gets 2
+  if (tier === "wren" && isCaseStudy) return 2;
+  return base;
+}
+
 export default function CreatorTypeAssignmentForm({ clientId, clientName }: CreatorTypeAssignmentFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [creatorTypes, setCreatorTypes] = useState<CreatorType[]>([]);
-  const [primaryType, setPrimaryType] = useState<string>("");
-  const [secondaryType, setSecondaryType] = useState<string>("");
+  const [types, setTypes] = useState<string[]>(["", "", "", ""]);
   const [notes, setNotes] = useState("");
   const [existingProfileId, setExistingProfileId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [clientTier, setClientTier] = useState<TierKey | null>(null);
+  const [isCaseStudy, setIsCaseStudy] = useState(false);
 
   useEffect(() => {
     async function load() {
-      const [typesRes, profileRes] = await Promise.all([
+      const [typesRes, profileRes, subRes, caseStudyRes] = await Promise.all([
         supabase.from("creator_types").select("name, family, element, color_hex").order("sort_order"),
         supabase.from("creator_type_profiles").select("id, primary_type, secondary_type, profiling_data").eq("user_id", clientId).maybeSingle(),
+        supabase.from("subscriptions").select("tier").eq("user_id", clientId).maybeSingle(),
+        supabase.from("case_studies").select("id").eq("subject_user_id", clientId).limit(1),
       ]);
       if (typesRes.data) setCreatorTypes(typesRes.data);
+      if (subRes.data) setClientTier(subRes.data.tier as TierKey);
+      if (caseStudyRes.data && caseStudyRes.data.length > 0) setIsCaseStudy(true);
       if (profileRes.data) {
         setExistingProfileId(profileRes.data.id);
-        setPrimaryType(profileRes.data.primary_type || "");
-        setSecondaryType(profileRes.data.secondary_type || "");
         const data = profileRes.data.profiling_data as Record<string, unknown> | null;
+        setTypes([
+          profileRes.data.primary_type || "",
+          profileRes.data.secondary_type || "",
+          (data?.type_3 as string) || "",
+          (data?.type_4 as string) || "",
+        ]);
         setNotes((data?.notes as string) || "");
       }
       setLoading(false);
@@ -50,17 +77,23 @@ export default function CreatorTypeAssignmentForm({ clientId, clientName }: Crea
     load();
   }, [clientId]);
 
+  const maxSlots = getMaxSlots(clientTier, isCaseStudy);
+
   const handleSave = async () => {
-    if (!primaryType || !user) return;
+    if (!types[0] || !user) return;
     setSaving(true);
 
     const payload = {
       user_id: clientId,
-      primary_type: primaryType,
-      secondary_type: secondaryType || null,
+      primary_type: types[0],
+      secondary_type: types[1] || null,
       profiled_by: user.id,
       profiled_at: new Date().toISOString(),
-      profiling_data: { notes } as unknown as Record<string, never>,
+      profiling_data: {
+        notes,
+        type_3: types[2] || null,
+        type_4: types[3] || null,
+      } as unknown as Record<string, never>,
     };
 
     let error;
@@ -77,7 +110,7 @@ export default function CreatorTypeAssignmentForm({ clientId, clientName }: Crea
       toast({ title: "Failed to save", description: error.message, variant: "destructive" });
     } else {
       setSaved(true);
-      toast({ title: "Creator type assigned!", description: `${clientName} has been profiled as ${primaryType}.` });
+      toast({ title: "Creator types assigned!", description: `${clientName} has been profiled.` });
       setTimeout(() => setSaved(false), 3000);
     }
   };
@@ -89,58 +122,64 @@ export default function CreatorTypeAssignmentForm({ clientId, clientName }: Crea
     return acc;
   }, {});
 
+  const slotLabels = ["Creator Type 1", "Creator Type 2", "Creator Type 3", "Creator Type 4"];
+  const selectedTypes = types.filter(Boolean);
+
   return (
     <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
-      <div className="flex items-center gap-2">
-        <Sparkles className="h-5 w-5 text-secondary" />
-        <h3 className="text-lg font-display font-bold text-foreground">Assign Creator Type</h3>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-5 w-5 text-secondary" />
+          <h3 className="text-lg font-display font-bold text-foreground">Assign Creator Type</h3>
+        </div>
+        <span className="text-xs text-muted-foreground">
+          {clientTier ? (
+            <>
+              <span className="capitalize font-semibold">{clientTier}</span> tier — {maxSlots} type{maxSlots > 1 ? "s" : ""}
+              {isCaseStudy && clientTier === "wren" && " (case study)"}
+            </>
+          ) : "No subscription"}
+        </span>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="space-y-1.5">
-          <label className="text-xs font-medium text-muted-foreground">Primary Type *</label>
-          <Select value={primaryType || "none"} onValueChange={(v) => setPrimaryType(v === "none" ? "" : v)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select primary type…" />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.entries(grouped).map(([family, types]) => (
-                <div key={family}>
-                  <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{family}</div>
-                  {types.map(t => (
-                    <SelectItem key={t.name} value={t.name}>
-                      <span className="capitalize">{t.name}</span>
-                      <span className="ml-2 text-xs text-muted-foreground">({t.element})</span>
-                    </SelectItem>
-                  ))}
-                </div>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-1.5">
-          <label className="text-xs font-medium text-muted-foreground">Secondary Type</label>
-          <Select value={secondaryType || "none"} onValueChange={(v) => setSecondaryType(v === "none" ? "" : v)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Optional…" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">None</SelectItem>
-              {Object.entries(grouped).map(([family, types]) => (
-                <div key={family}>
-                  <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{family}</div>
-                  {types.map(t => (
-                    <SelectItem key={t.name} value={t.name} disabled={t.name === primaryType}>
-                      <span className="capitalize">{t.name}</span>
-                      <span className="ml-2 text-xs text-muted-foreground">({t.element})</span>
-                    </SelectItem>
-                  ))}
-                </div>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {Array.from({ length: maxSlots }).map((_, i) => (
+          <div key={i} className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">
+              {slotLabels[i]} {i === 0 ? "*" : ""}
+            </label>
+            <Select
+              value={types[i] || "none"}
+              onValueChange={(v) => {
+                const next = [...types];
+                next[i] = v === "none" ? "" : v;
+                setTypes(next);
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={i === 0 ? "Select primary type…" : "Optional…"} />
+              </SelectTrigger>
+              <SelectContent>
+                {i > 0 && <SelectItem value="none">None</SelectItem>}
+                {Object.entries(grouped).map(([family, fTypes]) => (
+                  <div key={family}>
+                    <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{family}</div>
+                    {fTypes.map(t => (
+                      <SelectItem
+                        key={t.name}
+                        value={t.name}
+                        disabled={selectedTypes.includes(t.name) && types[i] !== t.name}
+                      >
+                        <span className="capitalize">{t.name}</span>
+                        <span className="ml-2 text-xs text-muted-foreground">({t.element})</span>
+                      </SelectItem>
+                    ))}
+                  </div>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        ))}
       </div>
 
       <div className="space-y-1.5">
@@ -153,7 +192,7 @@ export default function CreatorTypeAssignmentForm({ clientId, clientName }: Crea
         />
       </div>
 
-      <Button onClick={handleSave} disabled={!primaryType || saving} className="w-full">
+      <Button onClick={handleSave} disabled={!types[0] || saving} className="w-full">
         {saving ? (
           <Loader2 className="h-4 w-4 animate-spin mr-2" />
         ) : saved ? (
@@ -161,7 +200,7 @@ export default function CreatorTypeAssignmentForm({ clientId, clientName }: Crea
         ) : (
           <Save className="h-4 w-4 mr-2" />
         )}
-        {existingProfileId ? "Update Creator Type" : "Assign Creator Type"}
+        {existingProfileId ? "Update Creator Types" : "Assign Creator Types"}
       </Button>
     </div>
   );
