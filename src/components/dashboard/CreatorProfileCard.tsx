@@ -161,20 +161,24 @@ export default function CreatorProfileCard({ userId }: CreatorProfileCardProps) 
         <TypePanel info={primaryInfo} glyphUrl={glyphUrls[primaryInfo.name.toLowerCase()]} slotLabel="Type 1" />
       ) : (
         <Tabs defaultValue={primaryInfo.name.toLowerCase()} className="w-full">
-          <TabsList className="w-full flex">
+          <TabsList className="w-full flex gap-1 bg-transparent p-1">
             {typeInfos.map((info, idx) => {
               const glyph = glyphUrls[info.name.toLowerCase()];
+              const tabColor = info.color_hex || "hsl(var(--primary))";
               return (
                 <TabsTrigger
                   key={info.name}
                   value={info.name.toLowerCase()}
-                  className="flex-1 flex items-center gap-2 data-[state=active]:shadow-sm text-white"
+                  className="flex-1 flex items-center gap-2 rounded-lg text-white/90 font-semibold transition-all data-[state=active]:shadow-lg data-[state=active]:scale-[1.02] data-[state=active]:text-white data-[state=inactive]:opacity-75"
+                  style={{
+                    backgroundColor: tabColor,
+                  }}
                 >
                   {glyph && (
-                    <img src={glyph} alt="" className="w-5 h-5 object-contain" />
+                    <img src={glyph} alt="" className="w-5 h-5 object-contain brightness-0 invert" />
                   )}
-                  <span className="capitalize font-semibold">{info.name}</span>
-                  <span className="hidden sm:inline text-[10px] opacity-75">(Type {idx + 1})</span>
+                  <span className="capitalize">{info.name}</span>
+                  <span className="hidden sm:inline text-[10px] opacity-80">(Type {idx + 1})</span>
                 </TabsTrigger>
               );
             })}
