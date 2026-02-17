@@ -8,11 +8,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Users, Shield, ChevronDown, ChevronUp, UserPlus, FileText, CheckCircle, XCircle, Clock, Link2, BarChart3, Eye, EyeOff, FolderOpen, GitBranch, Save } from "lucide-react";
+import { Search, Users, Shield, ChevronDown, ChevronUp, UserPlus, FileText, CheckCircle, XCircle, Clock, Link2, BarChart3, Eye, EyeOff, FolderOpen, GitBranch, Save, HelpCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
 import CreateUserForm from "@/components/admin/CreateUserForm";
 import ResourceUploadPanel from "@/components/admin/ResourceUploadPanel";
+import FAQManagerPanel from "@/components/admin/FAQManagerPanel";
 import CompositePhotoLayout from "@/components/profiling/CompositePhotoLayout";
 import CaseStudyFormDataView from "@/components/admin/CaseStudyFormDataView";
 import BodyOutlineSVG from "@/components/practitioner/BodyOutlineSVG";
@@ -315,6 +316,7 @@ export default function AdminDashboard() {
             <TabsTrigger value="cases"><FileText className="h-3.5 w-3.5 mr-1" />Case Studies {pendingCaseStudies > 0 && <Badge className="ml-1 h-5 text-[10px]" variant="destructive">{pendingCaseStudies}</Badge>}</TabsTrigger>
             <TabsTrigger value="assignments"><Link2 className="h-3.5 w-3.5 mr-1" />Assignments</TabsTrigger>
             <TabsTrigger value="resources"><FolderOpen className="h-3.5 w-3.5 mr-1" />Resources</TabsTrigger>
+            <TabsTrigger value="faqs"><HelpCircle className="h-3.5 w-3.5 mr-1" />FAQs</TabsTrigger>
           </TabsList>
 
           {/* ======= USERS TAB ======= */}
@@ -597,6 +599,11 @@ export default function AdminDashboard() {
           {/* ======= RESOURCES TAB ======= */}
           <TabsContent value="resources" className="space-y-4">
             <ResourceUploadPanel />
+          </TabsContent>
+
+          {/* ======= FAQs TAB ======= */}
+          <TabsContent value="faqs" className="space-y-4">
+            <FAQManagerPanel />
           </TabsContent>
         </Tabs>
       </main>
