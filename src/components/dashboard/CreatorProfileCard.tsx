@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Sparkles, Lock } from "lucide-react";
+import { Sparkles, Lock, Zap, AlertTriangle, Eye } from "lucide-react";
 
 const GLYPH_IMPORTS: Record<string, () => Promise<{ default: string }>> = {
   lava: () => import("@/assets/glyph-lava.png"),
@@ -29,6 +29,18 @@ interface ProfileResult {
   profiling_data: Record<string, unknown> | null;
 }
 
+interface ProfileContent {
+  tagline?: string;
+  magical_qualities?: string[];
+  challenges?: string[];
+  physical_features?: string[];
+  description?: string;
+  natural_state?: {
+    title?: string;
+    traits?: string[];
+  };
+}
+
 interface CreatorTypeInfo {
   name: string;
   family: string;
@@ -39,6 +51,7 @@ interface CreatorTypeInfo {
   disaster_state: string | null;
   energy_pattern: string | null;
   color_hex: string | null;
+  profile_content: ProfileContent | null;
 }
 
 export default function CreatorProfileCard({ userId }: CreatorProfileCardProps) {
@@ -66,7 +79,6 @@ export default function CreatorProfileCard({ userId }: CreatorProfileCardProps) 
     if (!profile?.primary_type) return;
 
     async function fetchTypeInfo() {
-      // Collect all assigned type names
       const names: string[] = [profile!.primary_type!];
       if (profile!.secondary_type) names.push(profile!.secondary_type);
       const data = profile!.profiling_data;
@@ -75,11 +87,10 @@ export default function CreatorProfileCard({ userId }: CreatorProfileCardProps) 
 
       const { data: typesData } = await supabase
         .from("creator_types")
-        .select("name, family, element, team_role, creative_power, natural_power, disaster_state, energy_pattern, color_hex")
+        .select("name, family, element, team_role, creative_power, natural_power, disaster_state, energy_pattern, color_hex, profile_content")
         .in("name", names);
 
       if (typesData) {
-        // Order by the names array order
         const ordered = names
           .map(n => typesData.find(d => d.name.toLowerCase() === n.toLowerCase()))
           .filter(Boolean) as CreatorTypeInfo[];
@@ -103,22 +114,25 @@ export default function CreatorProfileCard({ userId }: CreatorProfileCardProps) 
 
   if (profile?.primary_type && primaryInfo) {
     const color = primaryInfo.color_hex || "hsl(var(--primary))";
+    const content = primaryInfo.profile_content;
 
     return (
       <div
-        className="rounded-2xl border bg-gradient-to-br from-card via-card to-secondary/5 p-6 space-y-4"
+        className="rounded-2xl border bg-gradient-to-br from-card via-card to-secondary/5 p-6 space-y-6"
         style={{ borderColor: `${color}30` }}
       >
+        {/* Header */}
         <div className="flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-secondary" />
           <h2 className="text-lg font-display font-bold text-foreground">Your Creator Type{typeInfos.length > 1 ? "s" : ""}</h2>
         </div>
 
+        {/* Hero: glyph + name + meta */}
         <div className="flex flex-col md:flex-row items-center gap-6">
           {glyphUrl && (
             <div className="flex-shrink-0">
               <div
-                className="w-24 h-24 rounded-full flex items-center justify-center p-3"
+                className="w-28 h-28 rounded-full flex items-center justify-center p-3"
                 style={{ backgroundColor: `${color}15` }}
               >
                 <img src={glyphUrl} alt={primaryInfo.name} className="w-full h-full object-contain" />
@@ -130,53 +144,115 @@ export default function CreatorProfileCard({ userId }: CreatorProfileCardProps) 
             <p className="text-3xl font-display font-bold capitalize" style={{ color }}>
               {primaryInfo.name}
             </p>
-            <p className="text-sm text-muted-foreground">
-              <span className="font-semibold text-foreground">{primaryInfo.family}</span> · {primaryInfo.element}
-            </p>
-            {primaryInfo.team_role && (
-              <p className="text-sm text-muted-foreground">{primaryInfo.team_role}</p>
+            {content?.tagline && (
+              <p className="text-base italic text-muted-foreground">{content.tagline}</p>
             )}
-            {/* Additional assigned types */}
-            {typeInfos.slice(1).map((info, idx) => (
-              <p key={info.name} className="text-sm text-muted-foreground">
-                Creator Type {idx + 2}: <span className="font-semibold text-foreground capitalize">{info.name}</span>
-                <span className="ml-1 text-xs">({info.family} · {info.element})</span>
-              </p>
-            ))}
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+              <span><span className="font-semibold text-foreground">Family:</span> {primaryInfo.family}</span>
+              <span><span className="font-semibold text-foreground">Element:</span> {primaryInfo.element}</span>
+              {primaryInfo.team_role && (
+                <span><span className="font-semibold text-foreground">Team Role:</span> {primaryInfo.team_role}</span>
+              )}
+            </div>
             {profile.profiled_at && (
               <p className="text-xs text-muted-foreground">
                 Profiled on {new Date(profile.profiled_at).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })}
               </p>
             )}
           </div>
+        </div>
 
-          <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-muted-foreground flex-shrink-0">
-            {primaryInfo.creative_power && (
-              <div>
-                <span className="font-semibold text-foreground">Creative Power</span>
-                <p>{primaryInfo.creative_power}</p>
+        {/* Additional assigned types */}
+        {typeInfos.length > 1 && (
+          <div className="space-y-1">
+            {typeInfos.slice(1).map((info, idx) => (
+              <p key={info.name} className="text-sm text-muted-foreground">
+                Creator Type {idx + 2}: <span className="font-semibold text-foreground capitalize">{info.name}</span>
+                <span className="ml-1 text-xs">({info.family} · {info.element})</span>
+              </p>
+            ))}
+          </div>
+        )}
+
+        {/* Magical Qualities & Challenges */}
+        {content && (content.magical_qualities || content.challenges) && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {content.magical_qualities && content.magical_qualities.length > 0 && (
+              <div className="rounded-xl p-4 space-y-2" style={{ backgroundColor: `${color}08` }}>
+                <div className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                  <Zap className="h-4 w-4" style={{ color }} />
+                  Magical Qualities
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {content.magical_qualities.map(q => (
+                    <span key={q} className="text-xs font-medium px-2.5 py-1 rounded-full border" style={{ borderColor: `${color}40`, color }}>
+                      {q}
+                    </span>
+                  ))}
+                </div>
               </div>
             )}
-            {primaryInfo.natural_power && (
-              <div>
-                <span className="font-semibold text-foreground">Natural Power</span>
-                <p>{primaryInfo.natural_power}</p>
-              </div>
-            )}
-            {primaryInfo.energy_pattern && (
-              <div>
-                <span className="font-semibold text-foreground">Energy Pattern</span>
-                <p>{primaryInfo.energy_pattern}</p>
-              </div>
-            )}
-            {primaryInfo.disaster_state && (
-              <div>
-                <span className="font-semibold text-foreground">Disaster State</span>
-                <p>{primaryInfo.disaster_state}</p>
+            {content.challenges && content.challenges.length > 0 && (
+              <div className="rounded-xl bg-muted/40 p-4 space-y-2">
+                <div className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                  <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                  Challenges
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {content.challenges.map(c => (
+                    <span key={c} className="text-xs font-medium px-2.5 py-1 rounded-full border border-border text-muted-foreground">
+                      {c}
+                    </span>
+                  ))}
+                </div>
               </div>
             )}
           </div>
-        </div>
+        )}
+
+        {/* Key Physical Features */}
+        {content?.physical_features && content.physical_features.length > 0 && (
+          <div className="rounded-xl border border-border p-4 space-y-2">
+            <div className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+              <Eye className="h-4 w-4 text-secondary" />
+              Key Physical Features
+            </div>
+            <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1 pl-1">
+              {content.physical_features.map(f => (
+                <li key={f}>{f}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Description */}
+        {content?.description && (
+          <div className="space-y-2">
+            <p className="text-sm leading-relaxed text-foreground/90 whitespace-pre-line">
+              {content.description}
+            </p>
+          </div>
+        )}
+
+        {/* Natural State */}
+        {content?.natural_state && (
+          <div className="rounded-xl p-4 space-y-3" style={{ backgroundColor: `${color}06`, borderLeft: `3px solid ${color}` }}>
+            <p className="text-sm font-display font-bold text-foreground">
+              {content.natural_state.title && <>{content.natural_state.title} — </>}
+              When you embody <span className="capitalize" style={{ color }}>{primaryInfo.name}</span> in its Natural State…
+            </p>
+            {content.natural_state.traits && (
+              <ul className="space-y-2">
+                {content.natural_state.traits.map((t, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm text-foreground/85">
+                    <span className="mt-1 flex-shrink-0 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
+                    {t}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
       </div>
     );
   }
