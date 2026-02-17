@@ -53,6 +53,8 @@ export default function CreatorProfileCard({ userId }: CreatorProfileCardProps) 
         .from("creator_type_profiles")
         .select("primary_type, secondary_type, profiled_at, profiling_data")
         .eq("user_id", userId)
+        .order("updated_at", { ascending: false })
+        .limit(1)
         .maybeSingle();
       if (data) setProfile(data as ProfileResult);
       setLoading(false);
