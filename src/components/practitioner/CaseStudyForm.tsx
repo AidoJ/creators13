@@ -7,17 +7,28 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
-import { FileText, Save, Loader2, ChevronRight, ChevronLeft } from "lucide-react";
+import { FileText, Save, Loader2, ChevronRight, ChevronLeft, AlertTriangle } from "lucide-react";
 import BodyDrawingCanvas from "./BodyDrawingCanvas";
 import type { Database } from "@/integrations/supabase/types";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 
 type CaseStudyStatus = Database["public"]["Enums"]["case_study_status"];
 
+interface ExistingCaseStudy {
+  id: string;
+  title: string;
+  form_data: Record<string, any> | null;
+  body_drawing_path: string | null;
+  creator_types_identified: string[] | null;
+  reviewer_notes: string | null;
+  status: CaseStudyStatus;
+}
+
 interface CaseStudyFormProps {
   clientId: string;
   clientName: string;
   onSaved?: () => void;
+  existingCaseStudy?: ExistingCaseStudy;
 }
 
 const CREATOR_TYPES = [
@@ -33,42 +44,50 @@ const PAGE_LABELS = {
   reflection: "Feedback Reflection",
 };
 
-export default function CaseStudyForm({ clientId, clientName, onSaved }: CaseStudyFormProps) {
+export default function CaseStudyForm({ clientId, clientName, onSaved, existingCaseStudy }: CaseStudyFormProps) {
   const { user } = useAuth();
+  const isEditing = !!existingCaseStudy;
   const [page, setPage] = useState<typeof PAGES[number]>("assessment");
   const [saving, setSaving] = useState(false);
 
+  // Pre-populate from existing case study form_data if editing
+  const fd = existingCaseStudy?.form_data || {};
+  const p1 = fd.page1 || {};
+  const p2 = fd.page2 || {};
+  const p3 = fd.page3 || {};
+  const p4 = fd.page4 || {};
+
   // Header fields
-  const [title, setTitle] = useState(`${clientName} — Case Study Assessment`);
-  const [assessmentDate, setAssessmentDate] = useState(new Date().toISOString().split("T")[0]);
+  const [title, setTitle] = useState(existingCaseStudy?.title || `${clientName} — Case Study Assessment`);
+  const [assessmentDate, setAssessmentDate] = useState(fd.assessment_date || new Date().toISOString().split("T")[0]);
 
   // Page 1: Body Assessment
   const [bodyDrawing, setBodyDrawing] = useState<string | null>(null);
-  const [headNeck, setHeadNeck] = useState("");
-  const [chestArms, setChestArms] = useState("");
-  const [bellyWaist, setBellyWaist] = useState("");
-  const [upperThighs, setUpperThighs] = useState("");
-  const [legsFeet, setLegsFeet] = useState("");
+  const [headNeck, setHeadNeck] = useState(p1.head_neck || "");
+  const [chestArms, setChestArms] = useState(p1.chest_arms || "");
+  const [bellyWaist, setBellyWaist] = useState(p1.belly_waist || "");
+  const [upperThighs, setUpperThighs] = useState(p1.upper_thighs_hips_buttocks || "");
+  const [legsFeet, setLegsFeet] = useState(p1.legs_feet || "");
 
   // Page 2: Assessment Details
-  const [prominentFace, setProminentFace] = useState("");
-  const [prominentBody, setProminentBody] = useState("");
-  const [prominentHandsFeet, setProminentHandsFeet] = useState("");
-  const [concentrationOfTissue, setConcentrationOfTissue] = useState("");
-  const [otherAilments, setOtherAilments] = useState("");
-  const [possibleCreatorTypes, setPossibleCreatorTypes] = useState<string[]>([]);
+  const [prominentFace, setProminentFace] = useState(p2.prominent_features_face || "");
+  const [prominentBody, setProminentBody] = useState(p2.prominent_features_body || "");
+  const [prominentHandsFeet, setProminentHandsFeet] = useState(p2.prominent_features_hands_feet || "");
+  const [concentrationOfTissue, setConcentrationOfTissue] = useState(p2.concentration_of_tissue || "");
+  const [otherAilments, setOtherAilments] = useState(p2.other_ailments || "");
+  const [possibleCreatorTypes, setPossibleCreatorTypes] = useState<string[]>(existingCaseStudy?.creator_types_identified || []);
 
   // Page 3: Feedback Preparation
-  const [keyFeaturesCT1, setKeyFeaturesCT1] = useState("");
-  const [keyFeaturesCT2, setKeyFeaturesCT2] = useState("");
-  const [keyFeaturesOther, setKeyFeaturesOther] = useState("");
-  const [keyQuestions, setKeyQuestions] = useState("");
+  const [keyFeaturesCT1, setKeyFeaturesCT1] = useState(p3.key_features_ct1 || "");
+  const [keyFeaturesCT2, setKeyFeaturesCT2] = useState(p3.key_features_ct2 || "");
+  const [keyFeaturesOther, setKeyFeaturesOther] = useState(p3.key_features_other || "");
+  const [keyQuestions, setKeyQuestions] = useState(p3.key_questions || "");
 
   // Page 4: Feedback Reflection
-  const [lightBulbMoments, setLightBulbMoments] = useState("");
-  const [whatLearned, setWhatLearned] = useState("");
-  const [whatWentWell, setWhatWentWell] = useState("");
-  const [potentialFollowUp, setPotentialFollowUp] = useState("");
+  const [lightBulbMoments, setLightBulbMoments] = useState(p4.light_bulb_moments || "");
+  const [whatLearned, setWhatLearned] = useState(p4.what_learned || "");
+  const [whatWentWell, setWhatWentWell] = useState(p4.what_went_well || "");
+  const [potentialFollowUp, setPotentialFollowUp] = useState(p4.potential_follow_up || "");
 
   function addCreatorType(type: string) {
     if (type && !possibleCreatorTypes.includes(type)) {
@@ -134,25 +153,46 @@ export default function CaseStudyForm({ clientId, clientName, onSaved }: CaseStu
       `## Other Ailments/Comments\n${otherAilments || "—"}`,
     ].join("\n\n");
 
-    const insertPayload: Record<string, unknown> = {
-      practitioner_id: user.id,
-      subject_user_id: clientId,
-      title,
-      description: `Assessment for ${clientName} on ${assessmentDate}`,
-      profiling_notes: profilingNotes,
-      creator_types_identified: possibleCreatorTypes,
-      form_data: formData,
-      body_drawing_path: drawingPath,
-      status,
-    };
+    if (isEditing && existingCaseStudy) {
+      // Update existing case study
+      const updatePayload: Record<string, unknown> = {
+        title,
+        description: `Assessment for ${clientName} on ${assessmentDate}`,
+        profiling_notes: profilingNotes,
+        creator_types_identified: possibleCreatorTypes,
+        form_data: formData,
+        status,
+      };
+      if (drawingPath) updatePayload.body_drawing_path = drawingPath;
 
-    const { error } = await supabase.from("case_studies").insert(insertPayload as any);
-
-    if (error) {
-      toast({ title: "Error saving", description: error.message, variant: "destructive" });
+      const { error } = await supabase.from("case_studies").update(updatePayload as any).eq("id", existingCaseStudy.id);
+      if (error) {
+        toast({ title: "Error saving", description: error.message, variant: "destructive" });
+      } else {
+        toast({ title: "Case study updated", description: status === "submitted" ? "Re-submitted for review." : "Saved as draft." });
+        onSaved?.();
+      }
     } else {
-      toast({ title: "Case study saved", description: status === "submitted" ? "Submitted for review." : "Saved as draft." });
-      onSaved?.();
+      // Insert new case study
+      const insertPayload: Record<string, unknown> = {
+        practitioner_id: user.id,
+        subject_user_id: clientId,
+        title,
+        description: `Assessment for ${clientName} on ${assessmentDate}`,
+        profiling_notes: profilingNotes,
+        creator_types_identified: possibleCreatorTypes,
+        form_data: formData,
+        body_drawing_path: drawingPath,
+        status,
+      };
+
+      const { error } = await supabase.from("case_studies").insert(insertPayload as any);
+      if (error) {
+        toast({ title: "Error saving", description: error.message, variant: "destructive" });
+      } else {
+        toast({ title: "Case study saved", description: status === "submitted" ? "Submitted for review." : "Saved as draft." });
+        onSaved?.();
+      }
     }
     setSaving(false);
   }
@@ -164,8 +204,20 @@ export default function CaseStudyForm({ clientId, clientName, onSaved }: CaseStu
       {/* Header */}
       <div className="flex items-center gap-2">
         <FileText className="h-5 w-5 text-primary" />
-        <h2 className="text-lg font-display font-bold text-foreground">Case Study Assessment</h2>
+        <h2 className="text-lg font-display font-bold text-foreground">
+          {isEditing ? "Edit Case Study Assessment" : "Case Study Assessment"}
+        </h2>
       </div>
+
+      {/* Reviewer notes banner when editing */}
+      {isEditing && existingCaseStudy?.reviewer_notes && (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+          <p className="text-xs font-semibold text-destructive uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+            <AlertTriangle className="h-3.5 w-3.5" /> Trainer Feedback
+          </p>
+          <p className="text-sm text-foreground whitespace-pre-wrap">{existingCaseStudy.reviewer_notes}</p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>

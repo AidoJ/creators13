@@ -22,6 +22,7 @@ export default function PractitionerDashboard() {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [selectedClientName, setSelectedClientName] = useState("");
   const [showCaseStudy, setShowCaseStudy] = useState(false);
+  const [editingCaseStudy, setEditingCaseStudy] = useState<any>(null);
   const [practitionerCode, setPractitionerCode] = useState<string | null>(null);
   const [codeCopied, setCodeCopied] = useState(false);
   const [activeTab, setActiveTab] = useState("pipeline");
@@ -41,11 +42,21 @@ export default function PractitionerDashboard() {
   function handleSelectClient(clientId: string) {
     setSelectedClientId(clientId);
     setShowCaseStudy(false);
+    setEditingCaseStudy(null);
   }
 
   function handleStartCaseStudy(clientId: string, clientName: string) {
     setSelectedClientId(clientId);
     setSelectedClientName(clientName);
+    setShowCaseStudy(true);
+    setEditingCaseStudy(null);
+    setActiveTab("clients");
+  }
+
+  function handleEditCaseStudy(caseStudy: any) {
+    setSelectedClientId(caseStudy.subject_user_id);
+    setSelectedClientName(caseStudy.subject_name || "Client");
+    setEditingCaseStudy(caseStudy);
     setShowCaseStudy(true);
     setActiveTab("clients");
   }

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FileText, Sparkles, Clock, CheckCircle, AlertCircle, Eye, EyeOff, MessageSquare } from "lucide-react";
+import { FileText, Sparkles, Clock, CheckCircle, AlertCircle, Eye, EyeOff, MessageSquare, Pencil } from "lucide-react";
 import CompositePhotoLayout from "@/components/profiling/CompositePhotoLayout";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -18,15 +18,18 @@ interface CaseStudy {
   description: string | null;
   profiling_notes: string | null;
   reviewer_notes: string | null;
+  form_data: Record<string, any> | null;
+  body_drawing_path: string | null;
   created_at: string;
   updated_at: string;
 }
 
 interface CaseStudyListProps {
   practitionerId: string;
+  onEditCaseStudy?: (caseStudy: CaseStudy) => void;
 }
 
-export default function CaseStudyList({ practitionerId }: CaseStudyListProps) {
+export default function CaseStudyList({ practitionerId, onEditCaseStudy }: CaseStudyListProps) {
   const [studies, setStudies] = useState<CaseStudy[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -35,7 +38,7 @@ export default function CaseStudyList({ practitionerId }: CaseStudyListProps) {
     async function fetch() {
       const { data } = await supabase
         .from("case_studies")
-        .select("id, title, status, subject_user_id, creator_types_identified, description, profiling_notes, reviewer_notes, created_at, updated_at")
+        .select("id, title, status, subject_user_id, creator_types_identified, description, profiling_notes, reviewer_notes, form_data, body_drawing_path, created_at, updated_at")
         .eq("practitioner_id", practitionerId)
         .order("created_at", { ascending: false });
 
@@ -52,6 +55,7 @@ export default function CaseStudyList({ practitionerId }: CaseStudyListProps) {
       setStudies(data.map(d => ({
         ...d,
         status: d.status as CaseStudyStatus,
+        form_data: (d.form_data && typeof d.form_data === 'object' && !Array.isArray(d.form_data)) ? d.form_data as Record<string, any> : null,
         subject_name: d.subject_user_id ? (nameMap[d.subject_user_id] || "Unknown") : "—",
       })));
       setLoading(false);
@@ -113,6 +117,11 @@ export default function CaseStudyList({ practitionerId }: CaseStudyListProps) {
                   <Badge variant="outline" className={`text-[10px] ${sc.className}`}>
                     <StatusIcon className="h-3 w-3 mr-1" />{sc.label}
                   </Badge>
+                  {(cs.status === "submitted" || cs.status === "draft" || cs.status === "revision_requested") && onEditCaseStudy && (
+                    <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => onEditCaseStudy(cs)}>
+                      <Pencil className="h-3 w-3 mr-1" />Edit
+                    </Button>
+                  )}
                   <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setExpandedId(isExpanded ? null : cs.id)}>
                     {isExpanded ? <EyeOff className="h-3 w-3 mr-1" /> : <Eye className="h-3 w-3 mr-1" />}
                     {isExpanded ? "Hide" : "View"}
