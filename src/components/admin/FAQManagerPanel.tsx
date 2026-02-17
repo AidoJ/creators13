@@ -12,6 +12,7 @@ interface FAQ {
   question: string;
   answer: string;
   sort_order: number;
+  audience: string;
 }
 
 export default function FAQManagerPanel() {
@@ -24,12 +25,14 @@ export default function FAQManagerPanel() {
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [sortOrder, setSortOrder] = useState(0);
+  const [audience, setAudience] = useState("practitioner");
   const [showAdd, setShowAdd] = useState(false);
+  const [filterAudience, setFilterAudience] = useState<string>("all");
 
   const fetchFaqs = useCallback(async () => {
     const { data } = await supabase
       .from("faqs")
-      .select("id, category, question, answer, sort_order")
+      .select("id, category, question, answer, sort_order, audience")
       .order("sort_order", { ascending: true });
     setFaqs((data as FAQ[]) || []);
     setLoading(false);
@@ -38,7 +41,7 @@ export default function FAQManagerPanel() {
   useEffect(() => { fetchFaqs(); }, [fetchFaqs]);
 
   function resetForm() {
-    setCategory(""); setQuestion(""); setAnswer(""); setSortOrder(0);
+    setCategory(""); setQuestion(""); setAnswer(""); setSortOrder(0); setAudience("practitioner");
     setShowAdd(false); setEditingId(null);
   }
 
@@ -48,6 +51,7 @@ export default function FAQManagerPanel() {
     setQuestion(faq.question);
     setAnswer(faq.answer);
     setSortOrder(faq.sort_order);
+    setAudience(faq.audience);
     setShowAdd(false);
   }
 
@@ -66,6 +70,7 @@ export default function FAQManagerPanel() {
         question: question.trim(),
         answer: answer.trim(),
         sort_order: sortOrder,
+        audience,
       }).eq("id", editingId);
       if (error) {
         toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -80,6 +85,7 @@ export default function FAQManagerPanel() {
         question: question.trim(),
         answer: answer.trim(),
         sort_order: sortOrder,
+        audience,
       });
       if (error) {
         toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -102,10 +108,11 @@ export default function FAQManagerPanel() {
     }
   }
 
-  // Group by category
+  // Filter and group
+  const filtered = filterAudience === "all" ? faqs : faqs.filter(f => f.audience === filterAudience);
   const categories: { name: string; items: FAQ[] }[] = [];
   const catMap = new Map<string, FAQ[]>();
-  faqs.forEach(f => {
+  filtered.forEach(f => {
     if (!catMap.has(f.category)) catMap.set(f.category, []);
     catMap.get(f.category)!.push(f);
   });
@@ -135,6 +142,13 @@ export default function FAQManagerPanel() {
               <label className="text-xs font-medium text-muted-foreground">Sort Order</label>
               <Input type="number" value={sortOrder} onChange={e => setSortOrder(parseInt(e.target.value) || 0)} />
             </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Audience *</label>
+              <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={audience} onChange={e => setAudience(e.target.value)}>
+                <option value="practitioner">Practitioner</option>
+                <option value="client">Client</option>
+              </select>
+            </div>
           </div>
           <div>
             <label className="text-xs font-medium text-muted-foreground">Question *</label>
@@ -151,9 +165,19 @@ export default function FAQManagerPanel() {
       )}
 
       {!isFormOpen && (
-        <Button onClick={startAdd} variant="outline">
-          <Plus className="h-4 w-4 mr-1" /> Add New FAQ
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button onClick={startAdd} variant="outline">
+            <Plus className="h-4 w-4 mr-1" /> Add New FAQ
+          </Button>
+          <div className="flex items-center gap-2 ml-auto">
+            <span className="text-xs text-muted-foreground">Filter:</span>
+            {["all", "practitioner", "client"].map(v => (
+              <Button key={v} size="sm" variant={filterAudience === v ? "default" : "outline"} className="h-7 text-xs capitalize" onClick={() => setFilterAudience(v)}>
+                {v}
+              </Button>
+            ))}
+          </div>
+        </div>
       )}
 
       {/* FAQ list by category */}
@@ -167,7 +191,7 @@ export default function FAQManagerPanel() {
       ) : (
         categories.map(cat => (
           <div key={cat.name} className="rounded-xl border border-border bg-card overflow-hidden">
-            <div className="px-4 py-2.5 bg-muted/30 border-b border-border">
+            <div className="px-4 py-2.5 bg-muted/30 border-b border-border flex items-center justify-between">
               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{cat.name}</span>
             </div>
             <div className="divide-y divide-border">
@@ -175,7 +199,12 @@ export default function FAQManagerPanel() {
                 <div key={faq.id} className={`p-4 ${editingId === faq.id ? "bg-accent/10" : "hover:bg-accent/5"}`}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground">{faq.question}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium text-foreground">{faq.question}</p>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${faq.audience === 'client' ? 'bg-blue-500/10 text-blue-600' : 'bg-green-500/10 text-green-600'}`}>
+                          {faq.audience}
+                        </span>
+                      </div>
                       <p className="text-xs text-muted-foreground mt-1 line-clamp-2 whitespace-pre-line">{faq.answer}</p>
                     </div>
                     <div className="flex gap-1 shrink-0">
