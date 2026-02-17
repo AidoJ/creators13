@@ -8,12 +8,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Users, Shield, ChevronDown, ChevronUp, UserPlus, FileText, CheckCircle, XCircle, Clock, Link2, BarChart3, Eye, EyeOff, FolderOpen, GitBranch } from "lucide-react";
+import { Search, Users, Shield, ChevronDown, ChevronUp, UserPlus, FileText, CheckCircle, XCircle, Clock, Link2, BarChart3, Eye, EyeOff, FolderOpen, GitBranch, Save } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
 import CreateUserForm from "@/components/admin/CreateUserForm";
 import ResourceUploadPanel from "@/components/admin/ResourceUploadPanel";
 import CompositePhotoLayout from "@/components/profiling/CompositePhotoLayout";
+import CaseStudyFormDataView from "@/components/admin/CaseStudyFormDataView";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 type EnrollmentStep = Database["public"]["Enums"]["enrollment_step"];
@@ -46,6 +47,8 @@ interface CaseStudyRow {
   description: string | null;
   profiling_notes: string | null;
   reviewer_notes: string | null;
+  form_data: Record<string, any> | null;
+  body_drawing_path: string | null;
   created_at: string;
 }
 
@@ -107,7 +110,7 @@ export default function AdminDashboard() {
 
   const fetchCaseStudies = useCallback(async () => {
     const { data } = await supabase.from("case_studies")
-      .select("id, title, status, practitioner_id, subject_user_id, creator_types_identified, description, profiling_notes, reviewer_notes, created_at")
+      .select("id, title, status, practitioner_id, subject_user_id, creator_types_identified, description, profiling_notes, reviewer_notes, form_data, body_drawing_path, created_at")
       .order("created_at", { ascending: false });
 
     if (!data) return;
@@ -129,6 +132,8 @@ export default function AdminDashboard() {
       description: d.description,
       profiling_notes: d.profiling_notes,
       reviewer_notes: (d as any).reviewer_notes || null,
+      form_data: (d.form_data && typeof d.form_data === 'object' && !Array.isArray(d.form_data)) ? d.form_data as Record<string, any> : null,
+      body_drawing_path: d.body_drawing_path,
       created_at: d.created_at,
     })));
   }, []);
@@ -189,7 +194,8 @@ export default function AdminDashboard() {
       reviewed_by: user?.id,
       reviewed_at: new Date().toISOString(),
     };
-    if (action === "revision_requested" && notes) {
+    // Always save reviewer_notes if provided (for both approve and revision)
+    if (notes) {
       updateData.reviewer_notes = notes;
     }
     const { error } = await supabase.from("case_studies").update(updateData).eq("id", id);
@@ -388,7 +394,10 @@ export default function AdminDashboard() {
                             </Button>
                             {cs.status === "submitted" && (
                               <>
-                                <Button size="sm" variant="outline" className="h-7 text-xs text-green-600" onClick={() => handleCaseStudyAction(cs.id, "approved")}>
+                                <Button size="sm" variant="outline" className="h-7 text-xs text-green-600" onClick={() => {
+                                  setExpandedCaseStudy(cs.id);
+                                  setRevisionNotes(prev => ({ ...prev, [cs.id]: prev[cs.id] || "" }));
+                                }}>
                                   <CheckCircle className="h-3 w-3 mr-1" />Approve
                                 </Button>
                                 <Button size="sm" variant="outline" className="h-7 text-xs text-amber-600" onClick={() => {
@@ -411,24 +420,35 @@ export default function AdminDashboard() {
                               subjectName={`${cs.subject_name}'s Profiling Photos`}
                             />
                           )}
-                          {cs.description && (
+
+                          {/* Body Drawing */}
+                          {cs.body_drawing_path && (
                             <div>
-                              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Description</p>
-                              <p className="text-sm text-foreground whitespace-pre-wrap">{cs.description}</p>
+                              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Body Drawing</p>
+                              <img
+                                src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/profiling-photos/${cs.body_drawing_path}`}
+                                alt="Body drawing"
+                                className="max-w-md rounded-lg border border-border"
+                              />
                             </div>
                           )}
-                          {cs.profiling_notes && (
+
+                          {/* Structured form data display */}
+                          {cs.form_data ? (
+                            <CaseStudyFormDataView formData={cs.form_data} />
+                          ) : cs.profiling_notes ? (
                             <div>
                               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Profiling Notes</p>
                               <div className="text-sm text-foreground whitespace-pre-wrap bg-card rounded-lg border border-border p-3 max-h-96 overflow-y-auto">
                                 {cs.profiling_notes}
                               </div>
                             </div>
-                          )}
-                          {(!cs.description && !cs.profiling_notes) && (
+                          ) : (
                             <p className="text-sm text-muted-foreground italic">No assessment notes have been added yet.</p>
                           )}
-                          {cs.reviewer_notes && cs.status !== "submitted" && (
+
+                          {/* Previous reviewer notes */}
+                          {cs.reviewer_notes && (
                             <div>
                               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Previous Reviewer Notes</p>
                               <div className="text-sm text-foreground whitespace-pre-wrap bg-amber-500/5 rounded-lg border border-amber-500/20 p-3">
@@ -436,30 +456,62 @@ export default function AdminDashboard() {
                               </div>
                             </div>
                           )}
-                          {revisionNotes[cs.id] !== undefined && cs.status === "submitted" && (
-                            <div className="border-t border-border pt-4 space-y-2">
-                              <p className="text-xs font-semibold text-foreground">Revision Notes for Practitioner</p>
-                              <Textarea
-                                value={revisionNotes[cs.id]}
-                                onChange={e => setRevisionNotes(prev => ({ ...prev, [cs.id]: e.target.value }))}
-                                rows={4}
-                                placeholder="Explain what needs to be revised, specific areas to focus on, and that they need to submit a new assessment form…"
-                              />
-                              <div className="flex gap-2">
+
+                          {/* Trainer feedback area — available for all statuses */}
+                          <div className="border-t border-border pt-4 space-y-2">
+                            <p className="text-xs font-semibold text-foreground">Trainer Feedback / Notes</p>
+                            <Textarea
+                              value={revisionNotes[cs.id] ?? ""}
+                              onChange={e => setRevisionNotes(prev => ({ ...prev, [cs.id]: e.target.value }))}
+                              rows={4}
+                              placeholder="Provide feedback on this assessment — visible to the practitioner…"
+                            />
+                            <div className="flex gap-2 flex-wrap">
+                              {cs.status === "submitted" && (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-green-600 border-green-500/30"
+                                    onClick={() => handleCaseStudyAction(cs.id, "approved", revisionNotes[cs.id])}
+                                  >
+                                    <CheckCircle className="h-3 w-3 mr-1" />Approve{revisionNotes[cs.id]?.trim() ? " with Notes" : ""}
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    disabled={!revisionNotes[cs.id]?.trim()}
+                                    onClick={() => handleCaseStudyAction(cs.id, "revision_requested", revisionNotes[cs.id])}
+                                  >
+                                    <XCircle className="h-3 w-3 mr-1" />Request Revision
+                                  </Button>
+                                </>
+                              )}
+                              {cs.status !== "submitted" && (
                                 <Button
                                   size="sm"
-                                  variant="destructive"
+                                  variant="outline"
                                   disabled={!revisionNotes[cs.id]?.trim()}
-                                  onClick={() => handleCaseStudyAction(cs.id, "revision_requested", revisionNotes[cs.id])}
+                                  onClick={async () => {
+                                    const { error } = await supabase.from("case_studies").update({
+                                      reviewer_notes: revisionNotes[cs.id],
+                                      reviewed_by: user?.id,
+                                      reviewed_at: new Date().toISOString(),
+                                    }).eq("id", cs.id);
+                                    if (error) {
+                                      toast({ title: "Error", description: error.message, variant: "destructive" });
+                                    } else {
+                                      toast({ title: "Feedback saved" });
+                                      setRevisionNotes(prev => { const n = { ...prev }; delete n[cs.id]; return n; });
+                                      await fetchCaseStudies();
+                                    }
+                                  }}
                                 >
-                                  <XCircle className="h-3 w-3 mr-1" />Submit Revision Request
+                                  <Save className="h-3 w-3 mr-1" />Save Feedback
                                 </Button>
-                                <Button size="sm" variant="ghost" onClick={() => setRevisionNotes(prev => { const n = { ...prev }; delete n[cs.id]; return n; })}>
-                                  Cancel
-                                </Button>
-                              </div>
+                              )}
                             </div>
-                          )}
+                          </div>
                         </div>
                       )}
                     </div>

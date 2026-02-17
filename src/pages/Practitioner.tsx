@@ -133,11 +133,16 @@ export default function PractitionerDashboard() {
                       </>
                     ) : (
                       <>
-                        <Button variant="ghost" size="sm" onClick={() => setShowCaseStudy(false)} className="text-xs">
+                        <Button variant="ghost" size="sm" onClick={() => { setShowCaseStudy(false); setEditingCaseStudy(null); }} className="text-xs">
                           <ArrowLeft className="h-3 w-3 mr-1" /> Back to Client Detail
                         </Button>
                         <CompositePhotoLayout userId={selectedClientId} subjectName={`${selectedClientName}'s Profiling Photos`} />
-                        <CaseStudyForm clientId={selectedClientId} clientName={selectedClientName} onSaved={() => setShowCaseStudy(false)} />
+                        <CaseStudyForm
+                          clientId={selectedClientId}
+                          clientName={selectedClientName}
+                          onSaved={() => { setShowCaseStudy(false); setEditingCaseStudy(null); }}
+                          existingCaseStudy={editingCaseStudy || undefined}
+                        />
                       </>
                     )}
                   </>
@@ -165,7 +170,7 @@ export default function PractitionerDashboard() {
 
           {/* ======= CASE STUDIES TAB ======= */}
           <TabsContent value="cases" className="mt-4">
-            {user && <CaseStudyList practitionerId={user.id} />}
+            {user && <CaseStudyList practitionerId={user.id} onEditCaseStudy={handleEditCaseStudy} />}
           </TabsContent>
 
           {/* ======= RESOURCES TAB ======= */}
