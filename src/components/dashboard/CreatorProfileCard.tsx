@@ -21,7 +21,6 @@ const GLYPH_IMPORTS: Record<string, () => Promise<{ default: string }>> = {
 
 interface CreatorProfileCardProps {
   userId: string;
-  isComplete: boolean;
 }
 
 interface ProfileResult {
@@ -43,7 +42,7 @@ interface CreatorTypeInfo {
   color_hex: string | null;
 }
 
-export default function CreatorProfileCard({ userId, isComplete }: CreatorProfileCardProps) {
+export default function CreatorProfileCard({ userId }: CreatorProfileCardProps) {
   const [profile, setProfile] = useState<ProfileResult | null>(null);
   const [typeInfo, setTypeInfo] = useState<CreatorTypeInfo | null>(null);
   const [secondaryInfo, setSecondaryInfo] = useState<CreatorTypeInfo | null>(null);
@@ -191,9 +190,7 @@ export default function CreatorProfileCard({ userId, isComplete }: CreatorProfil
         </div>
         <h2 className="text-lg font-display font-bold text-foreground">Your Creator Type</h2>
         <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-          {isComplete
-            ? "Your profile is being assessed by our practitioner. Results will appear here soon!"
-            : "Complete your enrollment to unlock your unique Creator Type profile."}
+          Your profile is being assessed by your practitioner. Results will appear here once assigned!
         </p>
         <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-secondary bg-secondary/10 px-3 py-1.5 rounded-full">
           <Sparkles className="h-3 w-3" /> Coming Soon

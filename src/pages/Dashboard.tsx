@@ -145,7 +145,7 @@ export default function Dashboard() {
 
         {/* Creator Profile — full width */}
         {user && (
-          <CreatorProfileCard userId={user.id} isComplete={isComplete} />
+          <CreatorProfileCard userId={user.id} />
         )}
 
         {/* FAQs — full width */}
