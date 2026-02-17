@@ -712,9 +712,23 @@ function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, 
         </td>
         <td className="px-4 py-2.5">
           <div className="flex flex-wrap gap-1">
-            {u.roles.length > 0 ? u.roles.map(r => (
-              <Badge key={r} variant="secondary" className="text-[10px] capitalize">{r.replace(/_/g, " ")}</Badge>
-            )) : <span className="text-[10px] text-muted-foreground">No roles</span>}
+            {u.roles.length > 0 ? u.roles.map(r => {
+              const isPracRole = r === "practitioner" || r === "trainee";
+              if (isPracRole && u.practitioner_status) {
+                const pracBadgeColors: Record<string, string> = {
+                  certified: "bg-green-500 text-white border-green-600",
+                  in_progress: "bg-orange-500 text-white border-orange-600",
+                  cancelled: "bg-red-500 text-white border-red-600",
+                  paused: "bg-blue-500 text-white border-blue-600",
+                };
+                return (
+                  <Badge key={r} variant="outline" className={`text-[10px] capitalize ${pracBadgeColors[u.practitioner_status] || ""}`}>
+                    {r.replace(/_/g, " ")}
+                  </Badge>
+                );
+              }
+              return <Badge key={r} variant="secondary" className="text-[10px] capitalize">{r.replace(/_/g, " ")}</Badge>;
+            }) : <span className="text-[10px] text-muted-foreground">No roles</span>}
           </div>
         </td>
         <td className="px-4 py-2.5 text-xs font-mono text-muted-foreground">{u.practitioner_code || "—"}</td>
