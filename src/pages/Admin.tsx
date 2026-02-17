@@ -814,6 +814,15 @@ function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, 
   const availableRoles = ALL_ROLES.filter(r => !u.roles.includes(r));
   const isPractitioner = u.roles.includes("practitioner") || u.roles.includes("trainee");
 
+  // Editable profile fields
+  const [editFirst, setEditFirst] = useState(u.first_name || "");
+  const [editLast, setEditLast] = useState(u.last_name || "");
+  const [editEmail, setEditEmail] = useState(u.email || "");
+  const [newPassword, setNewPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
+
   const cohortLabel = u.training_started_at
     ? new Date(u.training_started_at).toLocaleDateString("en-AU", { month: "short", year: "numeric" })
     : null;
@@ -832,6 +841,41 @@ function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, 
     } else {
       toast({ title: "Training date updated" });
       onRefresh();
+    }
+  }
+
+  async function handleSaveProfile() {
+    setSavingProfile(true);
+    const { data, error } = await supabase.functions.invoke("admin-update-user", {
+      body: {
+        target_user_id: u.user_id,
+        updates: { first_name: editFirst, last_name: editLast, email: editEmail },
+      },
+    });
+    setSavingProfile(false);
+    if (error || data?.error) {
+      toast({ title: "Error", description: data?.error || error?.message, variant: "destructive" });
+    } else {
+      toast({ title: "Profile updated" });
+      onRefresh();
+    }
+  }
+
+  async function handleResetPassword() {
+    if (!newPassword || newPassword.length < 6) {
+      toast({ title: "Password too short", description: "Must be at least 6 characters.", variant: "destructive" });
+      return;
+    }
+    setSavingPassword(true);
+    const { data, error } = await supabase.functions.invoke("admin-update-user", {
+      body: { target_user_id: u.user_id, new_password: newPassword },
+    });
+    setSavingPassword(false);
+    if (error || data?.error) {
+      toast({ title: "Error", description: data?.error || error?.message, variant: "destructive" });
+    } else {
+      toast({ title: "Password reset successfully" });
+      setNewPassword("");
     }
   }
 
@@ -878,32 +922,84 @@ function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, 
       {isExpanded && (
         <tr className="bg-muted/10">
           <td colSpan={8} className="px-4 py-4">
-            <div className="space-y-3">
-              <p className="text-xs font-medium text-foreground">Manage Roles</p>
-              <div className="flex flex-wrap gap-2">
-                {u.roles.map(role => (
-                  <Button key={role} variant="outline" size="sm" className="text-xs h-7 capitalize"
-                    onClick={e => { e.stopPropagation(); onRemoveRole(u.user_id, role); }}>
-                    ✕ {role.replace(/_/g, " ")}
-                  </Button>
-                ))}
+            <div className="space-y-4">
+              {/* Edit Profile Details */}
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-foreground">Edit Profile</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <div>
+                    <label className="text-[10px] text-muted-foreground">First Name</label>
+                    <Input value={editFirst} onChange={e => setEditFirst(e.target.value)} className="h-8 text-xs" onClick={e => e.stopPropagation()} />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-muted-foreground">Last Name</label>
+                    <Input value={editLast} onChange={e => setEditLast(e.target.value)} className="h-8 text-xs" onClick={e => e.stopPropagation()} />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-muted-foreground">Email</label>
+                    <Input value={editEmail} onChange={e => setEditEmail(e.target.value)} className="h-8 text-xs" onClick={e => e.stopPropagation()} />
+                  </div>
+                </div>
+                <Button size="sm" className="h-7 text-xs" disabled={savingProfile} onClick={e => { e.stopPropagation(); handleSaveProfile(); }}>
+                  <Save className="h-3 w-3 mr-1" />{savingProfile ? "Saving…" : "Save Profile"}
+                </Button>
               </div>
-              {availableRoles.length > 0 && (
+
+              {/* Password Reset */}
+              <div className="space-y-2 pt-2 border-t border-border">
+                <p className="text-xs font-medium text-foreground">Reset Password</p>
                 <div className="flex items-center gap-2">
-                  <Select value={selectedRole} onValueChange={v => setSelectedRole(v as AppRole)}>
-                    <SelectTrigger className="w-48 h-8 text-xs"><SelectValue placeholder="Add role…" /></SelectTrigger>
-                    <SelectContent>
-                      {availableRoles.map(r => (
-                        <SelectItem key={r} value={r} className="capitalize text-xs">{r.replace(/_/g, " ")}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button size="sm" className="h-8 text-xs" disabled={!selectedRole || addingRole?.userId === u.user_id}
-                    onClick={e => { e.stopPropagation(); if (selectedRole) { onAddRole(u.user_id, selectedRole as AppRole); setSelectedRole(""); } }}>
-                    Add
+                  <div className="relative flex-1 max-w-xs">
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      value={newPassword}
+                      onChange={e => setNewPassword(e.target.value)}
+                      placeholder="New password (min 6 chars)"
+                      className="h-8 text-xs pr-8"
+                      onClick={e => e.stopPropagation()}
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      onClick={e => { e.stopPropagation(); setShowPassword(!showPassword); }}
+                    >
+                      {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                    </button>
+                  </div>
+                  <Button size="sm" variant="destructive" className="h-8 text-xs" disabled={savingPassword || !newPassword} onClick={e => { e.stopPropagation(); handleResetPassword(); }}>
+                    {savingPassword ? "Resetting…" : "Reset Password"}
                   </Button>
                 </div>
-              )}
+              </div>
+
+              {/* Manage Roles */}
+              <div className="pt-2 border-t border-border space-y-2">
+                <p className="text-xs font-medium text-foreground">Manage Roles</p>
+                <div className="flex flex-wrap gap-2">
+                  {u.roles.map(role => (
+                    <Button key={role} variant="outline" size="sm" className="text-xs h-7 capitalize"
+                      onClick={e => { e.stopPropagation(); onRemoveRole(u.user_id, role); }}>
+                      ✕ {role.replace(/_/g, " ")}
+                    </Button>
+                  ))}
+                </div>
+                {availableRoles.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <Select value={selectedRole} onValueChange={v => setSelectedRole(v as AppRole)}>
+                      <SelectTrigger className="w-48 h-8 text-xs"><SelectValue placeholder="Add role…" /></SelectTrigger>
+                      <SelectContent>
+                        {availableRoles.map(r => (
+                          <SelectItem key={r} value={r} className="capitalize text-xs">{r.replace(/_/g, " ")}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button size="sm" className="h-8 text-xs" disabled={!selectedRole || addingRole?.userId === u.user_id}
+                      onClick={e => { e.stopPropagation(); if (selectedRole) { onAddRole(u.user_id, selectedRole as AppRole); setSelectedRole(""); } }}>
+                      Add
+                    </Button>
+                  </div>
+                )}
+              </div>
 
               {/* Practitioner certification status */}
               {isPractitioner && (
