@@ -99,7 +99,7 @@ export default function CreatorTypeAssignmentForm({ clientId, clientName }: Crea
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <label className="text-xs font-medium text-muted-foreground">Primary Type *</label>
-          <Select value={primaryType} onValueChange={setPrimaryType}>
+          <Select value={primaryType || "none"} onValueChange={(v) => setPrimaryType(v === "none" ? "" : v)}>
             <SelectTrigger>
               <SelectValue placeholder="Select primary type…" />
             </SelectTrigger>
@@ -121,12 +121,12 @@ export default function CreatorTypeAssignmentForm({ clientId, clientName }: Crea
 
         <div className="space-y-1.5">
           <label className="text-xs font-medium text-muted-foreground">Secondary Type</label>
-          <Select value={secondaryType} onValueChange={setSecondaryType}>
+          <Select value={secondaryType || "none"} onValueChange={(v) => setSecondaryType(v === "none" ? "" : v)}>
             <SelectTrigger>
               <SelectValue placeholder="Optional…" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">None</SelectItem>
+              <SelectItem value="none">None</SelectItem>
               {Object.entries(grouped).map(([family, types]) => (
                 <div key={family}>
                   <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{family}</div>
