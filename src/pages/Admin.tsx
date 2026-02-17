@@ -76,6 +76,7 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("users");
   const [expandedCaseStudy, setExpandedCaseStudy] = useState<string | null>(null);
   const [revisionNotes, setRevisionNotes] = useState<Record<string, string>>({});
+  const [cohortFilter, setCohortFilter] = useState<string>("all");
 
   const fetchUsers = useCallback(async () => {
     const [profilesRes, rolesRes, subsRes] = await Promise.all([
@@ -242,11 +243,19 @@ export default function AdminDashboard() {
     }
   }
 
+  // Compute unique cohort options
+  const cohortOptions = Array.from(new Set(
+    users.filter(u => u.training_started_at).map(u => {
+      const d = new Date(u.training_started_at!);
+      return d.toLocaleDateString("en-AU", { month: "long", year: "numeric" });
+    })
+  )).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+
   const filtered = users.filter(u => {
-    if (!search) return true;
     const q = search.toLowerCase();
-    const name = `${u.first_name || ""} ${u.last_name || ""}`.toLowerCase();
-    return name.includes(q) || (u.email || "").toLowerCase().includes(q) || (u.practitioner_code || "").toLowerCase().includes(q);
+    const nameMatch = !search || `${u.first_name || ""} ${u.last_name || ""}`.toLowerCase().includes(q) || (u.email || "").toLowerCase().includes(q) || (u.practitioner_code || "").toLowerCase().includes(q);
+    const cohortMatch = cohortFilter === "all" || (cohortFilter === "unassigned" ? !u.training_started_at : (u.training_started_at && new Date(u.training_started_at).toLocaleDateString("en-AU", { month: "long", year: "numeric" }) === cohortFilter));
+    return nameMatch && cohortMatch;
   });
 
   const stepLabel = (step: string | null) => step ? step.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase()) : "—";
@@ -324,9 +333,23 @@ export default function AdminDashboard() {
           {/* ======= USERS TAB ======= */}
           <TabsContent value="users" className="space-y-4">
             <CreateUserForm onCreated={fetchUsers} />
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search by name, email, or practitioner code…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+            <div className="flex gap-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="Search by name, email, or practitioner code…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+              </div>
+              <Select value={cohortFilter} onValueChange={setCohortFilter}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Filter by cohort" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Cohorts</SelectItem>
+                  {cohortOptions.map(c => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="rounded-xl border border-border bg-card overflow-hidden">
