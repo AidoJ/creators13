@@ -167,7 +167,7 @@ export default function Details() {
   if (isPaymentSuccess && !showForm) {
     return (
       <div className="min-h-screen bg-background">
-        <EnrollmentHeader currentStep={3} />
+        <EnrollmentHeader currentStep={4} />
         <main className="container mx-auto px-4 py-10 max-w-md">
           <div className="bg-card border border-border rounded-2xl p-8 text-center space-y-6">
             <div className="mx-auto w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center">
@@ -196,7 +196,7 @@ export default function Details() {
 
   return (
     <div className="min-h-screen bg-background">
-      <EnrollmentHeader currentStep={3} />
+      <EnrollmentHeader currentStep={4} />
 
       <main className="container mx-auto px-4 py-10 max-w-lg">
         <div className="text-center mb-8">

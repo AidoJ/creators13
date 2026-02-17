@@ -86,7 +86,7 @@ export default function Signup() {
         user_id: userId,
         tier,
         billing,
-        successUrl: `${window.location.origin}/enroll/details?tier=${tier}&billing=${billing}&payment=skipped`,
+        successUrl: `${window.location.origin}/enroll/practitioner?tier=${tier}&billing=${billing}&payment=skipped`,
         cancelUrl: `${window.location.origin}/enroll/payment?tier=${tier}&billing=${billing}&canceled=true`,
       },
     });

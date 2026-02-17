@@ -70,7 +70,7 @@ export default function Booking() {
 
   return (
     <div className="min-h-screen bg-background">
-      <EnrollmentHeader currentStep={6} />
+      <EnrollmentHeader currentStep={7} />
 
       <main className="container mx-auto px-4 py-10 max-w-2xl">
         <div className="text-center mb-8">

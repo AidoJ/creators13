@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import PlanSelection from "./pages/enrollment/PlanSelection";
 import Signup from "./pages/enrollment/Signup";
 import Payment from "./pages/enrollment/Payment";
+import PractitionerSelection from "./pages/enrollment/PractitionerSelection";
 import Details from "./pages/enrollment/Details";
 import Consent from "./pages/enrollment/Consent";
 import Photos from "./pages/enrollment/Photos";
@@ -35,6 +36,7 @@ const App = () => (
             <Route path="/enroll" element={<PlanSelection />} />
             <Route path="/enroll/signup" element={<Signup />} />
             <Route path="/enroll/payment" element={<Payment />} />
+            <Route path="/enroll/practitioner" element={<ProtectedRoute><PractitionerSelection /></ProtectedRoute>} />
             <Route path="/enroll/details" element={<Details />} />
             <Route path="/enroll/consent" element={<ProtectedRoute><Consent /></ProtectedRoute>} />
             <Route path="/enroll/photos" element={<ProtectedRoute><Photos /></ProtectedRoute>} />

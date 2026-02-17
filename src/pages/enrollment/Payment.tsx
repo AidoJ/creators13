@@ -64,7 +64,7 @@ export default function Payment() {
         tier,
         billing,
         embedded: true,
-        successUrl: `${window.location.origin}/enroll/details?tier=${tier}&billing=${billing}&payment=success&session_id={CHECKOUT_SESSION_ID}`,
+        successUrl: `${window.location.origin}/enroll/practitioner?tier=${tier}&billing=${billing}&payment=success`,
       },
     });
 
