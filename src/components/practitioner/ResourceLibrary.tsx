@@ -196,72 +196,99 @@ export default function ResourceLibrary() {
           return (
             <div
               key={r.id}
-              className="rounded-xl border bg-card p-4 hover:shadow-md transition-all"
+              className="rounded-xl border bg-card overflow-hidden hover:shadow-lg transition-all duration-200 flex flex-col"
               style={creatorType ? {
-                borderColor: `${creatorType.color}55`,
-                boxShadow: `inset 0 0 0 1px ${creatorType.color}22`,
+                borderColor: `${creatorType.color}66`,
               } : undefined}
             >
-              {/* Top row: glyph (if creator type) + icon + title */}
-              <div className="flex items-start gap-3">
-                {creatorType ? (
-                  <div
-                    className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center"
-                    style={{ backgroundColor: `${creatorType.color}20`, border: `1px solid ${creatorType.color}44` }}
-                  >
-                    <img
-                      src={creatorType.glyph}
-                      alt={creatorType.key}
-                      className="w-6 h-6 object-contain"
-                      style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.15))" }}
-                    />
-                  </div>
-                ) : (
-                  <div className={`p-2 rounded-lg bg-muted/50 ${cfg.color}`}>
-                    <Icon className="h-5 w-5" />
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-medium text-foreground text-sm truncate">{r.title}</h4>
-                  {r.description && (
-                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{r.description}</p>
+              {/* Coloured accent bar at top */}
+              <div
+                className="h-1.5 w-full flex-shrink-0"
+                style={{
+                  background: creatorType
+                    ? `linear-gradient(90deg, ${creatorType.color}, ${creatorType.color}88)`
+                    : "hsl(var(--border))",
+                }}
+              />
+
+              <div className="p-4 flex flex-col flex-1 gap-3">
+                {/* Header row: glyph/icon + title + type badge */}
+                <div className="flex items-start gap-3">
+                  {/* Glyph or resource-type icon */}
+                  {creatorType ? (
+                    <div
+                      className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center"
+                      style={{
+                        backgroundColor: `${creatorType.color}18`,
+                        border: `1.5px solid ${creatorType.color}44`,
+                      }}
+                    >
+                      <img
+                        src={creatorType.glyph}
+                        alt={creatorType.key}
+                        className="w-7 h-7 object-contain"
+                        style={{ filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.18))" }}
+                      />
+                    </div>
+                  ) : (
+                    <div className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center bg-muted/60 ${cfg.color}`}>
+                      <Icon className="h-6 w-6" />
+                    </div>
                   )}
-                  <div className="flex items-center gap-2 mt-2">
-                    {creatorType ? (
-                      <span
-                        className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold capitalize"
-                        style={{ backgroundColor: `${creatorType.color}22`, color: creatorType.color }}
-                      >
-                        {creatorType.key}
-                      </span>
-                    ) : (
-                      <Badge variant="secondary" className="text-[10px] capitalize">{r.resource_type}</Badge>
-                    )}
-                    <span className="text-[10px] text-muted-foreground">{formatBytes(r.file_size_bytes)}</span>
+
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-foreground text-sm leading-snug line-clamp-2">{r.title}</h4>
+
+                    {/* Badges row */}
+                    <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                      {creatorType && (
+                        <span
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold capitalize"
+                          style={{ backgroundColor: `${creatorType.color}20`, color: creatorType.color }}
+                        >
+                          <img src={creatorType.glyph} alt="" className="w-3 h-3 object-contain" />
+                          {creatorType.key}
+                        </span>
+                      )}
+                      <Badge variant="secondary" className="text-[10px] capitalize gap-1">
+                        <Icon className="h-2.5 w-2.5" />
+                        {TYPE_LABELS[r.resource_type] ?? r.resource_type}
+                      </Badge>
+                      {r.file_size_bytes ? (
+                        <span className="text-[10px] text-muted-foreground">{formatBytes(r.file_size_bytes)}</span>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="flex gap-2 mt-3">
-                {r.resource_type === "url" ? (
-                  <Button variant="outline" size="sm" className="h-7 text-xs flex-1" onClick={() => handleOpen(r)}>
-                    <ExternalLink className="h-3 w-3 mr-1" />Open Link
-                  </Button>
-                ) : (r.resource_type === "video" || r.resource_type === "audio") ? (
-                  <Button variant="outline" size="sm" className="h-7 text-xs flex-1" onClick={() => handleOpen(r)}>
-                    <Play className="h-3 w-3 mr-1" />Play
-                  </Button>
-                ) : (
-                  <Button variant="outline" size="sm" className="h-7 text-xs flex-1" onClick={() => handleOpen(r)}>
-                    <ExternalLink className="h-3 w-3 mr-1" />Open
-                  </Button>
+
+                {/* Description */}
+                {r.description && (
+                  <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">{r.description}</p>
                 )}
-                {r.resource_type !== "url" && (
-                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0" asChild>
-                    <a href={getPublicUrl(r.storage_path)} download={r.file_name}>
-                      <Download className="h-3 w-3" />
-                    </a>
-                  </Button>
-                )}
+
+                {/* Action buttons — pushed to bottom */}
+                <div className="flex gap-2 mt-auto pt-1">
+                  {r.resource_type === "url" ? (
+                    <Button variant="outline" size="sm" className="h-7 text-xs flex-1" onClick={() => handleOpen(r)}>
+                      <ExternalLink className="h-3 w-3 mr-1" />Open Link
+                    </Button>
+                  ) : (r.resource_type === "video" || r.resource_type === "audio") ? (
+                    <Button variant="outline" size="sm" className="h-7 text-xs flex-1" onClick={() => handleOpen(r)}>
+                      <Play className="h-3 w-3 mr-1" />Play
+                    </Button>
+                  ) : (
+                    <Button variant="outline" size="sm" className="h-7 text-xs flex-1" onClick={() => handleOpen(r)}>
+                      <ExternalLink className="h-3 w-3 mr-1" />Open
+                    </Button>
+                  )}
+                  {r.resource_type !== "url" && (
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0" asChild>
+                      <a href={getPublicUrl(r.storage_path)} download={r.file_name}>
+                        <Download className="h-3 w-3" />
+                      </a>
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           );
