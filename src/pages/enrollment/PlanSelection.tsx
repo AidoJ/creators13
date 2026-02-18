@@ -245,15 +245,15 @@ export default function PlanSelection() {
             Continue <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
           {!user && (
-            <p className="text-sm text-muted-foreground">
-              Already have an account?{" "}
+            <div className="flex flex-col items-center gap-2">
+              <p className="text-sm text-muted-foreground">Already have an account?</p>
               <a
                 href={`/auth?returnTo=${encodeURIComponent("/enroll/plan")}`}
-                className="text-primary font-medium hover:underline underline-offset-2"
+                className="inline-flex items-center justify-center rounded-full border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground px-8 py-2.5 text-sm font-semibold transition-colors"
               >
                 Sign in
               </a>
-            </p>
+            </div>
           )}
         </div>
       </main>
