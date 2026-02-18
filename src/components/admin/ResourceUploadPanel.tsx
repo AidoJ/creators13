@@ -41,11 +41,27 @@ function typeIcon(type: string) {
   return <Icon className="h-4 w-4" />;
 }
 
+const TYPE_COLORS: Record<string, string> = {
+  video: "text-blue-500",
+  audio: "text-purple-500",
+  document: "text-amber-500",
+  image: "text-green-500",
+  url: "text-cyan-500",
+};
+const TYPE_LABELS: Record<string, string> = {
+  video: "Video",
+  audio: "Audio",
+  document: "Docs",
+  image: "Image",
+  url: "Links",
+};
+
 export default function ResourceUploadPanel() {
   const { user } = useAuth();
   const [resources, setResources] = useState<Resource[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
 
   // Form state
   const [title, setTitle] = useState("");
@@ -53,6 +69,19 @@ export default function ResourceUploadPanel() {
   const [resourceType, setResourceType] = useState("document");
   const [file, setFile] = useState<File | null>(null);
   const [urlValue, setUrlValue] = useState("");
+
+  function toggleFilter(type: string) {
+    setActiveFilters(prev => {
+      const next = new Set(prev);
+      if (next.has(type)) next.delete(type);
+      else next.add(type);
+      return next;
+    });
+  }
+
+  const filteredResources = activeFilters.size === 0
+    ? resources
+    : resources.filter(r => activeFilters.has(r.resource_type));
 
   const fetchResources = useCallback(async () => {
     const { data } = await supabase
@@ -201,6 +230,36 @@ export default function ResourceUploadPanel() {
 
       {/* Resource list */}
       <div className="rounded-xl border border-border bg-card overflow-hidden">
+        {/* Filter bar */}
+        <div className="flex flex-wrap gap-2 items-center px-4 py-3 border-b border-border bg-muted/20">
+          <span className="text-xs font-medium text-muted-foreground">Filter:</span>
+          {RESOURCE_TYPES.map(t => {
+            const Icon = t.icon;
+            const active = activeFilters.has(t.value);
+            return (
+              <button
+                key={t.value}
+                onClick={() => toggleFilter(t.value)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                  active
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-card text-muted-foreground border-border hover:border-primary hover:text-foreground"
+                }`}
+              >
+                <Icon className="h-3 w-3" />
+                {TYPE_LABELS[t.value]}
+              </button>
+            );
+          })}
+          {activeFilters.size > 0 && (
+            <button
+              onClick={() => setActiveFilters(new Set())}
+              className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 ml-1"
+            >
+              Clear
+            </button>
+          )}
+        </div>
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-muted/30">
@@ -214,9 +273,9 @@ export default function ResourceUploadPanel() {
           <tbody>
             {loading ? (
               <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">Loading…</td></tr>
-            ) : resources.length === 0 ? (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">No resources uploaded yet.</td></tr>
-            ) : resources.map(r => (
+            ) : filteredResources.length === 0 ? (
+              <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">{activeFilters.size > 0 ? "No resources match the selected filters." : "No resources uploaded yet."}</td></tr>
+            ) : filteredResources.map(r => (
               <tr key={r.id} className="border-b border-border last:border-0 hover:bg-accent/20">
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
