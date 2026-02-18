@@ -30,11 +30,21 @@ const TYPE_CONFIG: Record<string, { icon: typeof File; color: string }> = {
   url: { icon: ExternalLink, color: "text-cyan-500" },
 };
 
+const ALL_TYPES = ["video", "audio", "document", "image", "url"] as const;
+const TYPE_LABELS: Record<string, string> = {
+  video: "Video",
+  audio: "Audio",
+  document: "Docs",
+  image: "Image",
+  url: "Links",
+};
+
 export default function ResourceLibrary() {
   const [resources, setResources] = useState<Resource[]>([]);
   const [loading, setLoading] = useState(true);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewType, setPreviewType] = useState<string>("");
+  const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     supabase
@@ -46,6 +56,19 @@ export default function ResourceLibrary() {
         setLoading(false);
       });
   }, []);
+
+  function toggleFilter(type: string) {
+    setActiveFilters(prev => {
+      const next = new Set(prev);
+      if (next.has(type)) next.delete(type);
+      else next.add(type);
+      return next;
+    });
+  }
+
+  const filteredResources = activeFilters.size === 0
+    ? resources
+    : resources.filter(r => activeFilters.has(r.resource_type));
 
   function getPublicUrl(path: string) {
     return supabase.storage.from("training-resources").getPublicUrl(path).data.publicUrl;
@@ -78,6 +101,38 @@ export default function ResourceLibrary() {
 
   return (
     <div className="space-y-4">
+      {/* Type filters */}
+      <div className="flex flex-wrap gap-2 items-center">
+        <span className="text-xs font-medium text-muted-foreground">Filter:</span>
+        {ALL_TYPES.map(type => {
+          const cfg = TYPE_CONFIG[type] || { icon: File, color: "text-muted-foreground" };
+          const Icon = cfg.icon;
+          const active = activeFilters.has(type);
+          return (
+            <button
+              key={type}
+              onClick={() => toggleFilter(type)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                active
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-card text-muted-foreground border-border hover:border-primary hover:text-foreground"
+              }`}
+            >
+              <Icon className="h-3 w-3" />
+              {TYPE_LABELS[type]}
+            </button>
+          );
+        })}
+        {activeFilters.size > 0 && (
+          <button
+            onClick={() => setActiveFilters(new Set())}
+            className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 ml-1"
+          >
+            Clear
+          </button>
+        )}
+      </div>
+
       {/* Media preview */}
       {previewUrl && (
         <div className="rounded-xl border border-border bg-card p-4 space-y-3">
@@ -94,8 +149,13 @@ export default function ResourceLibrary() {
       )}
 
       {/* Resource grid */}
+      {filteredResources.length === 0 && activeFilters.size > 0 && (
+        <div className="rounded-2xl border border-dashed border-border bg-card/50 p-8 text-center">
+          <p className="text-sm text-muted-foreground">No resources match the selected filters.</p>
+        </div>
+      )}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {resources.map(r => {
+        {filteredResources.map(r => {
           const cfg = TYPE_CONFIG[r.resource_type] || { icon: File, color: "text-muted-foreground" };
           const Icon = cfg.icon;
           return (
