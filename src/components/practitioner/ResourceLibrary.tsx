@@ -56,19 +56,19 @@ const TYPE_LABELS: Record<string, string> = {
 
 // Creator type glyph + colour mapping (colour_hex from DB)
 const CREATOR_TYPES: Record<string, { glyph: string; color: string }> = {
-  lava:      { glyph: glyphLava,      color: "#B22222" },
-  fire:      { glyph: glyphFire,      color: "#FF4500" },
-  whirlwind: { glyph: glyphWhirlwind, color: "#708090" },
-  sun:       { glyph: glyphSun,       color: "#FFD700" },
-  lightning: { glyph: glyphLightning, color: "#9370DB" },
-  snow:      { glyph: glyphSnow,      color: "#87CEEB" },
-  sky:       { glyph: glyphSky,       color: "#87CEEB" },
-  mountain:  { glyph: glyphMountain,  color: "#8B7355" },
-  tree:      { glyph: glyphTree,      color: "#228B22" },
-  soil:      { glyph: glyphSoil,      color: "#8B4513" },
-  river:     { glyph: glyphRiver,     color: "#4682B4" },
-  ocean:     { glyph: glyphOcean,     color: "#1E3A5F" },
-  lake:      { glyph: glyphLake,      color: "#5F9EA0" },
+  lava:      { glyph: glyphLava,      color: "#E85500" },
+  fire:      { glyph: glyphFire,      color: "#F07000" },
+  whirlwind: { glyph: glyphWhirlwind, color: "#2D7A00" },
+  sun:       { glyph: glyphSun,       color: "#F5A300" },
+  lightning: { glyph: glyphLightning, color: "#7CC800" },
+  snow:      { glyph: glyphSnow,      color: "#00B887" },
+  sky:       { glyph: glyphSky,       color: "#5BB8D4" },
+  mountain:  { glyph: glyphMountain,  color: "#BE1558" },
+  tree:      { glyph: glyphTree,      color: "#CC2200" },
+  soil:      { glyph: glyphSoil,      color: "#8B1717" },
+  river:     { glyph: glyphRiver,     color: "#00AAEE" },
+  ocean:     { glyph: glyphOcean,     color: "#1B3FB5" },
+  lake:      { glyph: glyphLake,      color: "#00A8CC" },
 };
 
 function detectCreatorType(title: string) {
