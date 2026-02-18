@@ -4,6 +4,21 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FileText, Video, Music, Image, File, Download, ExternalLink, Play } from "lucide-react";
 
+// Glyph image imports
+import glyphLava from "@/assets/glyph-lava.png";
+import glyphFire from "@/assets/glyph-fire.png";
+import glyphWhirlwind from "@/assets/glyph-whirlwind.png";
+import glyphSun from "@/assets/glyph-sun.png";
+import glyphLightning from "@/assets/glyph-lightning.png";
+import glyphSnow from "@/assets/glyph-snow.png";
+import glyphSky from "@/assets/glyph-sky.png";
+import glyphMountain from "@/assets/glyph-mountain.png";
+import glyphTree from "@/assets/glyph-tree.png";
+import glyphSoil from "@/assets/glyph-soil.png";
+import glyphRiver from "@/assets/glyph-river.png";
+import glyphOcean from "@/assets/glyph-ocean.png";
+import glyphLake from "@/assets/glyph-lake.png";
+
 interface Resource {
   id: string;
   title: string;
@@ -38,6 +53,31 @@ const TYPE_LABELS: Record<string, string> = {
   image: "Image",
   url: "Links",
 };
+
+// Creator type glyph + colour mapping (colour_hex from DB)
+const CREATOR_TYPES: Record<string, { glyph: string; color: string }> = {
+  lava:      { glyph: glyphLava,      color: "#B22222" },
+  fire:      { glyph: glyphFire,      color: "#FF4500" },
+  whirlwind: { glyph: glyphWhirlwind, color: "#708090" },
+  sun:       { glyph: glyphSun,       color: "#FFD700" },
+  lightning: { glyph: glyphLightning, color: "#9370DB" },
+  snow:      { glyph: glyphSnow,      color: "#87CEEB" },
+  sky:       { glyph: glyphSky,       color: "#87CEEB" },
+  mountain:  { glyph: glyphMountain,  color: "#8B7355" },
+  tree:      { glyph: glyphTree,      color: "#228B22" },
+  soil:      { glyph: glyphSoil,      color: "#8B4513" },
+  river:     { glyph: glyphRiver,     color: "#4682B4" },
+  ocean:     { glyph: glyphOcean,     color: "#1E3A5F" },
+  lake:      { glyph: glyphLake,      color: "#5F9EA0" },
+};
+
+function detectCreatorType(title: string) {
+  const lower = title.toLowerCase();
+  for (const key of Object.keys(CREATOR_TYPES)) {
+    if (lower.includes(key)) return { key, ...CREATOR_TYPES[key] };
+  }
+  return null;
+}
 
 export default function ResourceLibrary() {
   const [resources, setResources] = useState<Resource[]>([]);
@@ -158,19 +198,51 @@ export default function ResourceLibrary() {
         {filteredResources.map(r => {
           const cfg = TYPE_CONFIG[r.resource_type] || { icon: File, color: "text-muted-foreground" };
           const Icon = cfg.icon;
+          const creatorType = detectCreatorType(r.title);
           return (
-            <div key={r.id} className="rounded-xl border border-border bg-card p-4 hover:shadow-md transition-shadow">
+            <div
+              key={r.id}
+              className="rounded-xl border bg-card p-4 hover:shadow-md transition-all"
+              style={creatorType ? {
+                borderColor: `${creatorType.color}55`,
+                boxShadow: `inset 0 0 0 1px ${creatorType.color}22`,
+              } : undefined}
+            >
+              {/* Top row: glyph (if creator type) + icon + title */}
               <div className="flex items-start gap-3">
-                <div className={`p-2 rounded-lg bg-muted/50 ${cfg.color}`}>
-                  <Icon className="h-5 w-5" />
-                </div>
+                {creatorType ? (
+                  <div
+                    className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center"
+                    style={{ backgroundColor: `${creatorType.color}20`, border: `1px solid ${creatorType.color}44` }}
+                  >
+                    <img
+                      src={creatorType.glyph}
+                      alt={creatorType.key}
+                      className="w-6 h-6 object-contain"
+                      style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.15))" }}
+                    />
+                  </div>
+                ) : (
+                  <div className={`p-2 rounded-lg bg-muted/50 ${cfg.color}`}>
+                    <Icon className="h-5 w-5" />
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <h4 className="font-medium text-foreground text-sm truncate">{r.title}</h4>
                   {r.description && (
                     <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{r.description}</p>
                   )}
                   <div className="flex items-center gap-2 mt-2">
-                    <Badge variant="secondary" className="text-[10px] capitalize">{r.resource_type}</Badge>
+                    {creatorType ? (
+                      <span
+                        className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold capitalize"
+                        style={{ backgroundColor: `${creatorType.color}22`, color: creatorType.color }}
+                      >
+                        {creatorType.key}
+                      </span>
+                    ) : (
+                      <Badge variant="secondary" className="text-[10px] capitalize">{r.resource_type}</Badge>
+                    )}
                     <span className="text-[10px] text-muted-foreground">{formatBytes(r.file_size_bytes)}</span>
                   </div>
                 </div>
