@@ -10,6 +10,7 @@ import { toast } from "@/hooks/use-toast";
 import { FileText, Save, Loader2, ChevronRight, ChevronLeft, AlertTriangle } from "lucide-react";
 import BodyDrawingCanvas from "./BodyDrawingCanvas";
 import type { Database } from "@/integrations/supabase/types";
+import { getCreatorTypeColor } from "@/lib/creatorTypes";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 
 type CaseStudyStatus = Database["public"]["Enums"]["case_study_status"];
@@ -317,15 +318,19 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
             </div>
             {possibleCreatorTypes.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-2">
-                {possibleCreatorTypes.map(t => (
-                  <button
-                    key={t}
-                    onClick={() => setPossibleCreatorTypes(possibleCreatorTypes.filter(x => x !== t))}
-                    className="text-xs bg-secondary/10 text-secondary px-2 py-1 rounded-full hover:bg-secondary/20 transition-colors"
-                  >
-                    {t} ✕
-                  </button>
-                ))}
+                {possibleCreatorTypes.map(t => {
+                  const c = getCreatorTypeColor(t);
+                  return (
+                    <button
+                      key={t}
+                      onClick={() => setPossibleCreatorTypes(possibleCreatorTypes.filter(x => x !== t))}
+                      className="text-xs px-2.5 py-1 rounded-full font-medium transition-opacity hover:opacity-80"
+                      style={{ backgroundColor: `${c}22`, color: c, border: `1px solid ${c}55` }}
+                    >
+                      {t} ✕
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>

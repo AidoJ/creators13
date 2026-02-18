@@ -17,6 +17,7 @@ import FAQManagerPanel from "@/components/admin/FAQManagerPanel";
 import CompositePhotoLayout from "@/components/profiling/CompositePhotoLayout";
 import CaseStudyFormDataView from "@/components/admin/CaseStudyFormDataView";
 import BodyOutlineSVG from "@/components/practitioner/BodyOutlineSVG";
+import { getCreatorTypeColor } from "@/lib/creatorTypes";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 type EnrollmentStep = Database["public"]["Enums"]["enrollment_step"];
@@ -408,10 +409,19 @@ export default function AdminDashboard() {
                               By {cs.practitioner_name} · Subject: {cs.subject_name} · {new Date(cs.created_at).toLocaleDateString("en-AU")}
                             </p>
                             {cs.creator_types_identified && cs.creator_types_identified.length > 0 && (
-                              <div className="flex gap-1 mt-1.5">
-                                {cs.creator_types_identified.map(t => (
-                                  <Badge key={t} variant="secondary" className="text-[10px] capitalize">{t}</Badge>
-                                ))}
+                              <div className="flex flex-wrap gap-1 mt-1.5">
+                                {cs.creator_types_identified.map(t => {
+                                  const c = getCreatorTypeColor(t);
+                                  return (
+                                    <span
+                                      key={t}
+                                      className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold capitalize"
+                                      style={{ backgroundColor: `${c}22`, color: c, border: `1px solid ${c}44` }}
+                                    >
+                                      {t}
+                                    </span>
+                                  );
+                                })}
                               </div>
                             )}
                           </div>

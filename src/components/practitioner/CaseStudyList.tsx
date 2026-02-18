@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FileText, Sparkles, Clock, CheckCircle, AlertCircle, Eye, EyeOff, MessageSquare, Pencil } from "lucide-react";
 import CompositePhotoLayout from "@/components/profiling/CompositePhotoLayout";
+import { getCreatorTypeColor } from "@/lib/creatorTypes";
 import type { Database } from "@/integrations/supabase/types";
 
 type CaseStudyStatus = Database["public"]["Enums"]["case_study_status"];
@@ -99,11 +100,20 @@ export default function CaseStudyList({ practitionerId, onEditCaseStudy }: CaseS
                     Subject: {cs.subject_name} · Created {new Date(cs.created_at).toLocaleDateString("en-AU")}
                   </p>
                   {cs.creator_types_identified && cs.creator_types_identified.length > 0 && (
-                    <div className="flex gap-1 mt-2">
+                    <div className="flex flex-wrap gap-1 mt-2 items-center">
                       <Sparkles className="h-3 w-3 text-secondary mt-0.5" />
-                      {cs.creator_types_identified.map(t => (
-                        <Badge key={t} variant="secondary" className="text-[10px] capitalize">{t}</Badge>
-                      ))}
+                      {cs.creator_types_identified.map(t => {
+                        const c = getCreatorTypeColor(t);
+                        return (
+                          <span
+                            key={t}
+                            className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold capitalize"
+                            style={{ backgroundColor: `${c}22`, color: c, border: `1px solid ${c}44` }}
+                          >
+                            {t}
+                          </span>
+                        );
+                      })}
                     </div>
                   )}
                   {hasRevisionNotes && !isExpanded && (
