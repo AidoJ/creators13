@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FileText, Video, Music, Image, File, Download, ExternalLink, Play } from "lucide-react";
+import { getCreatorTypeColor } from "@/lib/creatorTypes";
 
 // Glyph image imports
 import glyphLava from "@/assets/glyph-lava.png";
@@ -54,27 +55,20 @@ const TYPE_LABELS: Record<string, string> = {
   url: "Links",
 };
 
-// Creator type glyph + colour mapping (colour_hex from DB)
-const CREATOR_TYPES: Record<string, { glyph: string; color: string }> = {
-  lava:      { glyph: glyphLava,      color: "#E85500" },
-  fire:      { glyph: glyphFire,      color: "#F07000" },
-  whirlwind: { glyph: glyphWhirlwind, color: "#2D7A00" },
-  sun:       { glyph: glyphSun,       color: "#F5A300" },
-  lightning: { glyph: glyphLightning, color: "#7CC800" },
-  snow:      { glyph: glyphSnow,      color: "#00B887" },
-  sky:       { glyph: glyphSky,       color: "#5BB8D4" },
-  mountain:  { glyph: glyphMountain,  color: "#BE1558" },
-  tree:      { glyph: glyphTree,      color: "#CC2200" },
-  soil:      { glyph: glyphSoil,      color: "#8B1717" },
-  river:     { glyph: glyphRiver,     color: "#00AAEE" },
-  ocean:     { glyph: glyphOcean,     color: "#1B3FB5" },
-  lake:      { glyph: glyphLake,      color: "#00A8CC" },
+// Glyph map keyed by creator type name (lowercase)
+const GLYPH_MAP: Record<string, string> = {
+  lava: glyphLava, fire: glyphFire, whirlwind: glyphWhirlwind,
+  sun: glyphSun, lightning: glyphLightning, snow: glyphSnow, sky: glyphSky,
+  mountain: glyphMountain, tree: glyphTree, soil: glyphSoil,
+  river: glyphRiver, ocean: glyphOcean, lake: glyphLake,
 };
 
 function detectCreatorType(title: string) {
   const lower = title.toLowerCase();
-  for (const key of Object.keys(CREATOR_TYPES)) {
-    if (lower.includes(key)) return { key, ...CREATOR_TYPES[key] };
+  for (const key of Object.keys(GLYPH_MAP)) {
+    if (lower.includes(key)) {
+      return { key, glyph: GLYPH_MAP[key], color: getCreatorTypeColor(key) };
+    }
   }
   return null;
 }

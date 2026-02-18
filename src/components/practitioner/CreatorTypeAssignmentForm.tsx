@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Sparkles, Save, Loader2, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { TierKey } from "@/lib/tiers";
+import { getCreatorTypeColor } from "@/lib/creatorTypes";
 
 interface CreatorType {
   name: string;
@@ -183,8 +184,14 @@ export default function CreatorTypeAssignmentForm({ clientId, clientName }: Crea
                         value={t.name}
                         disabled={selectedTypes.includes(t.name) && types[i] !== t.name}
                       >
-                        <span className="capitalize">{t.name}</span>
-                        <span className="ml-2 text-xs text-muted-foreground">({t.element})</span>
+                        <span className="flex items-center gap-2">
+                          <span
+                            className="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0"
+                            style={{ backgroundColor: getCreatorTypeColor(t.name) }}
+                          />
+                          <span className="capitalize">{t.name}</span>
+                          <span className="text-xs text-muted-foreground">({t.element})</span>
+                        </span>
                       </SelectItem>
                     ))}
                   </div>
