@@ -235,7 +235,7 @@ export default function PlanSelection() {
         )}
 
         {/* Continue button */}
-        <div className="text-center">
+        <div className="text-center space-y-3">
           <Button
             onClick={handleContinue}
             disabled={!selectedTier || (selectedTier === "wren" && isCaseStudy && !practitionerCode.trim())}
@@ -244,6 +244,17 @@ export default function PlanSelection() {
           >
             Continue <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
+          {!user && (
+            <p className="text-sm text-muted-foreground">
+              Already have an account?{" "}
+              <a
+                href={`/auth?returnTo=${encodeURIComponent("/enroll/plan")}`}
+                className="text-primary font-medium hover:underline underline-offset-2"
+              >
+                Sign in
+              </a>
+            </p>
+          )}
         </div>
       </main>
     </div>
