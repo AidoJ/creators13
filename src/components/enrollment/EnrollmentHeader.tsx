@@ -42,7 +42,7 @@ export default function EnrollmentHeader({ currentStep }: EnrollmentHeaderProps)
         {!user && (
           <Link
             to={`/auth?returnTo=${returnTo}`}
-            className="ml-4 text-sm text-primary font-medium hover:underline underline-offset-2 whitespace-nowrap"
+            className="ml-4 inline-flex items-center justify-center rounded-full border-2 border-primary bg-primary text-primary-foreground hover:bg-primary/90 px-5 py-2 text-sm font-semibold transition-colors whitespace-nowrap shadow-sm"
           >
             Sign in
           </Link>
