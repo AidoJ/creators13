@@ -217,17 +217,14 @@ export default function ResourceLibrary() {
                   {/* Glyph or resource-type icon */}
                   {creatorType ? (
                     <div
-                      className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center"
-                      style={{
-                        backgroundColor: `${creatorType.color}18`,
-                        border: `1.5px solid ${creatorType.color}44`,
-                      }}
+                      className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center shadow-sm"
+                      style={{ backgroundColor: creatorType.color }}
                     >
                       <img
                         src={creatorType.glyph}
                         alt={creatorType.key}
                         className="w-7 h-7 object-contain"
-                        style={{ filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.18))" }}
+                        style={{ filter: "brightness(0) invert(1)" }}
                       />
                     </div>
                   ) : (
@@ -246,7 +243,12 @@ export default function ResourceLibrary() {
                           className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold capitalize"
                           style={{ backgroundColor: `${creatorType.color}20`, color: creatorType.color }}
                         >
-                          <img src={creatorType.glyph} alt="" className="w-3 h-3 object-contain" />
+                          <span
+                            className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full"
+                            style={{ backgroundColor: creatorType.color }}
+                          >
+                            <img src={creatorType.glyph} alt="" className="w-2.5 h-2.5 object-contain" style={{ filter: "brightness(0) invert(1)" }} />
+                          </span>
                           {creatorType.key}
                         </span>
                       )}
