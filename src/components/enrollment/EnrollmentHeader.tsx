@@ -1,5 +1,7 @@
 import logo from "@/assets/13creators-logo.png";
 import { cn } from "@/lib/utils";
+import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 const STEPS = ["Plan", "Signup", "Payment", "Practitioner", "Details", "Consent", "Photos", "Booking"] as const;
 
@@ -8,6 +10,10 @@ interface EnrollmentHeaderProps {
 }
 
 export default function EnrollmentHeader({ currentStep }: EnrollmentHeaderProps) {
+  const { user } = useAuth();
+  const location = useLocation();
+  const returnTo = encodeURIComponent(location.pathname + location.search);
+
   return (
     <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
       <div className="container mx-auto flex items-center justify-between h-16 px-4">
@@ -33,6 +39,14 @@ export default function EnrollmentHeader({ currentStep }: EnrollmentHeaderProps)
             </span>
           ))}
         </div>
+        {!user && (
+          <Link
+            to={`/auth?returnTo=${returnTo}`}
+            className="ml-4 text-sm text-primary font-medium hover:underline underline-offset-2 whitespace-nowrap"
+          >
+            Sign in
+          </Link>
+        )}
       </div>
     </header>
   );
