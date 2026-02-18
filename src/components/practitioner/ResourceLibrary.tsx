@@ -63,33 +63,11 @@ const GLYPH_MAP: Record<string, string> = {
   river: glyphRiver, ocean: glyphOcean, lake: glyphLake,
 };
 
-// CSS filter strings to convert black PNG glyphs to each creator type's brand colour
-const GLYPH_FILTER_MAP: Record<string, string> = {
-  lava:      "invert(39%) sepia(96%) saturate(1000%) hue-rotate(5deg) brightness(101%)",
-  fire:      "invert(50%) sepia(90%) saturate(800%) hue-rotate(15deg) brightness(105%)",
-  whirlwind: "invert(30%) sepia(100%) saturate(600%) hue-rotate(85deg) brightness(95%)",
-  sun:       "invert(60%) sepia(85%) saturate(700%) hue-rotate(20deg) brightness(103%)",
-  lightning: "invert(65%) sepia(85%) saturate(700%) hue-rotate(60deg) brightness(105%)",
-  snow:      "invert(55%) sepia(90%) saturate(500%) hue-rotate(140deg) brightness(100%)",
-  sky:       "invert(60%) sepia(40%) saturate(500%) hue-rotate(175deg) brightness(100%)",
-  mountain:  "invert(20%) sepia(90%) saturate(1200%) hue-rotate(310deg) brightness(90%)",
-  tree:      "invert(20%) sepia(100%) saturate(1500%) hue-rotate(358deg) brightness(90%)",
-  soil:      "invert(15%) sepia(100%) saturate(1000%) hue-rotate(358deg) brightness(80%)",
-  river:     "invert(55%) sepia(80%) saturate(600%) hue-rotate(185deg) brightness(105%)",
-  ocean:     "invert(20%) sepia(90%) saturate(1000%) hue-rotate(215deg) brightness(85%)",
-  lake:      "invert(55%) sepia(80%) saturate(500%) hue-rotate(175deg) brightness(100%)",
-};
-
 function detectCreatorType(title: string) {
   const lower = title.toLowerCase();
   for (const key of Object.keys(GLYPH_MAP)) {
     if (lower.includes(key)) {
-      return {
-        key,
-        glyph: GLYPH_MAP[key],
-        color: getCreatorTypeColor(key),
-        filter: GLYPH_FILTER_MAP[key] ?? "",
-      };
+      return { key, glyph: GLYPH_MAP[key], color: getCreatorTypeColor(key) };
     }
   }
   return null;
@@ -239,14 +217,14 @@ export default function ResourceLibrary() {
                   {/* Glyph or resource-type icon */}
                   {creatorType ? (
                     <div
-                      className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center"
-                      style={{ backgroundColor: `${creatorType.color}20` }}
+                      className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center shadow-sm"
+                      style={{ backgroundColor: creatorType.color }}
                     >
                       <img
                         src={creatorType.glyph}
                         alt={creatorType.key}
                         className="w-7 h-7 object-contain"
-                        style={{ filter: creatorType.filter }}
+                        style={{ filter: "brightness(0) invert(1)" }}
                       />
                     </div>
                   ) : (
@@ -265,12 +243,12 @@ export default function ResourceLibrary() {
                           className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold capitalize"
                           style={{ backgroundColor: `${creatorType.color}20`, color: creatorType.color }}
                         >
-                          <img
-                            src={creatorType.glyph}
-                            alt=""
-                            className="w-3 h-3 object-contain"
-                            style={{ filter: creatorType.filter }}
-                          />
+                          <span
+                            className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full"
+                            style={{ backgroundColor: creatorType.color }}
+                          >
+                            <img src={creatorType.glyph} alt="" className="w-2.5 h-2.5 object-contain" style={{ filter: "brightness(0) invert(1)" }} />
+                          </span>
                           {creatorType.key}
                         </span>
                       )}
