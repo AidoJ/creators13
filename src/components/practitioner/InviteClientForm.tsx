@@ -133,16 +133,28 @@ www.creatortypes.com`
   return (
     <div className="space-y-6">
       {/* ── Hero info card ── */}
-      <div className="rounded-2xl border border-border bg-card overflow-hidden">
-        {/* Header */}
-        <div className="px-6 pt-6 pb-4 border-b border-border">
-          <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-1">Creator Types Case Study</p>
-          <h2 className="text-xl font-display font-bold text-foreground">Volunteer Information &amp; Consent</h2>
+      <div className="rounded-2xl overflow-hidden border border-secondary/30 shadow-lg">
+
+        {/* Gradient hero header */}
+        <div className="relative bg-gradient-to-br from-primary via-primary/90 to-secondary px-8 py-10 text-center overflow-hidden">
+          {/* Decorative orbs */}
+          <div className="absolute -top-8 -right-8 w-40 h-40 rounded-full bg-secondary/20 blur-2xl pointer-events-none" />
+          <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-accent/20 blur-2xl pointer-events-none" />
+
+          <p className="relative text-xs font-semibold uppercase tracking-[0.2em] text-primary-foreground/70 mb-2">
+            Creator Types Case Study
+          </p>
+          <h2 className="relative text-3xl font-display font-bold text-primary-foreground leading-tight mb-1">
+            Volunteer Information
+          </h2>
+          <p className="relative text-lg font-display text-secondary/90 font-medium tracking-wide">
+            &amp; Consent
+          </p>
         </div>
 
         {/* YouTube embed */}
-        <div className="px-6 pt-5">
-          <div className="relative w-full rounded-xl overflow-hidden bg-muted" style={{ paddingBottom: "56.25%" }}>
+        <div className="bg-foreground/5 px-6 py-6 border-b border-secondary/20">
+          <div className="relative w-full rounded-xl overflow-hidden shadow-md" style={{ paddingBottom: "56.25%" }}>
             <iframe
               className="absolute inset-0 w-full h-full"
               src="https://www.youtube.com/embed/N_hAuOoWFjM"
@@ -151,11 +163,13 @@ www.creatortypes.com`
               allowFullScreen
             />
           </div>
+          <p className="text-center text-xs text-muted-foreground mt-3 italic">Watch: 12 Creator Types In 12 Minutes</p>
         </div>
 
         {/* Body copy */}
-        <div className="px-6 py-5 space-y-4 text-sm text-foreground leading-relaxed">
-          <p className="text-base font-semibold text-primary">Greetings Beautiful Body!</p>
+        <div className="bg-card px-8 py-7 space-y-5 text-sm text-foreground leading-relaxed">
+          {/* Greeting */}
+          <p className="text-xl font-display font-bold text-primary">Greetings Beautiful Body!</p>
 
           <p>
             Thank you for your interest in volunteering as a case study for the{" "}
@@ -163,35 +177,41 @@ www.creatortypes.com`
               href="http://sacredbusiness.com.au/wp-content/uploads/2026/02/2026-13CREATORS-Training-Prospectus.pdf"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-primary underline underline-offset-2 hover:opacity-80 inline-flex items-center gap-1"
+              className="text-primary underline underline-offset-2 hover:opacity-80 inline-flex items-center gap-1 font-medium"
             >
               13CREATORS Practitioner Training <ExternalLink className="h-3 w-3" />
             </a>
             .
           </p>
 
-          <p>
-            To become a case study, you'll be invited to share{" "}
-            <a
-              href="https://sacredbusiness.com.au/creator-constitution-instructions/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary underline underline-offset-2 hover:opacity-80"
-            >
-              8 photos of your full body
-            </a>{" "}
-            wearing swimwear or yoga gear.
-          </p>
+          {/* Photos callout */}
+          <div className="rounded-xl bg-gradient-to-r from-secondary/15 to-secondary/5 border border-secondary/30 px-5 py-4 flex items-start gap-3">
+            <span className="text-2xl mt-0.5">📸</span>
+            <p>
+              To become a case study, you'll be invited to share{" "}
+              <a
+                href="https://sacredbusiness.com.au/creator-constitution-instructions/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary underline underline-offset-2 hover:opacity-80 font-semibold"
+              >
+                8 photos of your full body
+              </a>{" "}
+              wearing swimwear or yoga gear.
+            </p>
+          </div>
 
           <p>
             In exchange, you will learn about two of your Creator Types, according to your body shape, facial features,
             hands and feet. Your Creator Types blueprint will give you a deeper awareness of your natural abilities,
             challenges and the purpose of your particular physical constitution, both individually and in groups. In
-            other words, what purpose are you naturally built for?
+            other words, <span className="font-semibold text-foreground">what purpose are you naturally built for?</span>
           </p>
 
-          <div className="rounded-xl bg-primary/10 border border-primary/20 px-4 py-3 text-sm">
-            <p className="font-medium text-primary">
+          {/* Privacy notice */}
+          <div className="rounded-xl bg-primary/10 border border-primary/20 px-5 py-4 text-sm flex items-start gap-3">
+            <span className="text-xl mt-0.5">🔒</span>
+            <p className="font-medium text-primary/90">
               Your photos will only be shared within class for teaching purposes and viewed only by students and the
               teacher and inventor of the Creator Types, A'Hara.
             </p>
@@ -201,36 +221,44 @@ www.creatortypes.com`
             If you would like to proceed, please talk to your Trainee Practitioner about next steps.
           </p>
 
-          <p>
-            For more information, have a read of{" "}
-            <a
-              href="https://sacredbusiness.com.au/not-creators-made-equal/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary underline underline-offset-2 hover:opacity-80"
-            >
-              Not All Creators Were Made Equal
-            </a>{" "}
-            or the FAQs{" "}
-            <a
-              href="https://sacredbusiness.com.au/wp-content/uploads/2025/03/Creator-Types-FAQs-2025.pdf"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary underline underline-offset-2 hover:opacity-80"
-            >
-              here
-            </a>
-            .
-          </p>
+          {/* More info links */}
+          <div className="rounded-xl bg-accent/10 border border-accent/20 px-5 py-4 text-sm space-y-2">
+            <p className="font-semibold text-foreground text-xs uppercase tracking-wide mb-2">For more information</p>
+            <p>
+              📖 Read{" "}
+              <a
+                href="https://sacredbusiness.com.au/not-creators-made-equal/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary underline underline-offset-2 hover:opacity-80 font-medium"
+              >
+                Not All Creators Were Made Equal
+              </a>
+            </p>
+            <p>
+              📋 Browse the{" "}
+              <a
+                href="https://sacredbusiness.com.au/wp-content/uploads/2025/03/Creator-Types-FAQs-2025.pdf"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary underline underline-offset-2 hover:opacity-80 font-medium"
+              >
+                Creator Types FAQs
+              </a>
+            </p>
+          </div>
 
-          <p className="text-center font-display font-semibold text-base text-primary pt-2">
-            Be Curious &amp; Have Fun Learning About Your Body!
-          </p>
-          <p className="text-center text-xs text-muted-foreground">
-            <a href="https://www.creatortypes.com" target="_blank" rel="noopener noreferrer" className="hover:text-primary underline underline-offset-2">
-              www.creatortypes.com
-            </a>
-          </p>
+          {/* Closing */}
+          <div className="pt-2 border-t border-secondary/20 text-center space-y-1">
+            <p className="font-display font-bold text-lg text-primary">
+              Be Curious &amp; Have Fun Learning About Your Body!
+            </p>
+            <p className="text-xs text-muted-foreground">
+              <a href="https://www.creatortypes.com" target="_blank" rel="noopener noreferrer" className="hover:text-primary underline underline-offset-2">
+                www.creatortypes.com
+              </a>
+            </p>
+          </div>
         </div>
       </div>
 
@@ -293,7 +321,7 @@ www.creatortypes.com`
                       onClick={() => handleCopyLink(inv)}
                       title="Copy invite link"
                     >
-                      {copiedId === inv.id ? <CheckCircle className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                      {copiedId === inv.id ? <CheckCircle className="h-3.5 w-3.5 text-forest" /> : <Copy className="h-3.5 w-3.5" />}
                     </Button>
                     <Button
                       variant="ghost"
