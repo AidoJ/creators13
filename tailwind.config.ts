@@ -14,7 +14,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ['"Cormorant Garamond"', 'serif'],
+        display: ['"Lilita One"', 'cursive'],
         body: ['"Questrial"', 'sans-serif'],
       },
       colors: {
