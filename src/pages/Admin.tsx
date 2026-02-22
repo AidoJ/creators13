@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Users, Shield, ChevronDown, ChevronUp, UserPlus, FileText, CheckCircle, XCircle, Clock, Link2, BarChart3, Eye, EyeOff, FolderOpen, GitBranch, Save, HelpCircle } from "lucide-react";
+import { Search, Users, Shield, ChevronDown, ChevronUp, UserPlus, FileText, CheckCircle, XCircle, Clock, Link2, BarChart3, Eye, EyeOff, FolderOpen, GitBranch, Save, HelpCircle, Briefcase, CreditCard } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
 import CreateUserForm from "@/components/admin/CreateUserForm";
@@ -17,6 +17,8 @@ import FAQManagerPanel from "@/components/admin/FAQManagerPanel";
 import CompositePhotoLayout from "@/components/profiling/CompositePhotoLayout";
 import CaseStudyFormDataView from "@/components/admin/CaseStudyFormDataView";
 import BodyOutlineSVG from "@/components/practitioner/BodyOutlineSVG";
+import PractitionersTab from "@/components/admin/PractitionersTab";
+import SubscribersTab from "@/components/admin/SubscribersTab";
 import { getCreatorTypeColor } from "@/lib/creatorTypes";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
@@ -70,11 +72,12 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [caseStudies, setCaseStudies] = useState<CaseStudyRow[]>([]);
   const [assignments, setAssignments] = useState<AssignmentRow[]>([]);
+  const [photoCounts, setPhotoCounts] = useState<{ user_id: string; count: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const [addingRole, setAddingRole] = useState<{ userId: string; role: AppRole } | null>(null);
-  const [activeTab, setActiveTab] = useState("users");
+  const [activeTab, setActiveTab] = useState("practitioners");
   const [expandedCaseStudy, setExpandedCaseStudy] = useState<string | null>(null);
   const [revisionNotes, setRevisionNotes] = useState<Record<string, string>>({});
   const [cohortFilter, setCohortFilter] = useState<string>("all");
@@ -163,14 +166,22 @@ export default function AdminDashboard() {
     })));
   }, []);
 
+  const fetchPhotoCounts = useCallback(async () => {
+    const { data } = await supabase.from("profiling_photos").select("user_id");
+    if (!data) return;
+    const counts: Record<string, number> = {};
+    data.forEach(p => { counts[p.user_id] = (counts[p.user_id] || 0) + 1; });
+    setPhotoCounts(Object.entries(counts).map(([user_id, count]) => ({ user_id, count })));
+  }, []);
+
   useEffect(() => {
     async function init() {
       setLoading(true);
-      await Promise.all([fetchUsers(), fetchCaseStudies(), fetchAssignments()]);
+      await Promise.all([fetchUsers(), fetchCaseStudies(), fetchAssignments(), fetchPhotoCounts()]);
       setLoading(false);
     }
     init();
-  }, [fetchUsers, fetchCaseStudies, fetchAssignments]);
+  }, [fetchUsers, fetchCaseStudies, fetchAssignments, fetchPhotoCounts]);
 
   async function handleAddRole(userId: string, role: AppRole) {
     setAddingRole({ userId, role });
@@ -322,16 +333,36 @@ export default function AdminDashboard() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-4">
-            <TabsTrigger value="users"><Users className="h-3.5 w-3.5 mr-1" />Users</TabsTrigger>
+          <TabsList className="mb-4 flex-wrap">
+            <TabsTrigger value="practitioners"><Briefcase className="h-3.5 w-3.5 mr-1" />Practitioners</TabsTrigger>
+            <TabsTrigger value="subscribers"><CreditCard className="h-3.5 w-3.5 mr-1" />Subscribers</TabsTrigger>
             <TabsTrigger value="pipeline"><GitBranch className="h-3.5 w-3.5 mr-1" />Pipeline</TabsTrigger>
             <TabsTrigger value="cases"><FileText className="h-3.5 w-3.5 mr-1" />Case Studies {pendingCaseStudies > 0 && <Badge className="ml-1 h-5 text-[10px]" variant="destructive">{pendingCaseStudies}</Badge>}</TabsTrigger>
-            <TabsTrigger value="assignments"><Link2 className="h-3.5 w-3.5 mr-1" />Assignments</TabsTrigger>
+            <TabsTrigger value="users"><Users className="h-3.5 w-3.5 mr-1" />All Users</TabsTrigger>
             <TabsTrigger value="resources"><FolderOpen className="h-3.5 w-3.5 mr-1" />Resources</TabsTrigger>
             <TabsTrigger value="faqs"><HelpCircle className="h-3.5 w-3.5 mr-1" />FAQs</TabsTrigger>
           </TabsList>
 
-          {/* ======= USERS TAB ======= */}
+          {/* ======= PRACTITIONERS TAB ======= */}
+          <TabsContent value="practitioners" className="space-y-4">
+            <PractitionersTab
+              users={users}
+              caseStudies={caseStudies}
+              assignments={assignments}
+              photoCounts={photoCounts}
+              onViewCaseStudy={(caseStudyId) => {
+                setActiveTab("cases");
+                setExpandedCaseStudy(caseStudyId);
+              }}
+            />
+          </TabsContent>
+
+          {/* ======= SUBSCRIBERS TAB ======= */}
+          <TabsContent value="subscribers" className="space-y-4">
+            <SubscribersTab users={users} assignments={assignments} />
+          </TabsContent>
+
+          {/* ======= ALL USERS TAB ======= */}
           <TabsContent value="users" className="space-y-4">
             <CreateUserForm onCreated={fetchUsers} />
             <div className="flex gap-3">
@@ -563,74 +594,7 @@ export default function AdminDashboard() {
             )}
           </TabsContent>
 
-          {/* ======= ASSIGNMENTS TAB ======= */}
-          <TabsContent value="assignments" className="space-y-4">
-            {/* New assignment form */}
-            <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <UserPlus className="h-4 w-4 text-primary" /> Assign Client to Practitioner
-              </h3>
-              <div className="flex gap-3 items-end flex-wrap">
-                <div className="flex-1 min-w-[200px]">
-                  <label className="text-xs text-muted-foreground">Client</label>
-                  <Select value={assignClient} onValueChange={setAssignClient}>
-                    <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Select client…" /></SelectTrigger>
-                    <SelectContent>
-                      {clients.map(c => (
-                        <SelectItem key={c.user_id} value={c.user_id} className="text-sm">
-                          {c.first_name || "—"} {c.last_name || ""} ({c.email})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex-1 min-w-[200px]">
-                  <label className="text-xs text-muted-foreground">Practitioner</label>
-                  <Select value={assignPrac} onValueChange={setAssignPrac}>
-                    <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Select practitioner…" /></SelectTrigger>
-                    <SelectContent>
-                      {practitioners.map(p => (
-                        <SelectItem key={p.user_id} value={p.user_id} className="text-sm">
-                          {p.first_name || "—"} {p.last_name || ""} {p.practitioner_code ? `(${p.practitioner_code})` : ""}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button size="sm" className="h-9" onClick={handleAssign} disabled={!assignClient || !assignPrac}>
-                  <Link2 className="h-3.5 w-3.5 mr-1" /> Assign
-                </Button>
-              </div>
-            </div>
 
-            {/* Existing assignments */}
-            <div className="rounded-xl border border-border bg-card overflow-hidden">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border bg-muted/30">
-                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Client</th>
-                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Practitioner</th>
-                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {assignments.length === 0 ? (
-                    <tr><td colSpan={3} className="px-4 py-8 text-center text-muted-foreground">No assignments yet.</td></tr>
-                  ) : assignments.map(a => (
-                    <tr key={a.id} className="border-b border-border last:border-0">
-                      <td className="px-4 py-3 text-foreground">{a.client_name}</td>
-                      <td className="px-4 py-3 text-foreground">{a.practitioner_name}</td>
-                      <td className="px-4 py-3">
-                        <Badge variant={a.active ? "default" : "outline"} className="text-[10px]">
-                          {a.active ? "Active" : "Inactive"}
-                        </Badge>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </TabsContent>
 
           {/* ======= RESOURCES TAB ======= */}
           <TabsContent value="resources" className="space-y-4">
