@@ -436,9 +436,9 @@ export default function AdminDashboard() {
                       <div className="p-4">
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-medium text-foreground truncate">{cs.title}</h4>
+                            <h4 className="font-medium text-foreground truncate">{cs.subject_name !== "—" ? cs.subject_name : cs.title}</h4>
                             <p className="text-xs text-muted-foreground mt-0.5">
-                              By {cs.practitioner_name} · Subject: {cs.subject_name} · {new Date(cs.created_at).toLocaleDateString("en-AU")}
+                              By {cs.practitioner_name} · {new Date(cs.created_at).toLocaleDateString("en-AU")}
                             </p>
                             {cs.creator_types_identified && cs.creator_types_identified.length > 0 && (
                               <div className="flex flex-wrap gap-1 mt-1.5">
