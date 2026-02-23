@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.batch-import-users]
 verify_jwt = false
+
+[functions.import-case-study-attachments]
+verify_jwt = false
