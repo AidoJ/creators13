@@ -56,6 +56,7 @@ export default function CaseStudyFormDataView({ formData }: CaseStudyFormDataVie
           <Field label="Prominent Features — Body" value={p2.prominent_features_body} />
           <Field label="Prominent Features — Hands + Feet" value={p2.prominent_features_hands_feet} />
           <Field label="Concentration of Tissue" value={p2.concentration_of_tissue} />
+          <Field label="Structure Shapes" value={p2.structure_shapes} />
           <Field label="Other Ailments / Comments" value={p2.other_ailments} />
         </Section>
       )}
