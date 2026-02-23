@@ -20,6 +20,7 @@ import BodyOutlineSVG from "@/components/practitioner/BodyOutlineSVG";
 import PractitionersTab from "@/components/admin/PractitionersTab";
 import SubscribersTab from "@/components/admin/SubscribersTab";
 import { getCreatorTypeColor } from "@/lib/creatorTypes";
+import CreatorTypeEditor from "@/components/admin/CreatorTypeEditor";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 type EnrollmentStep = Database["public"]["Enums"]["enrollment_step"];
@@ -484,6 +485,14 @@ export default function AdminDashboard() {
 
                       {isExpanded && (
                         <div className="border-t border-border bg-muted/20 p-4 space-y-4">
+                          <CreatorTypeEditor
+                            caseStudyId={cs.id}
+                            currentTypes={cs.creator_types_identified}
+                            onUpdated={(newTypes) => {
+                              setCaseStudies(prev => prev.map(c => c.id === cs.id ? { ...c, creator_types_identified: newTypes } : c));
+                            }}
+                          />
+
                           {cs.subject_user_id && (
                             <CompositePhotoLayout
                               userId={cs.subject_user_id}
