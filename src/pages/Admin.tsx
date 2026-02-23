@@ -280,6 +280,7 @@ export default function AdminDashboard() {
   const practitionerCount = users.filter(u => u.roles.includes("practitioner")).length;
   const traineeCount = users.filter(u => u.roles.includes("trainee")).length;
   const pendingCaseStudies = caseStudies.filter(c => c.status === "submitted").length;
+  const totalCaseStudies = caseStudies.length;
 
   const practitioners = users.filter(u => u.roles.includes("practitioner") || u.roles.includes("trainee") || u.roles.includes("trainer"));
   const clients = users.filter(u => u.roles.includes("client"));
@@ -298,6 +299,7 @@ export default function AdminDashboard() {
             { label: "Practitioners", value: practitionerCount, icon: Shield },
             { label: "Trainees", value: traineeCount, icon: Shield },
             { label: "Pending Reviews", value: pendingCaseStudies, icon: FileText },
+            { label: "Total Case Studies", value: totalCaseStudies, icon: FileText },
             { label: "Completed Enrollment", value: byStep["complete"] || 0, icon: CheckCircle },
             { label: "In Progress", value: totalUsers - (byStep["complete"] || 0), icon: Clock },
           ].map(stat => (
