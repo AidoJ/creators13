@@ -34,7 +34,9 @@ export default function CaseStudyFormDataView({ formData }: CaseStudyFormDataVie
   const hasP3 = Object.values(p3).some(v => v);
   const hasP4 = Object.values(p4).some(v => v);
 
-  if (!hasP1 && !hasP2 && !hasP3 && !hasP4) {
+  const hasAttachments = formData.attachments && Array.isArray(formData.attachments) && formData.attachments.length > 0;
+
+  if (!hasP1 && !hasP2 && !hasP3 && !hasP4 && !hasAttachments) {
     return <p className="text-sm text-muted-foreground italic">No assessment data recorded.</p>;
   }
 
