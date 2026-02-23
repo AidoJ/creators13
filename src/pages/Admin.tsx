@@ -319,8 +319,8 @@ export default function AdminDashboard() {
             <BarChart3 className="h-4 w-4 text-primary" />
             <h3 className="text-sm font-semibold text-foreground">Enrollment Pipeline</h3>
           </div>
-          <div className="grid grid-cols-6 gap-2 text-center">
-            {["plan_selected", "signed_up", "payment_complete", "photos_uploaded", "booking_made", "complete"].map(step => (
+          <div className="grid grid-cols-7 gap-2 text-center">
+            {["plan_selected", "signed_up", "payment_complete", "photos_uploaded", "booking_made", "awaiting_profiling", "complete"].map(step => (
               <div key={step} className="space-y-1">
                 <div className="text-lg font-bold text-foreground">{byStep[step] || 0}</div>
                 <div className="text-[10px] text-muted-foreground capitalize">{step.replace(/_/g, " ")}</div>
