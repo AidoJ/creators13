@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.import-dropbox-photos]
 verify_jwt = false
+
+[functions.batch-import-users]
+verify_jwt = false
