@@ -1,3 +1,5 @@
+import AttachmentGallery from "@/components/practitioner/AttachmentGallery";
+
 interface CaseStudyFormDataViewProps {
   formData: Record<string, any>;
 }
@@ -74,6 +76,10 @@ export default function CaseStudyFormDataView({ formData }: CaseStudyFormDataVie
           <Field label="What Went Well" value={p4.what_went_well} />
           <Field label="Potential Follow-Up" value={p4.potential_follow_up} />
         </Section>
+      )}
+
+      {formData.attachments && Array.isArray(formData.attachments) && formData.attachments.length > 0 && (
+        <AttachmentGallery attachments={formData.attachments as string[]} />
       )}
     </div>
   );

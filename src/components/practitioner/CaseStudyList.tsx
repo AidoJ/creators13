@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FileText, Sparkles, Clock, CheckCircle, AlertCircle, Eye, EyeOff, MessageSquare, Pencil } from "lucide-react";
 import CompositePhotoLayout from "@/components/profiling/CompositePhotoLayout";
+import AttachmentGallery from "./AttachmentGallery";
 import { getCreatorTypeColor } from "@/lib/creatorTypes";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -169,6 +170,11 @@ export default function CaseStudyList({ practitionerId, onEditCaseStudy }: CaseS
                 )}
                 {(!cs.description && !cs.profiling_notes && !hasRevisionNotes) && (
                   <p className="text-sm text-muted-foreground italic">No assessment notes recorded.</p>
+                )}
+
+                {/* Attached paper assessment pages */}
+                {cs.form_data?.attachments && Array.isArray(cs.form_data.attachments) && cs.form_data.attachments.length > 0 && (
+                  <AttachmentGallery attachments={cs.form_data.attachments as string[]} />
                 )}
 
                 {/* Inline client photos */}
