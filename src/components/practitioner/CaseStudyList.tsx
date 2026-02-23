@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { FileText, Sparkles, Clock, CheckCircle, AlertCircle, Eye, EyeOff, MessageSquare, Pencil } from "lucide-react";
 import CompositePhotoLayout from "@/components/profiling/CompositePhotoLayout";
 import AttachmentGallery from "./AttachmentGallery";
+import CaseStudyFormDataView from "@/components/admin/CaseStudyFormDataView";
 import { getCreatorTypeColor } from "@/lib/creatorTypes";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -168,8 +169,16 @@ export default function CaseStudyList({ practitionerId, onEditCaseStudy }: CaseS
                     </div>
                   </div>
                 )}
-                {(!cs.description && !cs.profiling_notes && !hasRevisionNotes) && (
+                {(!cs.description && !cs.profiling_notes && !hasRevisionNotes && !cs.form_data) && (
                   <p className="text-sm text-muted-foreground italic">No assessment notes recorded.</p>
+                )}
+
+                {/* Structured form data (imported or online assessment) */}
+                {cs.form_data && Object.keys(cs.form_data).some(k => k.startsWith('page')) && (
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Assessment Form Data</p>
+                    <CaseStudyFormDataView formData={cs.form_data} />
+                  </div>
                 )}
 
                 {/* Attached paper assessment pages */}
