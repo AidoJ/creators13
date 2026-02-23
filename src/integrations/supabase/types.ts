@@ -946,6 +946,7 @@ export type Database = {
         | "payment_complete"
         | "photos_uploaded"
         | "booking_made"
+        | "awaiting_profiling"
         | "complete"
       order_status:
         | "pending"
@@ -1112,6 +1113,7 @@ export const Constants = {
         "payment_complete",
         "photos_uploaded",
         "booking_made",
+        "awaiting_profiling",
         "complete",
       ],
       order_status: [
