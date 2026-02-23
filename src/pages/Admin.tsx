@@ -280,6 +280,7 @@ export default function AdminDashboard() {
   const practitionerCount = users.filter(u => u.roles.includes("practitioner")).length;
   const traineeCount = users.filter(u => u.roles.includes("trainee")).length;
   const pendingCaseStudies = caseStudies.filter(c => c.status === "submitted").length;
+  const draftCaseStudies = caseStudies.filter(c => c.status === "draft").length;
   const totalCaseStudies = caseStudies.length;
 
   const practitioners = users.filter(u => u.roles.includes("practitioner") || u.roles.includes("trainee") || u.roles.includes("trainer"));
@@ -340,7 +341,8 @@ export default function AdminDashboard() {
             <TabsTrigger value="practitioners"><Briefcase className="h-3.5 w-3.5 mr-1" />Practitioners</TabsTrigger>
             <TabsTrigger value="subscribers"><CreditCard className="h-3.5 w-3.5 mr-1" />Subscribers</TabsTrigger>
             <TabsTrigger value="pipeline"><GitBranch className="h-3.5 w-3.5 mr-1" />Pipeline</TabsTrigger>
-            <TabsTrigger value="cases"><FileText className="h-3.5 w-3.5 mr-1" />Case Studies {pendingCaseStudies > 0 && <Badge className="ml-1 h-5 text-[10px]" variant="destructive">{pendingCaseStudies}</Badge>}</TabsTrigger>
+            <TabsTrigger value="cases-pr"><FileText className="h-3.5 w-3.5 mr-1" />Case Studies (PR) {pendingCaseStudies > 0 && <Badge className="ml-1 h-5 text-[10px]" variant="destructive">{pendingCaseStudies}</Badge>}</TabsTrigger>
+            <TabsTrigger value="cases-dt"><FileText className="h-3.5 w-3.5 mr-1" />Case Studies (Dt) {draftCaseStudies > 0 && <Badge className="ml-1 h-5 text-[10px]" variant="outline">{draftCaseStudies}</Badge>}</TabsTrigger>
             <TabsTrigger value="users"><Users className="h-3.5 w-3.5 mr-1" />All Users</TabsTrigger>
             <TabsTrigger value="resources"><FolderOpen className="h-3.5 w-3.5 mr-1" />Resources</TabsTrigger>
             <TabsTrigger value="faqs"><HelpCircle className="h-3.5 w-3.5 mr-1" />FAQs</TabsTrigger>
@@ -425,13 +427,13 @@ export default function AdminDashboard() {
             <TrainerCaseStudyPipeline caseStudies={caseStudies} users={users} />
           </TabsContent>
 
-          {/* ======= CASE STUDIES TAB ======= */}
-          <TabsContent value="cases" className="space-y-4">
-            {caseStudies.length === 0 ? (
-              <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground text-sm">No case studies yet.</div>
+          {/* ======= CASE STUDIES (PR) TAB ======= */}
+          <TabsContent value="cases-pr" className="space-y-4">
+            {caseStudies.filter(c => c.status === "submitted").length === 0 ? (
+              <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground text-sm">No case studies pending review.</div>
             ) : (
               <div className="space-y-3">
-                {caseStudies.map(cs => {
+                {caseStudies.filter(c => c.status === "submitted").map(cs => {
                   const isExpanded = expandedCaseStudy === cs.id;
                   return (
                     <div key={cs.id} className="rounded-xl border border-border bg-card overflow-hidden">
@@ -605,7 +607,127 @@ export default function AdminDashboard() {
             )}
           </TabsContent>
 
+          {/* ======= CASE STUDIES (Dt) TAB ======= */}
+          <TabsContent value="cases-dt" className="space-y-4">
+            {caseStudies.filter(c => c.status === "draft").length === 0 ? (
+              <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground text-sm">No draft case studies.</div>
+            ) : (
+              <div className="space-y-3">
+                {caseStudies.filter(c => c.status === "draft").map(cs => {
+                  const isExpanded = expandedCaseStudy === cs.id;
+                  return (
+                    <div key={cs.id} className="rounded-xl border border-border bg-card overflow-hidden">
+                      <div className="p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-foreground truncate">{cs.subject_name !== "—" ? cs.subject_name : cs.title}</h4>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              By {cs.practitioner_name} · {new Date(cs.created_at).toLocaleDateString("en-AU")}
+                            </p>
+                            {cs.creator_types_identified && cs.creator_types_identified.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1.5">
+                                {cs.creator_types_identified.map(t => {
+                                  const c = getCreatorTypeColor(t);
+                                  return (
+                                    <span
+                                      key={t}
+                                      className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold capitalize"
+                                      style={{ backgroundColor: `${c}22`, color: c, border: `1px solid ${c}44` }}
+                                    >
+                                      {t}
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <CaseStudyStatusBadge status={cs.status} />
+                            <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setExpandedCaseStudy(isExpanded ? null : cs.id)}>
+                              {isExpanded ? <EyeOff className="h-3 w-3 mr-1" /> : <Eye className="h-3 w-3 mr-1" />}
+                              {isExpanded ? "Hide" : "View"}
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
 
+                      {isExpanded && (
+                        <div className="border-t border-border bg-muted/20 p-4 space-y-4">
+                          <CreatorTypeEditor
+                            caseStudyId={cs.id}
+                            currentTypes={cs.creator_types_identified}
+                            onUpdated={(newTypes) => {
+                              setCaseStudies(prev => prev.map(c => c.id === cs.id ? { ...c, creator_types_identified: newTypes } : c));
+                            }}
+                          />
+
+                          {cs.subject_user_id && (
+                            <CompositePhotoLayout
+                              userId={cs.subject_user_id}
+                              subjectName={`${cs.subject_name}'s Profiling Photos`}
+                            />
+                          )}
+
+                          {cs.form_data ? (
+                            <CaseStudyFormDataView formData={cs.form_data} />
+                          ) : cs.profiling_notes ? (
+                            <div>
+                              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Profiling Notes</p>
+                              <div className="text-sm text-foreground whitespace-pre-wrap bg-card rounded-lg border border-border p-3 max-h-96 overflow-y-auto">
+                                {cs.profiling_notes}
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground italic">No assessment notes have been added yet.</p>
+                          )}
+
+                          {cs.reviewer_notes && (
+                            <div>
+                              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Previous Reviewer Notes</p>
+                              <div className="text-sm text-foreground whitespace-pre-wrap bg-amber-500/5 rounded-lg border border-amber-500/20 p-3">
+                                {cs.reviewer_notes}
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="border-t border-border pt-4 space-y-2">
+                            <p className="text-xs font-semibold text-foreground">Trainer Feedback / Notes</p>
+                            <Textarea
+                              value={revisionNotes[cs.id] ?? ""}
+                              onChange={e => setRevisionNotes(prev => ({ ...prev, [cs.id]: e.target.value }))}
+                              rows={4}
+                              placeholder="Provide feedback on this draft…"
+                            />
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={!revisionNotes[cs.id]?.trim()}
+                              onClick={async () => {
+                                const { error } = await supabase.from("case_studies").update({
+                                  reviewer_notes: revisionNotes[cs.id],
+                                  reviewed_by: user?.id,
+                                  reviewed_at: new Date().toISOString(),
+                                }).eq("id", cs.id);
+                                if (error) {
+                                  toast({ title: "Error", description: error.message, variant: "destructive" });
+                                } else {
+                                  toast({ title: "Feedback saved" });
+                                  setRevisionNotes(prev => { const n = { ...prev }; delete n[cs.id]; return n; });
+                                  await fetchCaseStudies();
+                                }
+                              }}
+                            >
+                              <Save className="h-3 w-3 mr-1" />Save Feedback
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </TabsContent>
 
           {/* ======= RESOURCES TAB ======= */}
           <TabsContent value="resources" className="space-y-4">
