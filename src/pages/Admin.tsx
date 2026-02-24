@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Users, Shield, ChevronDown, ChevronUp, FileText, CheckCircle, Clock, BarChart3, Eye, EyeOff, FolderOpen, Save, HelpCircle, Briefcase, CreditCard } from "lucide-react";
+import { Search, Users, Shield, ChevronDown, ChevronUp, FileText, CheckCircle, Clock, BarChart3, Eye, EyeOff, FolderOpen, Save, HelpCircle, Briefcase, CreditCard, Mail } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
 import CreateUserForm from "@/components/admin/CreateUserForm";
@@ -15,6 +15,7 @@ import ResourceUploadPanel from "@/components/admin/ResourceUploadPanel";
 import FAQManagerPanel from "@/components/admin/FAQManagerPanel";
 import PractitionersTab from "@/components/admin/PractitionersTab";
 import SubscribersTab from "@/components/admin/SubscribersTab";
+import EmailTemplateEditor from "@/components/admin/EmailTemplateEditor";
 
 
 type AppRole = Database["public"]["Enums"]["app_role"];
@@ -339,6 +340,7 @@ export default function AdminDashboard() {
             <TabsTrigger value="users"><Users className="h-3.5 w-3.5 mr-1" />All Users</TabsTrigger>
             <TabsTrigger value="resources"><FolderOpen className="h-3.5 w-3.5 mr-1" />Resources</TabsTrigger>
             <TabsTrigger value="faqs"><HelpCircle className="h-3.5 w-3.5 mr-1" />FAQs</TabsTrigger>
+            <TabsTrigger value="emails"><Mail className="h-3.5 w-3.5 mr-1" />Emails</TabsTrigger>
           </TabsList>
 
           {/* ======= PRACTITIONERS TAB ======= */}
@@ -424,6 +426,11 @@ export default function AdminDashboard() {
           {/* ======= FAQs TAB ======= */}
           <TabsContent value="faqs" className="space-y-4">
             <FAQManagerPanel />
+          </TabsContent>
+
+          {/* ======= EMAILS TAB ======= */}
+          <TabsContent value="emails" className="space-y-4">
+            <EmailTemplateEditor />
           </TabsContent>
         </Tabs>
       </main>
