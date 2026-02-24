@@ -933,6 +933,7 @@ export type Database = {
         | "client"
         | "community_participant"
         | "gamer"
+        | "admin"
       assessment_type: "quiz" | "test" | "practical"
       case_study_status:
         | "draft"
@@ -1098,6 +1099,7 @@ export const Constants = {
         "client",
         "community_participant",
         "gamer",
+        "admin",
       ],
       assessment_type: ["quiz", "test", "practical"],
       case_study_status: [
