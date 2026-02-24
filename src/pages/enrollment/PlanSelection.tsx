@@ -68,6 +68,10 @@ export default function PlanSelection() {
         if (isCaseStudy) {
           navigate(`/enroll/details?${params.toString()}`);
         } else {
+          // Pass practitioner_code if present (from invite link)
+          if (practitionerCode.trim()) {
+            params.set("practitioner_code", practitionerCode.trim());
+          }
           navigate(`/enroll/practitioner?${params.toString()}`);
         }
       } else {
