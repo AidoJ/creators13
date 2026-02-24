@@ -288,6 +288,22 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
 
   const pageIdx = PAGES.indexOf(page);
 
+  // Validation: all fields + drawing required for submit (online mode)
+  const allPage1Filled = !!(headNeck.trim() && chestArms.trim() && bellyWaist.trim() && upperThighs.trim() && legsFeet.trim());
+  const allPage2Filled = !!(prominentFace.trim() && prominentBody.trim() && prominentHandsFeet.trim() && concentrationOfTissue.trim() && otherAilments.trim());
+  const allPage3Filled = !!(keyFeaturesCT1.trim() && keyFeaturesCT2.trim() && keyFeaturesOther.trim() && keyQuestions.trim());
+  const allPage4Filled = !!(lightBulbMoments.trim() && whatLearned.trim() && whatWentWell.trim() && potentialFollowUp.trim());
+  const hasDrawing = !!bodyDrawing;
+  const canSubmitOnline = allPage1Filled && allPage2Filled && allPage3Filled && allPage4Filled && hasDrawing;
+
+  // Build missing items list for tooltip
+  const missingItems: string[] = [];
+  if (!hasDrawing) missingItems.push("Body drawing");
+  if (!allPage1Filled) missingItems.push("Page 1 fields");
+  if (!allPage2Filled) missingItems.push("Page 2 fields");
+  if (!allPage3Filled) missingItems.push("Page 3 fields");
+  if (!allPage4Filled) missingItems.push("Page 4 fields");
+
   return (
     <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
       {/* Header */}
@@ -621,10 +637,17 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
                 Save Draft
               </Button>
               {pageIdx === PAGES.length - 1 && (
-                <Button onClick={() => handleSave("submitted")} disabled={saving}>
-                  {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
-                  Submit for Review
-                </Button>
+                <div className="flex flex-col items-end gap-1">
+                  <Button onClick={() => handleSave("submitted")} disabled={saving || !canSubmitOnline}>
+                    {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                    Submit for Review
+                  </Button>
+                  {!canSubmitOnline && (
+                    <p className="text-[10px] text-destructive">
+                      Missing: {missingItems.join(", ")}
+                    </p>
+                  )}
+                </div>
               )}
             </div>
 
