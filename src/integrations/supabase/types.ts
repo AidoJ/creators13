@@ -881,6 +881,41 @@ export type Database = {
         }
         Relationships: []
       }
+      training_call_invitees: {
+        Row: {
+          call_id: string
+          email: string
+          id: string
+          invited_at: string
+          name: string | null
+          user_id: string | null
+        }
+        Insert: {
+          call_id: string
+          email: string
+          id?: string
+          invited_at?: string
+          name?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          call_id?: string
+          email?: string
+          id?: string
+          invited_at?: string
+          name?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_call_invitees_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "training_calls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       training_calls: {
         Row: {
           cancelled: boolean | null

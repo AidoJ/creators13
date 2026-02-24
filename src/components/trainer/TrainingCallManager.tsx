@@ -24,6 +24,14 @@ interface TrainingCall {
   created_at: string;
 }
 
+interface Invitee {
+  id: string;
+  email: string;
+  name: string | null;
+  user_id: string | null;
+  invited_at: string;
+}
+
 interface PractitionerOption {
   user_id: string;
   email: string;
@@ -37,11 +45,12 @@ export default function TrainingCallManager() {
   const [showForm, setShowForm] = useState(false);
   const [sending, setSending] = useState<string | null>(null);
 
-  // Practitioner list for invitee selection
+   // Practitioner list for invitee selection
   const [practitioners, setPractitioners] = useState<PractitionerOption[]>([]);
   const [practLoading, setPractLoading] = useState(false);
 
-  // Form state
+  // Invitees per call
+  const [inviteesByCall, setInviteesByCall] = useState<Record<string, Invitee[]>>({});
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [date, setDate] = useState("");
@@ -57,15 +66,34 @@ export default function TrainingCallManager() {
   const [externalEmails, setExternalEmails] = useState<string[]>([]);
   const [newExternalEmail, setNewExternalEmail] = useState("");
 
+  const fetchInvitees = useCallback(async (callIds: string[]) => {
+    if (callIds.length === 0) return;
+    const { data } = await supabase
+      .from("training_call_invitees")
+      .select("id, call_id, email, name, user_id, invited_at")
+      .in("call_id", callIds)
+      .order("invited_at", { ascending: true });
+    const grouped: Record<string, Invitee[]> = {};
+    (data || []).forEach((row: any) => {
+      if (!grouped[row.call_id]) grouped[row.call_id] = [];
+      grouped[row.call_id].push(row);
+    });
+    setInviteesByCall(grouped);
+  }, []);
+
   const fetchCalls = useCallback(async () => {
     setLoading(true);
     const { data } = await supabase
       .from("training_calls")
       .select("*")
       .order("scheduled_at", { ascending: true });
-    setCalls((data as TrainingCall[]) || []);
+    const callsList = (data as TrainingCall[]) || [];
+    setCalls(callsList);
     setLoading(false);
-  }, []);
+    // Fetch invitees for all calls
+    const ids = callsList.map(c => c.id);
+    fetchInvitees(ids);
+  }, [fetchInvitees]);
 
   const fetchPractitioners = useCallback(async () => {
     setPractLoading(true);
@@ -421,7 +449,7 @@ export default function TrainingCallManager() {
             <div className="space-y-2">
               <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Upcoming</h3>
               {upcomingCalls.map(call => (
-                <CallCard key={call.id} call={call} onCancel={handleCancel} onDelete={handleDelete} onResend={(c) => sendInvites(c)} sending={sending === call.id} practitioners={practitioners} onSendInvites={sendInvites} onLoadPractitioners={fetchPractitioners} practLoading={practLoading} />
+                <CallCard key={call.id} call={call} onCancel={handleCancel} onDelete={handleDelete} onResend={(c) => sendInvites(c)} sending={sending === call.id} practitioners={practitioners} onSendInvites={sendInvites} onLoadPractitioners={fetchPractitioners} practLoading={practLoading} invitees={inviteesByCall[call.id] || []} onInvitesSent={() => fetchInvitees(calls.map(c => c.id))} />
               ))}
             </div>
           )}
@@ -429,7 +457,7 @@ export default function TrainingCallManager() {
             <div className="space-y-2">
               <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Past</h3>
               {pastCalls.slice(0, 10).map(call => (
-                <CallCard key={call.id} call={call} onCancel={handleCancel} onDelete={handleDelete} onResend={(c) => sendInvites(c)} sending={sending === call.id} past />
+                <CallCard key={call.id} call={call} onCancel={handleCancel} onDelete={handleDelete} onResend={(c) => sendInvites(c)} sending={sending === call.id} past invitees={inviteesByCall[call.id] || []} />
               ))}
             </div>
           )}
@@ -438,7 +466,7 @@ export default function TrainingCallManager() {
               <summary className="text-xs font-semibold text-muted-foreground uppercase tracking-wider cursor-pointer">Cancelled ({cancelledCalls.length})</summary>
               <div className="space-y-2 mt-2">
                 {cancelledCalls.map(call => (
-                  <CallCard key={call.id} call={call} onCancel={handleCancel} onDelete={handleDelete} onResend={(c) => sendInvites(c)} sending={false} cancelled />
+                  <CallCard key={call.id} call={call} onCancel={handleCancel} onDelete={handleDelete} onResend={(c) => sendInvites(c)} sending={false} cancelled invitees={inviteesByCall[call.id] || []} />
                 ))}
               </div>
             </details>
@@ -449,7 +477,7 @@ export default function TrainingCallManager() {
   );
 }
 
-function CallCard({ call, onCancel, onDelete, onResend, sending, past, cancelled, practitioners, onSendInvites, onLoadPractitioners, practLoading }: {
+function CallCard({ call, onCancel, onDelete, onResend, sending, past, cancelled, practitioners, onSendInvites, onLoadPractitioners, practLoading, invitees, onInvitesSent }: {
   call: TrainingCall;
   onCancel: (id: string) => void;
   onDelete: (id: string) => void;
@@ -461,6 +489,8 @@ function CallCard({ call, onCancel, onDelete, onResend, sending, past, cancelled
   onSendInvites?: (call: Record<string, any>, practitionerUserIds?: string[], externalGuestEmails?: string[]) => Promise<void>;
   onLoadPractitioners?: () => void;
   practLoading?: boolean;
+  invitees?: Invitee[];
+  onInvitesSent?: () => void;
 }) {
   const [showInviteMore, setShowInviteMore] = useState(false);
   const [addSelectedIds, setAddSelectedIds] = useState<Set<string>>(new Set());
@@ -502,6 +532,7 @@ function CallCard({ call, onCancel, onDelete, onResend, sending, past, cancelled
     setAddSelectedIds(new Set());
     setAddExternalEmails([]);
     setAddNewEmail("");
+    onInvitesSent?.();
   }
 
   return (
@@ -524,6 +555,20 @@ function CallCard({ call, onCancel, onDelete, onResend, sending, past, cancelled
             <span>{call.duration_minutes}min</span>
           </div>
           {call.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{call.description}</p>}
+          {/* Invitee list */}
+          {invitees && invitees.length > 0 && (
+            <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+              <Users className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+              {invitees.slice(0, 6).map(inv => (
+                <Badge key={inv.id} variant="secondary" className="text-[10px] py-0 h-5">
+                  {inv.name || inv.email}
+                </Badge>
+              ))}
+              {invitees.length > 6 && (
+                <span className="text-[10px] text-muted-foreground">+{invitees.length - 6} more</span>
+              )}
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
           {call.zoom_link && (

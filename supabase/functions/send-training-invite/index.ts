@@ -149,12 +149,14 @@ serve(async (req) => {
 
     let sentCount = 0;
     const errors: string[] = [];
+    const inviteeRecords: Array<{ call_id: string; user_id: string | null; email: string; name: string | null }> = [];
 
     // Helper: send to one recipient
     async function sendToRecipient(
       email: string,
       firstName: string,
-      timezone: string
+      timezone: string,
+      userId: string | null
     ) {
       const localTime = formatDateForTimezone(scheduledAt, timezone);
 
@@ -172,6 +174,11 @@ serve(async (req) => {
 
       const html = replaceTemplateVars(template.html_body, vars);
       const subject = replaceTemplateVars(template.subject, vars);
+
+      // Track invitee
+      if (body.callId) {
+        inviteeRecords.push({ call_id: body.callId, user_id: userId, email, name: firstName !== "there" ? firstName : null });
+      }
 
       try {
         const { error } = await resend.emails.send({
@@ -207,7 +214,8 @@ serve(async (req) => {
         await sendToRecipient(
           profile.email,
           profile.first_name || "Practitioner",
-          profile.timezone || "Australia/Sydney"
+          profile.timezone || "Australia/Sydney",
+          profile.user_id
         );
       }
     }
@@ -216,8 +224,16 @@ serve(async (req) => {
     if (externalEmails && externalEmails.length > 0) {
       for (const guestEmail of externalEmails) {
         if (!guestEmail || !guestEmail.includes("@")) continue;
-        await sendToRecipient(guestEmail, "there", "UTC");
+        await sendToRecipient(guestEmail, "there", "UTC", null);
       }
+    }
+
+    // --- Record invitees in DB ---
+    if (inviteeRecords.length > 0) {
+      const { error: insertErr } = await supabase
+        .from("training_call_invitees")
+        .insert(inviteeRecords);
+      if (insertErr) console.error("Error recording invitees:", insertErr);
     }
 
     return new Response(
