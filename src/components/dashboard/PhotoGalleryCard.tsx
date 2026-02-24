@@ -16,6 +16,18 @@ const PHOTO_SLOTS = [
   { key: "hands", label: "Hands" },
 ] as const;
 
+// Fallback for photos stored with generic photo_1..photo_8 types
+const GENERIC_FALLBACK: Record<string, string> = {
+  face_front_closed: "photo_1",
+  face_front_smiling: "photo_2",
+  face_side: "photo_3",
+  body_front: "photo_4",
+  body_back: "photo_5",
+  body_side: "photo_6",
+  feet: "photo_7",
+  hands: "photo_8",
+};
+
 interface PhotoGalleryCardProps {
   userId: string;
   photosUploaded: boolean;
@@ -81,7 +93,7 @@ export default function PhotoGalleryCard({ userId, photosUploaded }: PhotoGaller
       ) : (
         <div className="grid grid-cols-4 sm:grid-cols-8 gap-1.5">
           {PHOTO_SLOTS.map((slot) => {
-            const url = photos[slot.key];
+            const url = photos[slot.key] || photos[GENERIC_FALLBACK[slot.key]] || null;
             return (
               <div key={slot.key} className="relative aspect-square rounded-lg overflow-hidden bg-muted/40">
                 {url ? (
