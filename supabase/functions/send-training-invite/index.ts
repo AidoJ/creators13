@@ -12,10 +12,12 @@ interface TrainingInviteRequest {
   callId: string;
   title: string;
   description?: string;
-  scheduledAt: string; // ISO UTC
+  scheduledAt: string;
   durationMinutes: number;
   zoomLink?: string;
   recurrenceRule?: string;
+  practitionerUserIds?: string[];  // specific practitioners to invite (empty = all)
+  externalEmails?: string[];        // guest emails outside the system
 }
 
 function formatDateForTimezone(isoDate: string, timezone: string): string {
@@ -73,6 +75,47 @@ function generateICS(
   return lines;
 }
 
+function buildEmailHtml(
+  firstName: string,
+  title: string,
+  description: string | undefined,
+  localTime: string,
+  durationMinutes: number,
+  tz: string,
+  recurrenceRule: string | undefined,
+  zoomLink: string | undefined
+): string {
+  const recurrenceText =
+    recurrenceRule && recurrenceRule !== "none"
+      ? `<p style="color:#666;font-size:14px;">This is a <strong>${recurrenceRule}</strong> recurring call.</p>`
+      : "";
+
+  return `
+    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;background:#ffffff;padding:40px 20px;">
+      <div style="background:#007e8c;border-radius:12px;padding:32px;text-align:center;margin-bottom:24px;">
+        <h1 style="color:#ffffff;font-size:22px;margin:0;">📅 Training Call Scheduled</h1>
+      </div>
+      <p style="color:#333;font-size:16px;">Hi ${firstName},</p>
+      <p style="color:#333;font-size:14px;">A new training call has been scheduled:</p>
+      <div style="background:#f8f9fa;border-radius:8px;padding:20px;margin:16px 0;border-left:4px solid #007e8c;">
+        <h2 style="color:#007e8c;font-size:18px;margin:0 0 8px 0;">${title}</h2>
+        ${description ? `<p style="color:#666;font-size:14px;margin:0 0 8px 0;">${description}</p>` : ""}
+        <p style="color:#333;font-size:15px;font-weight:600;margin:0 0 4px 0;">🕐 ${localTime}</p>
+        <p style="color:#666;font-size:13px;margin:0;">Duration: ${durationMinutes} minutes · Timezone: ${tz}</p>
+      </div>
+      ${recurrenceText}
+      ${
+        zoomLink
+          ? `<div style="text-align:center;margin:24px 0;">
+              <a href="${zoomLink}" style="display:inline-block;background:#007e8c;color:#ffffff;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;">Join Zoom Meeting →</a>
+            </div>`
+          : ""
+      }
+      <p style="color:#999;font-size:12px;text-align:center;margin-top:32px;">13 Creators · Training Program</p>
+    </div>
+  `;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -90,36 +133,19 @@ serve(async (req) => {
     const resend = new Resend(apiKey);
 
     const body: TrainingInviteRequest = await req.json();
-    const { title, description, scheduledAt, durationMinutes, zoomLink, recurrenceRule } = body;
+    const {
+      title,
+      description,
+      scheduledAt,
+      durationMinutes,
+      zoomLink,
+      recurrenceRule,
+      practitionerUserIds,
+      externalEmails,
+    } = body;
 
     if (!title || !scheduledAt) {
       throw new Error("Missing required fields: title, scheduledAt");
-    }
-
-    // Get all practitioners and trainees with their emails and timezones
-    const { data: practRoles } = await supabase
-      .from("user_roles")
-      .select("user_id, role")
-      .in("role", ["practitioner", "trainee"]);
-
-    if (!practRoles || practRoles.length === 0) {
-      return new Response(JSON.stringify({ success: true, sent: 0 }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const userIds = practRoles.map((r) => r.user_id);
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("user_id, email, first_name, timezone")
-      .in("user_id", userIds);
-
-    if (!profiles || profiles.length === 0) {
-      return new Response(JSON.stringify({ success: true, sent: 0 }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
     }
 
     const icsContent = generateICS(title, description || "", scheduledAt, durationMinutes, zoomLink);
@@ -128,76 +154,65 @@ serve(async (req) => {
     let sentCount = 0;
     const errors: string[] = [];
 
-    for (const profile of profiles) {
-      if (!profile.email) continue;
+    // --- Send to selected practitioners ---
+    const hasSelectedPractitioners = practitionerUserIds && practitionerUserIds.length > 0;
 
-      const tz = profile.timezone || "Australia/Sydney";
-      const localTime = formatDateForTimezone(scheduledAt, tz);
-      const firstName = profile.first_name || "Practitioner";
+    if (hasSelectedPractitioners) {
+      // Fetch profiles for selected practitioners only
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, email, first_name, timezone")
+        .in("user_id", practitionerUserIds);
 
-      const recurrenceText =
-        recurrenceRule && recurrenceRule !== "none"
-          ? `<p style="color:#666;font-size:14px;">This is a <strong>${recurrenceRule}</strong> recurring call.</p>`
-          : "";
+      for (const profile of (profiles || [])) {
+        if (!profile.email) continue;
 
-      const html = `
-        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;background:#ffffff;padding:40px 20px;">
-          <div style="background:#007e8c;border-radius:12px;padding:32px;text-align:center;margin-bottom:24px;">
-            <h1 style="color:#ffffff;font-size:22px;margin:0;">📅 Training Call Scheduled</h1>
-          </div>
-          <p style="color:#333;font-size:16px;">Hi ${firstName},</p>
-          <p style="color:#333;font-size:14px;">A new training call has been scheduled:</p>
-          <div style="background:#f8f9fa;border-radius:8px;padding:20px;margin:16px 0;border-left:4px solid #007e8c;">
-            <h2 style="color:#007e8c;font-size:18px;margin:0 0 8px 0;">${title}</h2>
-            ${description ? `<p style="color:#666;font-size:14px;margin:0 0 8px 0;">${description}</p>` : ""}
-            <p style="color:#333;font-size:15px;font-weight:600;margin:0 0 4px 0;">🕐 ${localTime}</p>
-            <p style="color:#666;font-size:13px;margin:0;">Duration: ${durationMinutes} minutes · Your timezone: ${tz}</p>
-          </div>
-          ${recurrenceText}
-          ${
-            zoomLink
-              ? `<div style="text-align:center;margin:24px 0;">
-                  <a href="${zoomLink}" style="display:inline-block;background:#007e8c;color:#ffffff;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;">Join Zoom Meeting →</a>
-                </div>`
-              : ""
-          }
-          <p style="color:#999;font-size:12px;text-align:center;margin-top:32px;">13 Creators · Training Program</p>
-        </div>
-      `;
+        const tz = profile.timezone || "Australia/Sydney";
+        const localTime = formatDateForTimezone(scheduledAt, tz);
+        const firstName = profile.first_name || "Practitioner";
 
-      try {
-        const { error } = await resend.emails.send({
-          from: "13 Creators <noreply@connect.13creators.com>",
-          to: [profile.email],
-          subject: `Training Call: ${title}`,
-          html,
-          attachments: [
-            {
-              filename: "training-call.ics",
-              content: icsBase64,
-              content_type: "text/calendar",
-            },
-          ],
-        });
+        const html = buildEmailHtml(firstName, title, description, localTime, durationMinutes, tz, recurrenceRule, zoomLink);
 
-        if (error) {
-          console.error(`Error sending to ${profile.email}:`, error);
-          errors.push(profile.email);
-        } else {
-          sentCount++;
-        }
-      } catch (e) {
-        console.error(`Exception sending to ${profile.email}:`, e);
-        errors.push(profile.email);
+        try {
+          const { error } = await resend.emails.send({
+            from: "13 Creators <noreply@connect.13creators.com>",
+            to: [profile.email],
+            subject: `Training Call: ${title}`,
+            html,
+            attachments: [{ filename: "training-call.ics", content: icsBase64, content_type: "text/calendar" }],
+          });
+          if (error) { console.error(`Error sending to ${profile.email}:`, error); errors.push(profile.email); }
+          else { sentCount++; }
+        } catch (e) { console.error(`Exception sending to ${profile.email}:`, e); errors.push(profile.email); }
+      }
+    }
+
+    // --- Send to external guest emails ---
+    if (externalEmails && externalEmails.length > 0) {
+      const utcTime = formatDateForTimezone(scheduledAt, "UTC");
+
+      for (const guestEmail of externalEmails) {
+        if (!guestEmail || !guestEmail.includes("@")) continue;
+
+        const html = buildEmailHtml("there", title, description, utcTime, durationMinutes, "UTC", recurrenceRule, zoomLink);
+
+        try {
+          const { error } = await resend.emails.send({
+            from: "13 Creators <noreply@connect.13creators.com>",
+            to: [guestEmail],
+            subject: `Training Call Invite: ${title}`,
+            html,
+            attachments: [{ filename: "training-call.ics", content: icsBase64, content_type: "text/calendar" }],
+          });
+          if (error) { console.error(`Error sending to ${guestEmail}:`, error); errors.push(guestEmail); }
+          else { sentCount++; }
+        } catch (e) { console.error(`Exception sending to ${guestEmail}:`, e); errors.push(guestEmail); }
       }
     }
 
     return new Response(
       JSON.stringify({ success: true, sent: sentCount, failed: errors.length, errors }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err: unknown) {
     console.error("send-training-invite error:", err);
