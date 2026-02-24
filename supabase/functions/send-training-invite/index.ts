@@ -236,6 +236,15 @@ serve(async (req) => {
       if (insertErr) console.error("Error recording invitees:", insertErr);
     }
 
+    // Record timeline event
+    if (body.callId && sentCount > 0) {
+      await supabase.from("training_call_events").insert({
+        call_id: body.callId,
+        event_type: "invites_sent",
+        details: `Invites sent to ${sentCount} recipient${sentCount !== 1 ? "s" : ""}`,
+      });
+    }
+
     return new Response(
       JSON.stringify({ success: true, sent: sentCount, failed: errors.length, errors }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
