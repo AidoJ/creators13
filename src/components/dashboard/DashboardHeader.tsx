@@ -35,9 +35,12 @@ export default function DashboardHeader({ email, onSignOut }: DashboardHeaderPro
   const isPractitioner = roles.some(r => ["practitioner", "trainee", "trainer"].includes(r));
   const isTrainerOrAdmin = roles.includes("trainer") || roles.includes("admin");
 
+  const isTrainer = roles.includes("trainer");
+
   const navItems = [
     { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard, show: true },
     { label: "Practitioner", path: "/practitioner", icon: Users, show: isPractitioner },
+    { label: "Trainer", path: "/trainer", icon: Shield, show: isTrainer },
     { label: "Admin", path: "/admin", icon: Shield, show: isTrainerOrAdmin },
   ];
 
