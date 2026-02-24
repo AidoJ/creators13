@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Calendar, Plus, Video, Clock, Repeat, Send, Trash2, X, Users, UserPlus, Mail } from "lucide-react";
+import { Calendar, Plus, Video, Clock, Repeat, Send, Trash2, X, Users, UserPlus, Mail, CheckCircle, Bell, XCircle, Edit, CircleDot } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
@@ -32,6 +32,14 @@ interface Invitee {
   invited_at: string;
 }
 
+interface CallEvent {
+  id: string;
+  call_id: string;
+  event_type: string;
+  details: string | null;
+  created_at: string;
+}
+
 interface PractitionerOption {
   user_id: string;
   email: string;
@@ -49,8 +57,9 @@ export default function TrainingCallManager() {
   const [practitioners, setPractitioners] = useState<PractitionerOption[]>([]);
   const [practLoading, setPractLoading] = useState(false);
 
-  // Invitees per call
+  // Invitees and events per call
   const [inviteesByCall, setInviteesByCall] = useState<Record<string, Invitee[]>>({});
+  const [eventsByCall, setEventsByCall] = useState<Record<string, CallEvent[]>>({});
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [date, setDate] = useState("");
@@ -68,17 +77,22 @@ export default function TrainingCallManager() {
 
   const fetchInvitees = useCallback(async (callIds: string[]) => {
     if (callIds.length === 0) return;
-    const { data } = await supabase
-      .from("training_call_invitees")
-      .select("id, call_id, email, name, user_id, invited_at")
-      .in("call_id", callIds)
-      .order("invited_at", { ascending: true });
-    const grouped: Record<string, Invitee[]> = {};
-    (data || []).forEach((row: any) => {
-      if (!grouped[row.call_id]) grouped[row.call_id] = [];
-      grouped[row.call_id].push(row);
+    const [{ data: invData }, { data: evtData }] = await Promise.all([
+      supabase.from("training_call_invitees").select("id, call_id, email, name, user_id, invited_at").in("call_id", callIds).order("invited_at", { ascending: true }),
+      supabase.from("training_call_events").select("id, call_id, event_type, details, created_at").in("call_id", callIds).order("created_at", { ascending: true }),
+    ]);
+    const groupedInv: Record<string, Invitee[]> = {};
+    (invData || []).forEach((row: any) => {
+      if (!groupedInv[row.call_id]) groupedInv[row.call_id] = [];
+      groupedInv[row.call_id].push(row);
     });
-    setInviteesByCall(grouped);
+    setInviteesByCall(groupedInv);
+    const groupedEvt: Record<string, CallEvent[]> = {};
+    (evtData || []).forEach((row: any) => {
+      if (!groupedEvt[row.call_id]) groupedEvt[row.call_id] = [];
+      groupedEvt[row.call_id].push(row);
+    });
+    setEventsByCall(groupedEvt);
   }, []);
 
   const fetchCalls = useCallback(async () => {
@@ -214,12 +228,19 @@ export default function TrainingCallManager() {
       }
     }
 
-    const { error } = await supabase.from("training_calls").insert(callsToCreate);
+    const { data: insertedCalls, error } = await supabase.from("training_calls").insert(callsToCreate).select("id");
 
     if (error) {
       toast({ title: "Error creating call", description: error.message, variant: "destructive" });
     } else {
       toast({ title: `Training call${callsToCreate.length > 1 ? "s" : ""} created`, description: `${callsToCreate.length} session${callsToCreate.length > 1 ? "s" : ""} scheduled.` });
+
+      // Record created events
+      if (insertedCalls) {
+        await supabase.from("training_call_events").insert(
+          insertedCalls.map((c: any) => ({ call_id: c.id, event_type: "created", details: "Training call scheduled" }))
+        );
+      }
 
       // Build recipient lists
       const selectedPractitionerUserIds = Array.from(selectedUserIds);
@@ -261,6 +282,7 @@ export default function TrainingCallManager() {
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
+      await supabase.from("training_call_events").insert({ call_id: id, event_type: "cancelled", details: "Call cancelled" });
       toast({ title: "Call cancelled" });
       fetchCalls();
     }
@@ -449,7 +471,7 @@ export default function TrainingCallManager() {
             <div className="space-y-2">
               <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Upcoming</h3>
               {upcomingCalls.map(call => (
-                <CallCard key={call.id} call={call} onCancel={handleCancel} onDelete={handleDelete} onResend={(c) => sendInvites(c)} sending={sending === call.id} practitioners={practitioners} onSendInvites={sendInvites} onLoadPractitioners={fetchPractitioners} practLoading={practLoading} invitees={inviteesByCall[call.id] || []} onInvitesSent={() => fetchInvitees(calls.map(c => c.id))} />
+                <CallCard key={call.id} call={call} onCancel={handleCancel} onDelete={handleDelete} onResend={(c) => sendInvites(c)} sending={sending === call.id} practitioners={practitioners} onSendInvites={sendInvites} onLoadPractitioners={fetchPractitioners} practLoading={practLoading} invitees={inviteesByCall[call.id] || []} events={eventsByCall[call.id] || []} onInvitesSent={() => fetchInvitees(calls.map(c => c.id))} />
               ))}
             </div>
           )}
@@ -457,7 +479,7 @@ export default function TrainingCallManager() {
             <div className="space-y-2">
               <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Past</h3>
               {pastCalls.slice(0, 10).map(call => (
-                <CallCard key={call.id} call={call} onCancel={handleCancel} onDelete={handleDelete} onResend={(c) => sendInvites(c)} sending={sending === call.id} past invitees={inviteesByCall[call.id] || []} />
+                <CallCard key={call.id} call={call} onCancel={handleCancel} onDelete={handleDelete} onResend={(c) => sendInvites(c)} sending={sending === call.id} past invitees={inviteesByCall[call.id] || []} events={eventsByCall[call.id] || []} />
               ))}
             </div>
           )}
@@ -466,7 +488,7 @@ export default function TrainingCallManager() {
               <summary className="text-xs font-semibold text-muted-foreground uppercase tracking-wider cursor-pointer">Cancelled ({cancelledCalls.length})</summary>
               <div className="space-y-2 mt-2">
                 {cancelledCalls.map(call => (
-                  <CallCard key={call.id} call={call} onCancel={handleCancel} onDelete={handleDelete} onResend={(c) => sendInvites(c)} sending={false} cancelled invitees={inviteesByCall[call.id] || []} />
+                  <CallCard key={call.id} call={call} onCancel={handleCancel} onDelete={handleDelete} onResend={(c) => sendInvites(c)} sending={false} cancelled invitees={inviteesByCall[call.id] || []} events={eventsByCall[call.id] || []} />
                 ))}
               </div>
             </details>
@@ -477,7 +499,7 @@ export default function TrainingCallManager() {
   );
 }
 
-function CallCard({ call, onCancel, onDelete, onResend, sending, past, cancelled, practitioners, onSendInvites, onLoadPractitioners, practLoading, invitees, onInvitesSent }: {
+function CallCard({ call, onCancel, onDelete, onResend, sending, past, cancelled, practitioners, onSendInvites, onLoadPractitioners, practLoading, invitees, events, onInvitesSent }: {
   call: TrainingCall;
   onCancel: (id: string) => void;
   onDelete: (id: string) => void;
@@ -490,6 +512,7 @@ function CallCard({ call, onCancel, onDelete, onResend, sending, past, cancelled
   onLoadPractitioners?: () => void;
   practLoading?: boolean;
   invitees?: Invitee[];
+  events?: CallEvent[];
   onInvitesSent?: () => void;
 }) {
   const [showInviteMore, setShowInviteMore] = useState(false);
@@ -608,6 +631,53 @@ function CallCard({ call, onCancel, onDelete, onResend, sending, past, cancelled
           </AlertDialog>
         </div>
       </div>
+
+      {/* Timeline */}
+      {events && events.length > 0 && (
+        <details className="border-t border-border pt-2">
+          <summary className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider cursor-pointer flex items-center gap-1">
+            <CircleDot className="h-3 w-3" /> Timeline ({events.length})
+          </summary>
+          <div className="mt-2 ml-1.5 border-l-2 border-border pl-3 space-y-1.5">
+            {events.map(evt => {
+              const evtDate = new Date(evt.created_at);
+              const icon = evt.event_type === "created" ? <Plus className="h-3 w-3 text-primary" /> :
+                evt.event_type === "invites_sent" ? <Send className="h-3 w-3 text-primary" /> :
+                evt.event_type === "reminder_sent" ? <Bell className="h-3 w-3 text-amber-500" /> :
+                evt.event_type === "cancelled" ? <XCircle className="h-3 w-3 text-destructive" /> :
+                evt.event_type === "completed" ? <CheckCircle className="h-3 w-3 text-green-600" /> :
+                evt.event_type === "updated" ? <Edit className="h-3 w-3 text-muted-foreground" /> :
+                <CircleDot className="h-3 w-3 text-muted-foreground" />;
+              const label = evt.event_type === "created" ? "Created" :
+                evt.event_type === "invites_sent" ? "Invites Sent" :
+                evt.event_type === "reminder_sent" ? "Reminder Sent" :
+                evt.event_type === "cancelled" ? "Cancelled" :
+                evt.event_type === "completed" ? "Completed" :
+                evt.event_type === "updated" ? "Updated" : evt.event_type;
+              return (
+                <div key={evt.id} className="flex items-start gap-2">
+                  <div className="mt-0.5 flex-shrink-0">{icon}</div>
+                  <div className="min-w-0">
+                    <span className="text-xs font-medium text-foreground">{label}</span>
+                    {evt.details && <span className="text-[10px] text-muted-foreground ml-1.5">— {evt.details}</span>}
+                    <p className="text-[10px] text-muted-foreground">{evtDate.toLocaleString("en-AU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</p>
+                  </div>
+                </div>
+              );
+            })}
+            {/* Auto-derive completed status for past calls */}
+            {past && !cancelled && !events.some(e => e.event_type === "completed") && (
+              <div className="flex items-start gap-2">
+                <div className="mt-0.5 flex-shrink-0"><CheckCircle className="h-3 w-3 text-green-600" /></div>
+                <div>
+                  <span className="text-xs font-medium text-foreground">Completed</span>
+                  <p className="text-[10px] text-muted-foreground">Session time has passed</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </details>
+      )}
 
       {/* Inline invite-more panel */}
       {showInviteMore && (
