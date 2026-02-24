@@ -280,15 +280,16 @@ function CaseStudyList({ caseStudies, emptyMessage, expandedCaseStudy, setExpand
               <div className="border-t border-border bg-muted/20 p-4 space-y-4">
                 <CreatorTypeEditor caseStudyId={cs.id} currentTypes={cs.creator_types_identified} onUpdated={(newTypes) => { setCaseStudies(prev => prev.map(c => c.id === cs.id ? { ...c, creator_types_identified: newTypes } : c)); }} />
                 {cs.subject_user_id && <CompositePhotoLayout userId={cs.subject_user_id} subjectName={`${cs.subject_name}'s Profiling Photos`} />}
-                {cs.body_drawing_path && (
-                  <div>
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Body Drawing</p>
-                    <div className="relative max-w-[400px] bg-white rounded-lg border border-border overflow-hidden" style={{ aspectRatio: "400/800" }}>
-                      <BodyOutlineSVG className="absolute inset-0 w-full h-full text-foreground/60 pointer-events-none z-0" />
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Body Drawing</p>
+                  <div className="relative max-w-[400px] bg-white rounded-lg border border-border overflow-hidden" style={{ aspectRatio: "400/800" }}>
+                    <BodyOutlineSVG className="absolute inset-0 w-full h-full text-foreground/60 pointer-events-none z-0" />
+                    {cs.body_drawing_path && (
                       <img src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/profiling-photos/${cs.body_drawing_path}`} alt="Body drawing annotations" className="absolute inset-0 w-full h-full object-contain z-10" />
-                    </div>
+                    )}
                   </div>
-                )}
+                  {!cs.body_drawing_path && <p className="text-[10px] text-muted-foreground italic mt-1">No annotations added yet</p>}
+                </div>
                 {cs.form_data ? <CaseStudyFormDataView formData={cs.form_data} /> : cs.profiling_notes ? (
                   <div>
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Profiling Notes</p>
