@@ -16,8 +16,8 @@ interface TrainingInviteRequest {
   durationMinutes: number;
   zoomLink?: string;
   recurrenceRule?: string;
-  practitionerUserIds?: string[];  // specific practitioners to invite (empty = all)
-  externalEmails?: string[];        // guest emails outside the system
+  practitionerUserIds?: string[];
+  externalEmails?: string[];
 }
 
 function formatDateForTimezone(isoDate: string, timezone: string): string {
@@ -75,45 +75,15 @@ function generateICS(
   return lines;
 }
 
-function buildEmailHtml(
-  firstName: string,
-  title: string,
-  description: string | undefined,
-  localTime: string,
-  durationMinutes: number,
-  tz: string,
-  recurrenceRule: string | undefined,
-  zoomLink: string | undefined
+function replaceTemplateVars(
+  template: string,
+  vars: Record<string, string>
 ): string {
-  const recurrenceText =
-    recurrenceRule && recurrenceRule !== "none"
-      ? `<p style="color:#666;font-size:14px;">This is a <strong>${recurrenceRule}</strong> recurring call.</p>`
-      : "";
-
-  return `
-    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;background:#ffffff;padding:40px 20px;">
-      <div style="background:#007e8c;border-radius:12px;padding:32px;text-align:center;margin-bottom:24px;">
-        <h1 style="color:#ffffff;font-size:22px;margin:0;">📅 Training Call Scheduled</h1>
-      </div>
-      <p style="color:#333;font-size:16px;">Hi ${firstName},</p>
-      <p style="color:#333;font-size:14px;">A new training call has been scheduled:</p>
-      <div style="background:#f8f9fa;border-radius:8px;padding:20px;margin:16px 0;border-left:4px solid #007e8c;">
-        <h2 style="color:#007e8c;font-size:18px;margin:0 0 8px 0;">${title}</h2>
-        ${description ? `<p style="color:#666;font-size:14px;margin:0 0 8px 0;">${description}</p>` : ""}
-        <p style="color:#333;font-size:15px;font-weight:600;margin:0 0 4px 0;">🕐 ${localTime}</p>
-        <p style="color:#666;font-size:13px;margin:0;">Duration: ${durationMinutes} minutes · Timezone: ${tz}</p>
-      </div>
-      ${recurrenceText}
-      ${
-        zoomLink
-          ? `<div style="text-align:center;margin:24px 0;">
-              <a href="${zoomLink}" style="display:inline-block;background:#007e8c;color:#ffffff;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;">Join Zoom Meeting →</a>
-            </div>`
-          : ""
-      }
-      <p style="color:#999;font-size:12px;text-align:center;margin-top:32px;">13 Creators · Training Program</p>
-    </div>
-  `;
+  let result = template;
+  for (const [key, value] of Object.entries(vars)) {
+    result = result.replace(new RegExp(`\\{\\{${key}\\}\\}`, "g"), value);
+  }
+  return result;
 }
 
 serve(async (req) => {
@@ -148,65 +118,105 @@ serve(async (req) => {
       throw new Error("Missing required fields: title, scheduledAt");
     }
 
+    // Fetch email template from database
+    const { data: template, error: tplError } = await supabase
+      .from("email_templates")
+      .select("subject, html_body")
+      .eq("template_key", "training_call_invite")
+      .single();
+
+    if (tplError || !template) {
+      console.error("Template fetch error:", tplError);
+      throw new Error("Training call email template not found. Please create it in Admin → Emails.");
+    }
+
     const icsContent = generateICS(title, description || "", scheduledAt, durationMinutes, zoomLink);
     const icsBase64 = btoa(icsContent);
+
+    // Build reusable template fragments
+    const descriptionHtml = description
+      ? `<p style="color:#666;font-size:14px;margin:0 0 8px 0;">${description}</p>`
+      : "";
+
+    const recurrenceText =
+      recurrenceRule && recurrenceRule !== "none"
+        ? `<p style="color:#666;font-size:13px;margin:0 0 16px 0;">🔁 This is a <strong>${recurrenceRule}</strong> recurring call.</p>`
+        : "";
+
+    const zoomButton = zoomLink
+      ? `<div style="text-align:center;margin:24px 0 0 0;"><a href="${zoomLink}" style="display:inline-block;background:#BB1B56;color:#ffffff;padding:14px 36px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;">Join Zoom Meeting →</a></div>`
+      : "";
 
     let sentCount = 0;
     const errors: string[] = [];
 
-    // --- Send to selected practitioners ---
-    const hasSelectedPractitioners = practitionerUserIds && practitionerUserIds.length > 0;
+    // Helper: send to one recipient
+    async function sendToRecipient(
+      email: string,
+      firstName: string,
+      timezone: string
+    ) {
+      const localTime = formatDateForTimezone(scheduledAt, timezone);
 
-    if (hasSelectedPractitioners) {
-      // Fetch profiles for selected practitioners only
+      const vars: Record<string, string> = {
+        firstName,
+        title,
+        description: descriptionHtml,
+        localTime,
+        durationMinutes: String(durationMinutes),
+        timezone,
+        recurrenceText,
+        zoomButton,
+        email,
+      };
+
+      const html = replaceTemplateVars(template.html_body, vars);
+      const subject = replaceTemplateVars(template.subject, vars);
+
+      try {
+        const { error } = await resend.emails.send({
+          from: "13 Creators <noreply@connect.13creators.com>",
+          to: [email],
+          subject,
+          html,
+          attachments: [
+            { filename: "training-call.ics", content: icsBase64, content_type: "text/calendar" },
+          ],
+        });
+        if (error) {
+          console.error(`Error sending to ${email}:`, error);
+          errors.push(email);
+        } else {
+          sentCount++;
+        }
+      } catch (e) {
+        console.error(`Exception sending to ${email}:`, e);
+        errors.push(email);
+      }
+    }
+
+    // --- Send to selected practitioners ---
+    if (practitionerUserIds && practitionerUserIds.length > 0) {
       const { data: profiles } = await supabase
         .from("profiles")
         .select("user_id, email, first_name, timezone")
         .in("user_id", practitionerUserIds);
 
-      for (const profile of (profiles || [])) {
+      for (const profile of profiles || []) {
         if (!profile.email) continue;
-
-        const tz = profile.timezone || "Australia/Sydney";
-        const localTime = formatDateForTimezone(scheduledAt, tz);
-        const firstName = profile.first_name || "Practitioner";
-
-        const html = buildEmailHtml(firstName, title, description, localTime, durationMinutes, tz, recurrenceRule, zoomLink);
-
-        try {
-          const { error } = await resend.emails.send({
-            from: "13 Creators <noreply@connect.13creators.com>",
-            to: [profile.email],
-            subject: `Training Call: ${title}`,
-            html,
-            attachments: [{ filename: "training-call.ics", content: icsBase64, content_type: "text/calendar" }],
-          });
-          if (error) { console.error(`Error sending to ${profile.email}:`, error); errors.push(profile.email); }
-          else { sentCount++; }
-        } catch (e) { console.error(`Exception sending to ${profile.email}:`, e); errors.push(profile.email); }
+        await sendToRecipient(
+          profile.email,
+          profile.first_name || "Practitioner",
+          profile.timezone || "Australia/Sydney"
+        );
       }
     }
 
     // --- Send to external guest emails ---
     if (externalEmails && externalEmails.length > 0) {
-      const utcTime = formatDateForTimezone(scheduledAt, "UTC");
-
       for (const guestEmail of externalEmails) {
         if (!guestEmail || !guestEmail.includes("@")) continue;
-
-        const html = buildEmailHtml("there", title, description, utcTime, durationMinutes, "UTC", recurrenceRule, zoomLink);
-
-        try {
-          const { error } = await resend.emails.send({
-            from: "13 Creators <noreply@connect.13creators.com>",
-            to: [guestEmail],
-            subject: `Training Call Invite: ${title}`,
-            html,
-            attachments: [{ filename: "training-call.ics", content: icsBase64, content_type: "text/calendar" }],
-          });
-          if (error) { console.error(`Error sending to ${guestEmail}:`, error); errors.push(guestEmail); }
-          else { sentCount++; }
-        } catch (e) { console.error(`Exception sending to ${guestEmail}:`, e); errors.push(guestEmail); }
+        await sendToRecipient(guestEmail, "there", "UTC");
       }
     }
 
