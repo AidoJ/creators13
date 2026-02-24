@@ -1,8 +1,10 @@
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { TIERS, TierKey } from "@/lib/tiers";
-import { Calendar, ArrowRight, AlertCircle } from "lucide-react";
+import { Calendar, ArrowRight, AlertCircle, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import EnrollmentHeader from "@/components/enrollment/EnrollmentHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,21 +18,24 @@ export default function Booking() {
   const tierInfo = TIERS[tier] || TIERS.wren;
   const [calendlyEventTime, setCalendlyEventTime] = useState<string | null>(null);
   const [calendlyBooked, setCalendlyBooked] = useState(false);
+  const [manualDate, setManualDate] = useState("");
+  const [manualTime, setManualTime] = useState("");
 
   // Listen for Calendly postMessage events to capture scheduled time
   useEffect(() => {
     const handleMessage = (e: MessageEvent) => {
       if (e.data?.event === "calendly.event_scheduled") {
-        // Calendly payload can have start_time at different paths
-        const startTime =
-          e.data?.payload?.event?.start_time ||
-          e.data?.payload?.invitee?.start_time ||
-          e.data?.payload?.event?.uri; // fallback
         console.log("[Booking] Calendly event_scheduled payload:", JSON.stringify(e.data?.payload));
-        if (startTime && startTime.includes("T")) {
-          setCalendlyEventTime(startTime);
-        }
         setCalendlyBooked(true);
+
+        // Try direct start_time fields first
+        const directTime =
+          e.data?.payload?.event?.start_time ||
+          e.data?.payload?.invitee?.start_time;
+        
+        if (directTime && directTime.includes("T")) {
+          setCalendlyEventTime(directTime);
+        }
       }
     };
     window.addEventListener("message", handleMessage);
@@ -95,12 +100,12 @@ export default function Booking() {
           </div>
         </div>
 
-        {/* Calendly embed */}
+        {/* Calendly embed — shrink after booking to avoid blank space */}
         <div className="bg-card border border-border rounded-2xl p-0 overflow-hidden mb-8">
           <div 
             className="calendly-inline-widget" 
             data-url="https://calendly.com/creatortypes/ahara-chat?hide_event_type_details=1&hide_gdpr_block=1"
-            style={{ minWidth: "320px", height: "950px" }}
+            style={{ minWidth: "320px", height: calendlyBooked ? "520px" : "700px", transition: "height 0.3s ease" }}
           />
         </div>
 
@@ -128,14 +133,57 @@ export default function Booking() {
           </div>
         </div>
 
+        {/* Confirm booking time — shown after Calendly booking detected */}
+        {calendlyBooked && !calendlyEventTime && (
+          <div className="bg-green-500/10 border border-green-500/20 rounded-2xl p-6 mb-6">
+            <div className="flex items-start gap-3 mb-4">
+              <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 shrink-0" />
+              <div>
+                <h3 className="font-semibold text-foreground">Booking Confirmed!</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Please enter your scheduled date and time so we can display it on your dashboard.
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-8">
+              <div>
+                <Label htmlFor="booking-date" className="text-xs font-medium text-foreground">Date</Label>
+                <Input
+                  id="booking-date"
+                  type="date"
+                  value={manualDate}
+                  onChange={e => setManualDate(e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="booking-time" className="text-xs font-medium text-foreground">Time</Label>
+                <Input
+                  id="booking-time"
+                  type="time"
+                  value={manualTime}
+                  onChange={e => setManualTime(e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="mt-8 text-center space-y-3 sm:space-y-0 sm:space-x-4">
           <Button
             onClick={async () => {
               if (user) {
+                // Build scheduled_at from calendly event or manual input
+                let scheduledAt = calendlyEventTime || null;
+                if (!scheduledAt && manualDate && manualTime) {
+                  scheduledAt = new Date(`${manualDate}T${manualTime}`).toISOString();
+                }
+                
                 await supabase.from("bookings").insert({
                   client_id: user.id,
                   status: "scheduled",
-                  scheduled_at: calendlyEventTime || null,
+                  scheduled_at: scheduledAt,
                 });
                 await supabase.from("profiles").update({ enrollment_step: "booking_made" }).eq("user_id", user.id);
               }
@@ -151,7 +199,6 @@ export default function Booking() {
           <Button
             onClick={async () => {
               if (user) {
-                // Still mark photos_uploaded step even if skipping booking
                 await supabase.from("profiles").update({ enrollment_step: "photos_uploaded" }).eq("user_id", user.id);
               }
               navigate("/dashboard");
