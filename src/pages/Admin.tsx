@@ -26,7 +26,7 @@ type AppRole = Database["public"]["Enums"]["app_role"];
 type EnrollmentStep = Database["public"]["Enums"]["enrollment_step"];
 type CaseStudyStatus = Database["public"]["Enums"]["case_study_status"];
 
-const ALL_ROLES: AppRole[] = ["trainer", "practitioner", "trainee", "client", "community_participant", "gamer"];
+const ALL_ROLES: AppRole[] = ["trainer", "admin", "practitioner", "trainee", "client", "community_participant", "gamer"];
 
 interface UserRow {
   user_id: string;
@@ -82,6 +82,17 @@ export default function AdminDashboard() {
   const [expandedCaseStudy, setExpandedCaseStudy] = useState<string | null>(null);
   const [revisionNotes, setRevisionNotes] = useState<Record<string, string>>({});
   const [cohortFilter, setCohortFilter] = useState<string>("all");
+  const [currentUserRoles, setCurrentUserRoles] = useState<AppRole[]>([]);
+
+  // Fetch current user's roles to determine trainer vs admin access
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("user_roles").select("role").eq("user_id", user.id).then(({ data }) => {
+      if (data) setCurrentUserRoles(data.map(r => r.role));
+    });
+  }, [user]);
+
+  const isTrainer = currentUserRoles.includes("trainer");
 
   const fetchUsers = useCallback(async () => {
     const [profilesRes, rolesRes, subsRes] = await Promise.all([
@@ -337,12 +348,12 @@ export default function AdminDashboard() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-4 flex-wrap">
+           <TabsList className="mb-4 flex-wrap">
             <TabsTrigger value="practitioners"><Briefcase className="h-3.5 w-3.5 mr-1" />Practitioners</TabsTrigger>
             <TabsTrigger value="subscribers"><CreditCard className="h-3.5 w-3.5 mr-1" />Subscribers</TabsTrigger>
-            <TabsTrigger value="pipeline"><GitBranch className="h-3.5 w-3.5 mr-1" />Pipeline</TabsTrigger>
-            <TabsTrigger value="cases-pr"><FileText className="h-3.5 w-3.5 mr-1" />Case Studies (PR) {pendingCaseStudies > 0 && <Badge className="ml-1 h-5 text-[10px]" variant="destructive">{pendingCaseStudies}</Badge>}</TabsTrigger>
-            <TabsTrigger value="cases-dt"><FileText className="h-3.5 w-3.5 mr-1" />Case Studies (Dt) {draftCaseStudies > 0 && <Badge className="ml-1 h-5 text-[10px]" variant="outline">{draftCaseStudies}</Badge>}</TabsTrigger>
+            {isTrainer && <TabsTrigger value="pipeline"><GitBranch className="h-3.5 w-3.5 mr-1" />Pipeline</TabsTrigger>}
+            {isTrainer && <TabsTrigger value="cases-pr"><FileText className="h-3.5 w-3.5 mr-1" />Case Studies (PR) {pendingCaseStudies > 0 && <Badge className="ml-1 h-5 text-[10px]" variant="destructive">{pendingCaseStudies}</Badge>}</TabsTrigger>}
+            {isTrainer && <TabsTrigger value="cases-dt"><FileText className="h-3.5 w-3.5 mr-1" />Case Studies (Dt) {draftCaseStudies > 0 && <Badge className="ml-1 h-5 text-[10px]" variant="outline">{draftCaseStudies}</Badge>}</TabsTrigger>}
             <TabsTrigger value="users"><Users className="h-3.5 w-3.5 mr-1" />All Users</TabsTrigger>
             <TabsTrigger value="resources"><FolderOpen className="h-3.5 w-3.5 mr-1" />Resources</TabsTrigger>
             <TabsTrigger value="faqs"><HelpCircle className="h-3.5 w-3.5 mr-1" />FAQs</TabsTrigger>
