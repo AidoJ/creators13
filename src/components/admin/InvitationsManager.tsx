@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
-import { Trash2, Search, Mail, Loader2 } from "lucide-react";
+import { Trash2, Search, Mail, Loader2, Filter } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,6 +34,7 @@ export default function InvitationsManager() {
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   useEffect(() => {
     fetchInvitations();
@@ -76,9 +78,13 @@ export default function InvitationsManager() {
     setDeleting(null);
   }
 
+  const statuses = [...new Set(invitations.map(i => i.status))];
+
   const filtered = invitations.filter(inv => {
     const q = search.toLowerCase();
-    return !q || inv.name.toLowerCase().includes(q) || inv.email.toLowerCase().includes(q) || inv.practitioner_name.toLowerCase().includes(q);
+    const matchesSearch = !q || inv.name.toLowerCase().includes(q) || inv.email.toLowerCase().includes(q) || inv.practitioner_name.toLowerCase().includes(q);
+    const matchesStatus = statusFilter === "all" || inv.status === statusFilter;
+    return matchesSearch && matchesStatus;
   });
 
   if (loading) return <div className="text-center py-8 text-sm text-muted-foreground">Loading invitations…</div>;
@@ -91,9 +97,23 @@ export default function InvitationsManager() {
           Client Invitations
           <span className="text-muted-foreground font-normal">({invitations.length})</span>
         </h3>
-        <div className="relative w-64">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input placeholder="Search…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-8 text-xs" />
+        <div className="flex items-center gap-2">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[140px] h-8 text-xs">
+              <Filter className="h-3 w-3 mr-1" />
+              <SelectValue placeholder="All statuses" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              {statuses.map(s => (
+                <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="relative w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input placeholder="Search…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-8 text-xs" />
+          </div>
         </div>
       </div>
 
@@ -112,7 +132,7 @@ export default function InvitationsManager() {
                     {inv.email} {inv.phone ? `• ${inv.phone}` : ""}
                   </p>
                   <p className="text-[10px] text-muted-foreground mt-0.5">
-                    By: {inv.practitioner_name} · {new Date(inv.created_at).toLocaleDateString("en-AU")}
+                    By: {inv.practitioner_name} · Sent {new Date(inv.created_at).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })} at {new Date(inv.created_at).toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" })}
                   </p>
                 </div>
                 <Badge variant="outline" className="text-[10px] capitalize flex-shrink-0">
