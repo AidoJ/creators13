@@ -4,7 +4,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, Video, Clock, Repeat, Globe, ChevronLeft, ChevronRight } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Calendar, Video, Clock, Repeat, Globe, ChevronLeft, ChevronRight, List, CalendarDays } from "lucide-react";
 
 interface TrainingCall {
   id: string;
@@ -47,6 +49,7 @@ export default function TrainingCalendar({ compact = false }: TrainingCalendarPr
   const [loading, setLoading] = useState(true);
   const [timezone, setTimezone] = useState("Australia/Sydney");
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [calendarView, setCalendarView] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -92,13 +95,43 @@ export default function TrainingCalendar({ compact = false }: TrainingCalendarPr
     };
   }
 
-  // Group calls by date for calendar view
+  // Group calls by date key for calendar grid
+  const callsByDateKey: Record<string, TrainingCall[]> = {};
+  calls.forEach(call => {
+    const d = new Date(call.scheduled_at);
+    const key = d.toLocaleDateString("en-AU", { timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit" });
+    if (!callsByDateKey[key]) callsByDateKey[key] = [];
+    callsByDateKey[key].push(call);
+  });
+
+  // Group calls by full date label for list view
   const callsByDate: Record<string, TrainingCall[]> = {};
   calls.forEach(call => {
     const { fullDate } = formatInTimezone(call.scheduled_at);
     if (!callsByDate[fullDate]) callsByDate[fullDate] = [];
     callsByDate[fullDate].push(call);
   });
+
+  // Monthly calendar helpers
+  function getMonthDays(month: Date) {
+    const year = month.getFullYear();
+    const m = month.getMonth();
+    const firstDay = new Date(year, m, 1);
+    const lastDay = new Date(year, m + 1, 0);
+    const startPad = firstDay.getDay(); // 0=Sun
+    const days: (Date | null)[] = [];
+    for (let i = 0; i < startPad; i++) days.push(null);
+    for (let d = 1; d <= lastDay.getDate(); d++) days.push(new Date(year, m, d));
+    return days;
+  }
+
+  function dateToKey(d: Date) {
+    return d.toLocaleDateString("en-AU", { year: "numeric", month: "2-digit", day: "2-digit" });
+  }
+
+  const monthDays = getMonthDays(currentMonth);
+  const today = new Date();
+  const todayKey = dateToKey(today);
 
   if (compact) {
     // Dashboard card: show next 3 upcoming calls
@@ -139,7 +172,7 @@ export default function TrainingCalendar({ compact = false }: TrainingCalendarPr
     );
   }
 
-  // Full calendar view
+  // Full view
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -147,18 +180,27 @@ export default function TrainingCalendar({ compact = false }: TrainingCalendarPr
           <Calendar className="h-5 w-5 text-primary" />
           Training Calendar
         </h2>
-        <div className="flex items-center gap-2">
-          <Globe className="h-3.5 w-3.5 text-muted-foreground" />
-          <Select value={timezone} onValueChange={handleTimezoneChange}>
-            <SelectTrigger className="w-[200px] h-8 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {TIMEZONE_OPTIONS.map(tz => (
-                <SelectItem key={tz} value={tz} className="text-xs">{tz.replace(/_/g, " ")}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="flex items-center gap-4">
+          {/* View toggle */}
+          <div className="flex items-center gap-2">
+            <List className="h-3.5 w-3.5 text-muted-foreground" />
+            <Switch checked={calendarView} onCheckedChange={setCalendarView} id="view-toggle" />
+            <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
+          </div>
+          {/* Timezone */}
+          <div className="flex items-center gap-2">
+            <Globe className="h-3.5 w-3.5 text-muted-foreground" />
+            <Select value={timezone} onValueChange={handleTimezoneChange}>
+              <SelectTrigger className="w-[200px] h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {TIMEZONE_OPTIONS.map(tz => (
+                  <SelectItem key={tz} value={tz} className="text-xs">{tz.replace(/_/g, " ")}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
@@ -169,7 +211,52 @@ export default function TrainingCalendar({ compact = false }: TrainingCalendarPr
           <Calendar className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
           <p className="text-muted-foreground">No upcoming training calls scheduled.</p>
         </div>
+      ) : calendarView ? (
+        /* ====== MONTHLY CALENDAR GRID ====== */
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <Button variant="ghost" size="sm" onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <h3 className="text-sm font-semibold text-foreground">
+              {currentMonth.toLocaleDateString("en-AU", { month: "long", year: "numeric" })}
+            </h3>
+            <Button variant="ghost" size="sm" onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="grid grid-cols-7 gap-px rounded-xl border border-border bg-border overflow-hidden">
+            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(d => (
+              <div key={d} className="bg-muted px-1 py-2 text-center text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{d}</div>
+            ))}
+            {monthDays.map((day, i) => {
+              if (!day) return <div key={`empty-${i}`} className="bg-card min-h-[80px]" />;
+              const key = dateToKey(day);
+              const dayCalls = callsByDateKey[key] || [];
+              const isToday = key === todayKey;
+              return (
+                <div key={key} className={`bg-card min-h-[80px] p-1 ${isToday ? "ring-1 ring-inset ring-primary/40" : ""}`}>
+                  <span className={`text-[11px] font-medium ${isToday ? "text-primary font-bold" : "text-foreground"}`}>{day.getDate()}</span>
+                  <div className="mt-0.5 space-y-0.5">
+                    {dayCalls.slice(0, 2).map(call => {
+                      const { time } = formatInTimezone(call.scheduled_at);
+                      return (
+                        <div key={call.id} className="rounded bg-primary/10 px-1 py-0.5 text-[9px] text-primary truncate" title={`${call.title} — ${time}`}>
+                          {time} {call.title}
+                        </div>
+                      );
+                    })}
+                    {dayCalls.length > 2 && (
+                      <span className="text-[9px] text-muted-foreground">+{dayCalls.length - 2} more</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       ) : (
+        /* ====== LIST VIEW ====== */
         <div className="space-y-3">
           {Object.entries(callsByDate).map(([dateLabel, dateCalls]) => (
             <div key={dateLabel}>
