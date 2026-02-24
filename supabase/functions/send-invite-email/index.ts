@@ -30,7 +30,7 @@ serve(async (req) => {
     }
 
     const { data, error } = await resend.emails.send({
-      from: "13 Creators <noreply@creatortypes.com>",
+      from: "13 Creators <onboarding@resend.dev>",
       to: [to],
       subject: "You're Invited to Join 13 Creators as a Case Study",
       html: `
