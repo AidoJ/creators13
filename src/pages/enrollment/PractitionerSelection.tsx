@@ -29,6 +29,7 @@ export default function PractitionerSelection() {
   const billing = params.get("billing") || "monthly";
   const isUpgradeParam = params.get("upgrade") === "true";
   const paymentSuccess = params.get("payment") === "success" || params.get("payment") === "skipped";
+  const practitionerCode = params.get("practitioner_code") || "";
 
   const [practitioners, setPractitioners] = useState<PractitionerOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,9 +38,7 @@ export default function PractitionerSelection() {
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
   const [isUpgrade, setIsUpgrade] = useState(isUpgradeParam);
-
-  // Wren allows in_progress practitioners; paid tiers require certified only
-  const allowInProgress = tier === "wren";
+  const [lockedPractitioner, setLockedPractitioner] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -97,19 +96,28 @@ export default function PractitionerSelection() {
       const eligible = profiles.filter(p => {
         if (!practitionerUserIds.has(p.user_id)) return false;
         if (p.user_id === user!.id) return false;
-        const status = p.practitioner_status;
-        if (allowInProgress) {
-          return status === "certified" || status === "in_progress";
+
+        // If arriving via invite link with a practitioner code, lock to that practitioner
+        if (practitionerCode) {
+          return p.practitioner_code === practitionerCode;
         }
-        return status === "certified";
+
+        // General public: only certified practitioners
+        return p.practitioner_status === "certified";
       });
+
+      // Auto-select and lock if invite flow matched a practitioner
+      if (practitionerCode && eligible.length > 0) {
+        setSelectedId(eligible[0].user_id);
+        setLockedPractitioner(true);
+      }
 
       setPractitioners(eligible);
       setLoading(false);
     }
 
     fetchData();
-  }, [user, authLoading, tier, allowInProgress, navigate, billing, isUpgrade]);
+  }, [user, authLoading, tier, navigate, billing, isUpgrade, practitionerCode]);
 
   const handleContinue = async () => {
     if (!selectedId || !user) return;
@@ -186,11 +194,11 @@ export default function PractitionerSelection() {
             <UserCheck className="h-7 w-7 text-primary" />
           </div>
           <h1 className="text-3xl font-display font-bold text-foreground mb-2">
-            {isUpgrade ? "Confirm Your Practitioner" : "Select Your Practitioner"}
+            {lockedPractitioner ? "Your Practitioner" : isUpgrade ? "Confirm Your Practitioner" : "Select Your Practitioner"}
           </h1>
           <p className="text-muted-foreground">
-            {allowInProgress
-              ? "Choose a practitioner to guide your profiling journey."
+            {lockedPractitioner
+              ? "You've been invited by this practitioner."
               : "Choose a certified practitioner for your profiling session."}
           </p>
         </div>
@@ -218,9 +226,7 @@ export default function PractitionerSelection() {
         {filtered.length === 0 ? (
           <div className="bg-card border border-border rounded-2xl p-8 text-center text-muted-foreground">
             <p className="text-sm">
-              {allowInProgress
-                ? "No practitioners available at this time."
-                : "No certified practitioners available. Please contact support."}
+              No certified practitioners available. Please contact support.
             </p>
           </div>
         ) : (
