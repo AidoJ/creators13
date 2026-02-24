@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Users, Shield, ChevronDown, ChevronUp, FileText, CheckCircle, Clock, BarChart3, Eye, EyeOff, FolderOpen, Save, HelpCircle, Briefcase, CreditCard, Mail } from "lucide-react";
+import { Search, Users, Shield, ChevronDown, ChevronUp, FileText, CheckCircle, Clock, BarChart3, Eye, EyeOff, FolderOpen, Save, HelpCircle, Briefcase, CreditCard, Mail, Send } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
 import CreateUserForm from "@/components/admin/CreateUserForm";
@@ -16,6 +16,7 @@ import FAQManagerPanel from "@/components/admin/FAQManagerPanel";
 import PractitionersTab from "@/components/admin/PractitionersTab";
 import SubscribersTab from "@/components/admin/SubscribersTab";
 import EmailTemplateEditor from "@/components/admin/EmailTemplateEditor";
+import InvitationsManager from "@/components/admin/InvitationsManager";
 
 
 type AppRole = Database["public"]["Enums"]["app_role"];
@@ -341,6 +342,7 @@ export default function AdminDashboard() {
             <TabsTrigger value="resources"><FolderOpen className="h-3.5 w-3.5 mr-1" />Resources</TabsTrigger>
             <TabsTrigger value="faqs"><HelpCircle className="h-3.5 w-3.5 mr-1" />FAQs</TabsTrigger>
             <TabsTrigger value="emails"><Mail className="h-3.5 w-3.5 mr-1" />Emails</TabsTrigger>
+            <TabsTrigger value="invitations"><Send className="h-3.5 w-3.5 mr-1" />Invitations</TabsTrigger>
           </TabsList>
 
           {/* ======= PRACTITIONERS TAB ======= */}
@@ -431,6 +433,11 @@ export default function AdminDashboard() {
           {/* ======= EMAILS TAB ======= */}
           <TabsContent value="emails" className="space-y-4">
             <EmailTemplateEditor />
+          </TabsContent>
+
+          {/* ======= INVITATIONS TAB ======= */}
+          <TabsContent value="invitations" className="space-y-4">
+            <InvitationsManager />
           </TabsContent>
         </Tabs>
       </main>
