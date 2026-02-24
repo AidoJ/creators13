@@ -68,9 +68,24 @@ export default function EmailTemplateEditor() {
     fetchTemplates();
   }, []);
 
-  const previewHtml = htmlBody
-    .replace(/\{\{clientName\}\}/g, "Jane Doe")
-    .replace(/\{\{inviteLink\}\}/g, "https://creatortypes.com/enroll?example=true");
+  // Preview replacements for all known template variables
+  const previewReplacements: Record<string, string> = {
+    clientName: "Jane Doe",
+    inviteLink: "https://creatortypes.com/enroll?example=true",
+    firstName: "Sarah",
+    title: "Weekly Training Session",
+    description: '<p style="color:#666;font-size:14px;margin:0 0 8px 0;">Reviewing body profiling techniques and case study submissions.</p>',
+    localTime: "Wednesday, 26 February 2026, 10:00 AM",
+    durationMinutes: "60",
+    timezone: "Australia/Sydney",
+    recurrenceText: '<p style="color:#666;font-size:13px;margin:0 0 16px 0;">🔁 This is a <strong>weekly</strong> recurring call.</p>',
+    zoomButton: '<div style="text-align:center;margin:24px 0 0 0;"><a href="#" style="display:inline-block;background:#BB1B56;color:#ffffff;padding:14px 36px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;">Join Zoom Meeting →</a></div>',
+    email: "sarah@example.com",
+  };
+  let previewHtml = htmlBody;
+  for (const [key, value] of Object.entries(previewReplacements)) {
+    previewHtml = previewHtml.replace(new RegExp(`\\{\\{${key}\\}\\}`, "g"), value);
+  }
 
   if (loading) return <p className="text-muted-foreground text-sm py-4">Loading templates…</p>;
 
@@ -129,7 +144,7 @@ export default function EmailTemplateEditor() {
                 </div>
 
                 <p className="text-xs text-muted-foreground">
-                  Available placeholders: <code className="bg-muted px-1 rounded">{"{{clientName}}"}</code> <code className="bg-muted px-1 rounded">{"{{inviteLink}}"}</code>
+                  {selected.description || "Available placeholders shown in the template description above."}
                 </p>
 
                 {showPreview ? (
