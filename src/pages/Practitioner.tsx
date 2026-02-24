@@ -59,7 +59,7 @@ export default function PractitionerDashboard() {
     setSelectedClientName(caseStudy.subject_name || "Client");
     setEditingCaseStudy(caseStudy);
     setShowCaseStudy(true);
-    setActiveTab("clients");
+    // Don't switch tabs — stay on current tab (cases)
   }
 
   function handleCopyCode() {
@@ -172,7 +172,22 @@ export default function PractitionerDashboard() {
 
           {/* ======= CASE STUDIES TAB ======= */}
           <TabsContent value="cases" className="mt-4">
-            {user && <CaseStudyList practitionerId={user.id} onEditCaseStudy={handleEditCaseStudy} />}
+            {showCaseStudy && editingCaseStudy && selectedClientId ? (
+              <div className="space-y-4">
+                <Button variant="ghost" size="sm" onClick={() => { setShowCaseStudy(false); setEditingCaseStudy(null); }} className="text-xs">
+                  <ArrowLeft className="h-3 w-3 mr-1" /> Back to Case Study List
+                </Button>
+                <CompositePhotoLayout userId={selectedClientId} subjectName={`${selectedClientName}'s Profiling Photos`} />
+                <CaseStudyForm
+                  clientId={selectedClientId}
+                  clientName={selectedClientName}
+                  onSaved={() => { setShowCaseStudy(false); setEditingCaseStudy(null); }}
+                  existingCaseStudy={editingCaseStudy}
+                />
+              </div>
+            ) : (
+              user && <CaseStudyList practitionerId={user.id} onEditCaseStudy={handleEditCaseStudy} />
+            )}
           </TabsContent>
 
           {/* ======= RESOURCES TAB ======= */}
