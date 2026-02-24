@@ -15,6 +15,7 @@ import BodyOutlineSVG from "@/components/practitioner/BodyOutlineSVG";
 import CreatorTypeEditor from "@/components/admin/CreatorTypeEditor";
 import { getCreatorTypeColor } from "@/lib/creatorTypes";
 import TrainingCallManager from "@/components/trainer/TrainingCallManager";
+import TrainingCalendar from "@/components/practitioner/TrainingCalendar";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 type EnrollmentStep = Database["public"]["Enums"]["enrollment_step"];
@@ -171,7 +172,8 @@ export default function TrainerDashboard() {
             <TrainerCaseStudyPipeline caseStudies={caseStudies} users={users} />
           </TabsContent>
 
-          <TabsContent value="training-calls" className="space-y-4">
+          <TabsContent value="training-calls" className="space-y-6">
+            <TrainingCalendar />
             <TrainingCallManager />
           </TabsContent>
 
