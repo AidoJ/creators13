@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Plus, Video, Clock, Repeat, Send, Trash2, X } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Calendar, Plus, Video, Clock, Repeat, Send, Trash2, X, Users, UserPlus, Mail } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
@@ -23,12 +24,22 @@ interface TrainingCall {
   created_at: string;
 }
 
+interface PractitionerOption {
+  user_id: string;
+  email: string;
+  name: string;
+}
+
 export default function TrainingCallManager() {
   const { user } = useAuth();
   const [calls, setCalls] = useState<TrainingCall[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [sending, setSending] = useState<string | null>(null);
+
+  // Practitioner list for invitee selection
+  const [practitioners, setPractitioners] = useState<PractitionerOption[]>([]);
+  const [practLoading, setPractLoading] = useState(false);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -41,6 +52,11 @@ export default function TrainingCallManager() {
   const [recurrenceEnd, setRecurrenceEnd] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // Invitee selection
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
+  const [externalEmails, setExternalEmails] = useState<string[]>([]);
+  const [newExternalEmail, setNewExternalEmail] = useState("");
+
   const fetchCalls = useCallback(async () => {
     setLoading(true);
     const { data } = await supabase
@@ -51,21 +67,86 @@ export default function TrainingCallManager() {
     setLoading(false);
   }, []);
 
+  const fetchPractitioners = useCallback(async () => {
+    setPractLoading(true);
+    const { data: roles } = await supabase
+      .from("user_roles")
+      .select("user_id, role")
+      .in("role", ["practitioner", "trainee"]);
+    if (!roles || roles.length === 0) { setPractLoading(false); return; }
+    const userIds = [...new Set(roles.map(r => r.user_id))];
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("user_id, email, first_name, last_name")
+      .in("user_id", userIds);
+    const list: PractitionerOption[] = (profiles || []).map(p => ({
+      user_id: p.user_id,
+      email: p.email || "",
+      name: `${p.first_name || ""} ${p.last_name || ""}`.trim() || p.email || "Unknown",
+    })).filter(p => p.email);
+    setPractitioners(list);
+    // Default: select all
+    setSelectedUserIds(new Set(list.map(p => p.user_id)));
+    setPractLoading(false);
+  }, []);
+
   useEffect(() => { fetchCalls(); }, [fetchCalls]);
+
+  useEffect(() => {
+    if (showForm && practitioners.length === 0) fetchPractitioners();
+  }, [showForm, practitioners.length, fetchPractitioners]);
 
   function resetForm() {
     setTitle(""); setDescription(""); setDate(""); setTime("");
     setDuration("60"); setZoomLink(""); setRecurrence("none"); setRecurrenceEnd("");
+    setExternalEmails([]); setNewExternalEmail("");
     setShowForm(false);
+  }
+
+  function toggleUser(userId: string) {
+    setSelectedUserIds(prev => {
+      const next = new Set(prev);
+      if (next.has(userId)) next.delete(userId); else next.add(userId);
+      return next;
+    });
+  }
+
+  function selectAll() {
+    setSelectedUserIds(new Set(practitioners.map(p => p.user_id)));
+  }
+
+  function selectNone() {
+    setSelectedUserIds(new Set());
+  }
+
+  function addExternalEmail() {
+    const email = newExternalEmail.trim().toLowerCase();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast({ title: "Invalid email", variant: "destructive" });
+      return;
+    }
+    if (externalEmails.includes(email)) {
+      toast({ title: "Email already added", variant: "destructive" });
+      return;
+    }
+    setExternalEmails(prev => [...prev, email]);
+    setNewExternalEmail("");
+  }
+
+  function removeExternalEmail(email: string) {
+    setExternalEmails(prev => prev.filter(e => e !== email));
   }
 
   async function handleCreate() {
     if (!title.trim() || !date || !time || !user) return;
+    if (selectedUserIds.size === 0 && externalEmails.length === 0) {
+      toast({ title: "Select at least one invitee", variant: "destructive" });
+      return;
+    }
     setSubmitting(true);
 
     const scheduledAt = new Date(`${date}T${time}`).toISOString();
 
-    // Create the call (and recurring instances if applicable)
     const callsToCreate: Array<{ title: string; description: string | null; scheduled_at: string; duration_minutes: number; zoom_link: string | null; recurrence_rule: string; recurrence_end_date?: string | null; created_by: string }> = [];
     
     if (recurrence === "none") {
@@ -79,10 +160,9 @@ export default function TrainingCallManager() {
         created_by: user.id,
       });
     } else {
-      // Create parent + recurring instances
       const intervals: Record<string, number> = { weekly: 7, fortnightly: 14, monthly: 30 };
       const intervalDays = intervals[recurrence] || 7;
-      const endDate = recurrenceEnd ? new Date(recurrenceEnd) : new Date(Date.now() + 90 * 86400000); // default 3 months
+      const endDate = recurrenceEnd ? new Date(recurrenceEnd) : new Date(Date.now() + 90 * 86400000);
       const startDate = new Date(`${date}T${time}`);
       
       let currentDate = new Date(startDate);
@@ -112,16 +192,19 @@ export default function TrainingCallManager() {
       toast({ title: "Error creating call", description: error.message, variant: "destructive" });
     } else {
       toast({ title: `Training call${callsToCreate.length > 1 ? "s" : ""} created`, description: `${callsToCreate.length} session${callsToCreate.length > 1 ? "s" : ""} scheduled.` });
+
+      // Build recipient lists
+      const selectedPractitionerUserIds = Array.from(selectedUserIds);
+
+      // Send email invites
+      sendInvites(callsToCreate[0], selectedPractitionerUserIds, externalEmails);
       resetForm();
       await fetchCalls();
-
-      // Send email invites for the first call
-      sendInvites(callsToCreate[0]);
     }
     setSubmitting(false);
   }
 
-  async function sendInvites(call: Record<string, any>) {
+  async function sendInvites(call: Record<string, any>, practitionerUserIds?: string[], externalGuestEmails?: string[]) {
     setSending(call.id || "new");
     try {
       const { data, error } = await supabase.functions.invoke("send-training-invite", {
@@ -133,10 +216,12 @@ export default function TrainingCallManager() {
           durationMinutes: call.duration_minutes,
           zoomLink: call.zoom_link,
           recurrenceRule: call.recurrence_rule,
+          practitionerUserIds: practitionerUserIds || [],
+          externalEmails: externalGuestEmails || [],
         },
       });
       if (error) throw error;
-      toast({ title: "Invites sent!", description: `${data?.sent || 0} email${(data?.sent || 0) !== 1 ? "s" : ""} sent to practitioners.` });
+      toast({ title: "Invites sent!", description: `${data?.sent || 0} email${(data?.sent || 0) !== 1 ? "s" : ""} sent.` });
     } catch (err: any) {
       toast({ title: "Error sending invites", description: err.message, variant: "destructive" });
     }
@@ -241,9 +326,82 @@ export default function TrainingCallManager() {
               </div>
             )}
           </div>
+
+          {/* Invitee selection */}
+          <div className="border-t border-border pt-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                <Users className="h-4 w-4 text-primary" />
+                Select Invitees
+              </h4>
+              <div className="flex gap-1.5">
+                <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={selectAll}>Select All</Button>
+                <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={selectNone}>Deselect All</Button>
+              </div>
+            </div>
+
+            {/* Practitioner checkboxes */}
+            {practLoading ? (
+              <p className="text-xs text-muted-foreground">Loading practitioners…</p>
+            ) : practitioners.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No practitioners found.</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-48 overflow-y-auto rounded-lg border border-border p-2 bg-muted/20">
+                {practitioners.map(p => (
+                  <label key={p.user_id} className="flex items-center gap-2 p-1.5 rounded-md hover:bg-muted/50 cursor-pointer text-sm">
+                    <Checkbox
+                      checked={selectedUserIds.has(p.user_id)}
+                      onCheckedChange={() => toggleUser(p.user_id)}
+                    />
+                    <div className="min-w-0">
+                      <span className="text-foreground text-xs font-medium truncate block">{p.name}</span>
+                      <span className="text-muted-foreground text-[10px] truncate block">{p.email}</span>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            )}
+            <p className="text-[10px] text-muted-foreground">
+              {selectedUserIds.size} of {practitioners.length} practitioners selected
+            </p>
+
+            {/* External email invites */}
+            <div className="space-y-2">
+              <h4 className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <UserPlus className="h-3.5 w-3.5 text-primary" />
+                External Guests
+              </h4>
+              <div className="flex gap-2">
+                <Input
+                  value={newExternalEmail}
+                  onChange={e => setNewExternalEmail(e.target.value)}
+                  placeholder="guest@example.com"
+                  className="text-xs h-8"
+                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addExternalEmail(); } }}
+                />
+                <Button variant="outline" size="sm" className="h-8 text-xs flex-shrink-0" onClick={addExternalEmail}>
+                  <Plus className="h-3 w-3 mr-0.5" /> Add
+                </Button>
+              </div>
+              {externalEmails.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {externalEmails.map(email => (
+                    <Badge key={email} variant="secondary" className="text-[10px] gap-1 pr-1">
+                      <Mail className="h-2.5 w-2.5" />
+                      {email}
+                      <button onClick={() => removeExternalEmail(email)} className="ml-0.5 hover:text-destructive">
+                        <X className="h-2.5 w-2.5" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="flex gap-2 pt-2">
-            <Button onClick={handleCreate} disabled={!title.trim() || !date || !time || submitting} className="rounded-full">
-              <Send className="h-3.5 w-3.5 mr-1" /> {submitting ? "Creating…" : "Create & Send Invites"}
+            <Button onClick={handleCreate} disabled={!title.trim() || !date || !time || (selectedUserIds.size === 0 && externalEmails.length === 0) || submitting} className="rounded-full">
+              <Send className="h-3.5 w-3.5 mr-1" /> {submitting ? "Creating…" : `Create & Send (${selectedUserIds.size + externalEmails.length})`}
             </Button>
             <Button variant="ghost" onClick={resetForm}>Cancel</Button>
           </div>
