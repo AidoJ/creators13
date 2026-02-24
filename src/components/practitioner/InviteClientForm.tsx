@@ -69,19 +69,29 @@ export default function InviteClientForm({ practitionerCode }: InviteClientFormP
       phone: phone || null,
     }).select().single();
 
-    setLoading(false);
-
     if (error) {
+      setLoading(false);
       toast({ title: "Error", description: error.message, variant: "destructive" });
       return;
     }
 
-    // Immediately open email client with full invitation
+    // Send rich HTML email via Resend edge function
     if (data) {
-      openInvitationEmail(data as Invitation);
+      const inv = data as Invitation;
+      const inviteLink = getInviteLink(inv.invite_token);
+      const { error: emailError } = await supabase.functions.invoke("send-invite-email", {
+        body: { to: inv.email, clientName: inv.name, inviteLink },
+      });
+
+      if (emailError) {
+        console.error("Email send error:", emailError);
+        toast({ title: "Invitation created", description: `Saved but email delivery failed. You can resend or copy the link.`, variant: "destructive" });
+      } else {
+        toast({ title: "Invitation sent!", description: `A beautifully formatted email has been sent to ${name}.` });
+      }
     }
 
-    toast({ title: "Invitation email opened!", description: `Your email client has been opened with a complete invitation for ${name}.` });
+    setLoading(false);
     setName("");
     setEmail("");
     setPhone("");
@@ -126,8 +136,16 @@ www.creatortypes.com`
     setTimeout(() => setCopiedId(null), 2000);
   }
 
-  function handleEmailLink(inv: Invitation) {
-    openInvitationEmail(inv);
+  async function handleEmailLink(inv: Invitation) {
+    const inviteLink = getInviteLink(inv.invite_token);
+    const { error } = await supabase.functions.invoke("send-invite-email", {
+      body: { to: inv.email, clientName: inv.name, inviteLink },
+    });
+    if (error) {
+      toast({ title: "Email failed", description: "Could not resend. Try copying the link instead.", variant: "destructive" });
+    } else {
+      toast({ title: "Email resent!", description: `Invitation re-sent to ${inv.email}.` });
+    }
   }
 
   return (
