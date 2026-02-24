@@ -13,10 +13,11 @@ import CaseStudyPipeline from "@/components/practitioner/CaseStudyPipeline";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, ArrowLeft, Users, ClipboardList, Copy, CheckCircle, UserPlus, FolderOpen, BarChart3, Gauge, HelpCircle } from "lucide-react";
+import { FileText, ArrowLeft, Users, ClipboardList, Copy, CheckCircle, UserPlus, FolderOpen, BarChart3, Gauge, HelpCircle, Calendar } from "lucide-react";
 import ResourceLibrary from "@/components/practitioner/ResourceLibrary";
 import { toast } from "@/hooks/use-toast";
 import FAQPanel from "@/components/practitioner/FAQPanel";
+import TrainingCalendar from "@/components/practitioner/TrainingCalendar";
 
 export default function PractitionerDashboard() {
   const { user, signOut } = useAuth();
@@ -97,6 +98,7 @@ export default function PractitionerDashboard() {
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
             <TabsTrigger value="pipeline"><Gauge className="h-3.5 w-3.5 mr-1" />Pipeline</TabsTrigger>
+            <TabsTrigger value="calendar"><Calendar className="h-3.5 w-3.5 mr-1" />Calendar</TabsTrigger>
             <TabsTrigger value="clients"><Users className="h-3.5 w-3.5 mr-1" />Clients</TabsTrigger>
             <TabsTrigger value="invitations"><UserPlus className="h-3.5 w-3.5 mr-1" />Invite</TabsTrigger>
             <TabsTrigger value="cases"><ClipboardList className="h-3.5 w-3.5 mr-1" />Case Studies</TabsTrigger>
@@ -106,7 +108,8 @@ export default function PractitionerDashboard() {
           </TabsList>
 
           {/* ======= PIPELINE TAB ======= */}
-          <TabsContent value="pipeline" className="mt-4">
+          <TabsContent value="pipeline" className="mt-4 space-y-6">
+            <TrainingCalendar compact />
             <CaseStudyPipeline
               onSelectClient={(clientId) => {
                 handleSelectClient(clientId);
@@ -114,6 +117,11 @@ export default function PractitionerDashboard() {
               }}
               onStartCaseStudy={handleStartCaseStudy}
             />
+          </TabsContent>
+
+          {/* ======= CALENDAR TAB ======= */}
+          <TabsContent value="calendar" className="mt-4">
+            <TrainingCalendar />
           </TabsContent>
 
           {/* ======= CLIENTS TAB ======= */}
