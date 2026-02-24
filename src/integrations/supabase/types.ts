@@ -733,6 +733,7 @@ export type Database = {
             | null
           shoe_size: string | null
           state: string | null
+          timezone: string | null
           training_started_at: string | null
           updated_at: string
           user_id: string
@@ -765,6 +766,7 @@ export type Database = {
             | null
           shoe_size?: string | null
           state?: string | null
+          timezone?: string | null
           training_started_at?: string | null
           updated_at?: string
           user_id: string
@@ -797,6 +799,7 @@ export type Database = {
             | null
           shoe_size?: string | null
           state?: string | null
+          timezone?: string | null
           training_started_at?: string | null
           updated_at?: string
           user_id?: string
@@ -877,6 +880,62 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      training_calls: {
+        Row: {
+          cancelled: boolean | null
+          created_at: string
+          created_by: string
+          description: string | null
+          duration_minutes: number
+          id: string
+          parent_call_id: string | null
+          recurrence_end_date: string | null
+          recurrence_rule: string | null
+          scheduled_at: string
+          title: string
+          updated_at: string
+          zoom_link: string | null
+        }
+        Insert: {
+          cancelled?: boolean | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          duration_minutes?: number
+          id?: string
+          parent_call_id?: string | null
+          recurrence_end_date?: string | null
+          recurrence_rule?: string | null
+          scheduled_at: string
+          title: string
+          updated_at?: string
+          zoom_link?: string | null
+        }
+        Update: {
+          cancelled?: boolean | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          duration_minutes?: number
+          id?: string
+          parent_call_id?: string | null
+          recurrence_end_date?: string | null
+          recurrence_rule?: string | null
+          scheduled_at?: string
+          title?: string
+          updated_at?: string
+          zoom_link?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_calls_parent_call_id_fkey"
+            columns: ["parent_call_id"]
+            isOneToOne: false
+            referencedRelation: "training_calls"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       training_resources: {
         Row: {

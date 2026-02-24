@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.send-invite-email]
 verify_jwt = false
+
+[functions.send-training-invite]
+verify_jwt = false

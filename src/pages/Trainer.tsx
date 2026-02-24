@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FileText, CheckCircle, XCircle, Clock, BarChart3, Eye, EyeOff, GitBranch, Save } from "lucide-react";
+import { FileText, CheckCircle, XCircle, Clock, BarChart3, Eye, EyeOff, GitBranch, Save, Calendar } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
 import CompositePhotoLayout from "@/components/profiling/CompositePhotoLayout";
@@ -14,6 +14,7 @@ import CaseStudyFormDataView from "@/components/admin/CaseStudyFormDataView";
 import BodyOutlineSVG from "@/components/practitioner/BodyOutlineSVG";
 import CreatorTypeEditor from "@/components/admin/CreatorTypeEditor";
 import { getCreatorTypeColor } from "@/lib/creatorTypes";
+import TrainingCallManager from "@/components/trainer/TrainingCallManager";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 type EnrollmentStep = Database["public"]["Enums"]["enrollment_step"];
@@ -161,12 +162,17 @@ export default function TrainerDashboard() {
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-4 flex-wrap">
             <TabsTrigger value="pipeline"><GitBranch className="h-3.5 w-3.5 mr-1" />Pipeline</TabsTrigger>
+            <TabsTrigger value="training-calls"><Calendar className="h-3.5 w-3.5 mr-1" />Training Calls</TabsTrigger>
             <TabsTrigger value="cases-pr"><FileText className="h-3.5 w-3.5 mr-1" />Case Studies (PR) {pendingCaseStudies > 0 && <Badge className="ml-1 h-5 text-[10px]" variant="destructive">{pendingCaseStudies}</Badge>}</TabsTrigger>
             <TabsTrigger value="cases-dt"><FileText className="h-3.5 w-3.5 mr-1" />Case Studies (Dt) {draftCaseStudies > 0 && <Badge className="ml-1 h-5 text-[10px]" variant="outline">{draftCaseStudies}</Badge>}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="pipeline" className="space-y-4">
             <TrainerCaseStudyPipeline caseStudies={caseStudies} users={users} />
+          </TabsContent>
+
+          <TabsContent value="training-calls" className="space-y-4">
+            <TrainingCallManager />
           </TabsContent>
 
           <TabsContent value="cases-pr" className="space-y-4">
