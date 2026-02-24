@@ -421,7 +421,7 @@ export default function TrainingCallManager() {
             <div className="space-y-2">
               <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Upcoming</h3>
               {upcomingCalls.map(call => (
-                <CallCard key={call.id} call={call} onCancel={handleCancel} onDelete={handleDelete} onResend={(c) => sendInvites(c)} sending={sending === call.id} />
+                <CallCard key={call.id} call={call} onCancel={handleCancel} onDelete={handleDelete} onResend={(c) => sendInvites(c)} sending={sending === call.id} practitioners={practitioners} onSendInvites={sendInvites} onLoadPractitioners={fetchPractitioners} practLoading={practLoading} />
               ))}
             </div>
           )}
@@ -449,7 +449,7 @@ export default function TrainingCallManager() {
   );
 }
 
-function CallCard({ call, onCancel, onDelete, onResend, sending, past, cancelled }: {
+function CallCard({ call, onCancel, onDelete, onResend, sending, past, cancelled, practitioners, onSendInvites, onLoadPractitioners, practLoading }: {
   call: TrainingCall;
   onCancel: (id: string) => void;
   onDelete: (id: string) => void;
@@ -457,65 +457,171 @@ function CallCard({ call, onCancel, onDelete, onResend, sending, past, cancelled
   sending: boolean;
   past?: boolean;
   cancelled?: boolean;
+  practitioners?: PractitionerOption[];
+  onSendInvites?: (call: Record<string, any>, practitionerUserIds?: string[], externalGuestEmails?: string[]) => Promise<void>;
+  onLoadPractitioners?: () => void;
+  practLoading?: boolean;
 }) {
+  const [showInviteMore, setShowInviteMore] = useState(false);
+  const [addSelectedIds, setAddSelectedIds] = useState<Set<string>>(new Set());
+  const [addExternalEmails, setAddExternalEmails] = useState<string[]>([]);
+  const [addNewEmail, setAddNewEmail] = useState("");
+  const [inviteSending, setInviteSending] = useState(false);
+
   const dt = new Date(call.scheduled_at);
   const dateStr = dt.toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
   const timeStr = dt.toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" });
 
+  function handleOpenInviteMore() {
+    setShowInviteMore(true);
+    if (practitioners && practitioners.length === 0 && onLoadPractitioners) onLoadPractitioners();
+  }
+
+  function toggleAddUser(userId: string) {
+    setAddSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(userId)) next.delete(userId); else next.add(userId);
+      return next;
+    });
+  }
+
+  function handleAddEmail() {
+    const email = addNewEmail.trim().toLowerCase();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return;
+    if (addExternalEmails.includes(email)) return;
+    setAddExternalEmails(prev => [...prev, email]);
+    setAddNewEmail("");
+  }
+
+  async function handleSendAdditional() {
+    if (!onSendInvites || (addSelectedIds.size === 0 && addExternalEmails.length === 0)) return;
+    setInviteSending(true);
+    await onSendInvites(call, Array.from(addSelectedIds), addExternalEmails);
+    setInviteSending(false);
+    setShowInviteMore(false);
+    setAddSelectedIds(new Set());
+    setAddExternalEmails([]);
+    setAddNewEmail("");
+  }
+
   return (
-    <div className={`rounded-xl border bg-card p-4 flex flex-col sm:flex-row sm:items-center gap-3 ${cancelled ? "opacity-50 border-border" : past ? "border-border" : "border-primary/20"}`}>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <h4 className="font-medium text-foreground text-sm">{call.title}</h4>
-          {call.recurrence_rule !== "none" && (
-            <Badge variant="outline" className="text-[10px]">
-              <Repeat className="h-2.5 w-2.5 mr-0.5" />
-              {call.recurrence_rule}
-            </Badge>
+    <div className={`rounded-xl border bg-card p-4 space-y-3 ${cancelled ? "opacity-50 border-border" : past ? "border-border" : "border-primary/20"}`}>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h4 className="font-medium text-foreground text-sm">{call.title}</h4>
+            {call.recurrence_rule !== "none" && (
+              <Badge variant="outline" className="text-[10px]">
+                <Repeat className="h-2.5 w-2.5 mr-0.5" />
+                {call.recurrence_rule}
+              </Badge>
+            )}
+            {cancelled && <Badge variant="outline" className="text-[10px] text-destructive border-destructive/30">Cancelled</Badge>}
+          </div>
+          <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{dateStr}</span>
+            <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{timeStr}</span>
+            <span>{call.duration_minutes}min</span>
+          </div>
+          {call.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{call.description}</p>}
+        </div>
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          {call.zoom_link && (
+            <a href={call.zoom_link} target="_blank" rel="noopener noreferrer">
+              <Button variant="outline" size="sm" className="h-7 text-xs"><Video className="h-3 w-3 mr-1" />Zoom</Button>
+            </a>
           )}
-          {cancelled && <Badge variant="outline" className="text-[10px] text-destructive border-destructive/30">Cancelled</Badge>}
+          {!past && !cancelled && (
+            <>
+              <Button variant="outline" size="sm" className="h-7 text-xs" onClick={handleOpenInviteMore}>
+                <UserPlus className="h-3 w-3 mr-1" />Invite More
+              </Button>
+              <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => onResend(call)} disabled={sending}>
+                <Send className="h-3 w-3 mr-1" />{sending ? "Sending…" : "Resend All"}
+              </Button>
+              <Button variant="ghost" size="sm" className="h-7 text-xs text-amber-600" onClick={() => onCancel(call.id)}>
+                Cancel
+              </Button>
+            </>
+          )}
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive">
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete this call?</AlertDialogTitle>
+                <AlertDialogDescription>This will permanently remove this training call.</AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={() => onDelete(call.id)}>Delete</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
-        <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{dateStr}</span>
-          <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{timeStr}</span>
-          <span>{call.duration_minutes}min</span>
+      </div>
+
+      {/* Inline invite-more panel */}
+      {showInviteMore && (
+        <div className="border-t border-border pt-3 space-y-3">
+          <div className="flex items-center justify-between">
+            <h4 className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+              <UserPlus className="h-3.5 w-3.5 text-primary" />
+              Add Invitees to This Call
+            </h4>
+            <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setShowInviteMore(false)}>
+              <X className="h-3 w-3" />
+            </Button>
+          </div>
+
+          {/* Practitioner pick list */}
+          {practLoading ? (
+            <p className="text-xs text-muted-foreground">Loading…</p>
+          ) : (practitioners || []).length === 0 ? (
+            <p className="text-xs text-muted-foreground">No practitioners found.</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 max-h-36 overflow-y-auto rounded-lg border border-border p-2 bg-muted/20">
+              {(practitioners || []).map(p => (
+                <label key={p.user_id} className="flex items-center gap-2 p-1 rounded-md hover:bg-muted/50 cursor-pointer text-xs">
+                  <Checkbox checked={addSelectedIds.has(p.user_id)} onCheckedChange={() => toggleAddUser(p.user_id)} />
+                  <span className="truncate">{p.name}</span>
+                </label>
+              ))}
+            </div>
+          )}
+
+          {/* External emails */}
+          <div className="flex gap-2">
+            <Input
+              value={addNewEmail}
+              onChange={e => setAddNewEmail(e.target.value)}
+              placeholder="guest@example.com"
+              className="text-xs h-7"
+              onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleAddEmail(); } }}
+            />
+            <Button variant="outline" size="sm" className="h-7 text-[10px] flex-shrink-0" onClick={handleAddEmail}>
+              <Plus className="h-2.5 w-2.5 mr-0.5" />Add
+            </Button>
+          </div>
+          {addExternalEmails.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {addExternalEmails.map(email => (
+                <Badge key={email} variant="secondary" className="text-[10px] gap-1 pr-1">
+                  <Mail className="h-2.5 w-2.5" />{email}
+                  <button onClick={() => setAddExternalEmails(prev => prev.filter(e => e !== email))} className="ml-0.5 hover:text-destructive"><X className="h-2.5 w-2.5" /></button>
+                </Badge>
+              ))}
+            </div>
+          )}
+
+          <Button size="sm" className="rounded-full h-7 text-xs" disabled={inviteSending || (addSelectedIds.size === 0 && addExternalEmails.length === 0)} onClick={handleSendAdditional}>
+            <Send className="h-3 w-3 mr-1" />{inviteSending ? "Sending…" : `Send Invite (${addSelectedIds.size + addExternalEmails.length})`}
+          </Button>
         </div>
-        {call.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{call.description}</p>}
-      </div>
-      <div className="flex items-center gap-1.5 flex-shrink-0">
-        {call.zoom_link && (
-          <a href={call.zoom_link} target="_blank" rel="noopener noreferrer">
-            <Button variant="outline" size="sm" className="h-7 text-xs"><Video className="h-3 w-3 mr-1" />Zoom</Button>
-          </a>
-        )}
-        {!past && !cancelled && (
-          <>
-            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => onResend(call)} disabled={sending}>
-              <Send className="h-3 w-3 mr-1" />{sending ? "Sending…" : "Resend"}
-            </Button>
-            <Button variant="ghost" size="sm" className="h-7 text-xs text-amber-600" onClick={() => onCancel(call.id)}>
-              Cancel
-            </Button>
-          </>
-        )}
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive">
-              <Trash2 className="h-3 w-3" />
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete this call?</AlertDialogTitle>
-              <AlertDialogDescription>This will permanently remove this training call.</AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={() => onDelete(call.id)}>Delete</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
+      )}
     </div>
   );
 }
