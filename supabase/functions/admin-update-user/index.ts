@@ -28,9 +28,10 @@ serve(async (req) => {
       .from("user_roles")
       .select("role")
       .eq("user_id", callerData.user.id)
-      .eq("role", "trainer")
+      .in("role", ["trainer", "admin"])
+      .limit(1)
       .maybeSingle();
-    if (!roleCheck) throw new Error("Unauthorized: trainer role required");
+    if (!roleCheck) throw new Error("Unauthorized: trainer or admin role required");
 
     const { target_user_id, new_password, updates } = await req.json();
     if (!target_user_id) throw new Error("target_user_id is required");

@@ -29,13 +29,14 @@ serve(async (req) => {
       if (!caller) {
         return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
       }
-      const { data: hasTrainer } = await supabaseAdmin
+      const { data: hasAccess } = await supabaseAdmin
         .from("user_roles")
         .select("id")
         .eq("user_id", caller.id)
-        .eq("role", "trainer")
+        .in("role", ["trainer", "admin"])
+        .limit(1)
         .maybeSingle();
-      if (!hasTrainer) {
+      if (!hasAccess) {
         return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: corsHeaders });
       }
     } else if (!isServiceRole) {

@@ -9,7 +9,7 @@ import type { Database } from "@/integrations/supabase/types";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 
-const ALL_ROLES: AppRole[] = ["trainer", "practitioner", "trainee", "client", "community_participant", "gamer"];
+const ALL_ROLES: AppRole[] = ["trainer", "admin", "practitioner", "trainee", "client", "community_participant", "gamer"];
 
 interface CreateUserFormProps {
   onCreated?: () => void;
