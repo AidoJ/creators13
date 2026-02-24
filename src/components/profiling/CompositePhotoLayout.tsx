@@ -15,6 +15,18 @@ const PHOTO_ORDER = [
   { key: "hands", label: "Hands" },
 ] as const;
 
+// Fallback mapping: when photos are stored with generic photo_1..photo_8 types
+const GENERIC_FALLBACK: Record<string, string> = {
+  face_front_closed: "photo_1",
+  face_front_smiling: "photo_2",
+  face_side: "photo_3",
+  body_front: "photo_4",
+  body_back: "photo_5",
+  body_side: "photo_6",
+  feet: "photo_7",
+  hands: "photo_8",
+};
+
 interface CompositePhotoLayoutProps {
   userId: string;
   subjectName?: string;
@@ -68,7 +80,8 @@ export default function CompositePhotoLayout({ userId, subjectName, className }:
   );
 
   const PhotoCell = ({ photoKey, label, className: cellClass }: { photoKey: string; label: string; className?: string }) => {
-    const url = photos[photoKey];
+    // Try the specific key first, then fall back to generic photo_N type
+    const url = photos[photoKey] || photos[GENERIC_FALLBACK[photoKey]] || null;
     return (
       <div className={cn("overflow-hidden rounded-lg group relative cursor-pointer", cellClass)}
         onClick={() => url && setZoomedPhoto({ url, label })}
