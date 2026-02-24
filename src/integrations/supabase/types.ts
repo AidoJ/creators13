@@ -881,6 +881,38 @@ export type Database = {
         }
         Relationships: []
       }
+      training_call_events: {
+        Row: {
+          call_id: string
+          created_at: string
+          details: string | null
+          event_type: string
+          id: string
+        }
+        Insert: {
+          call_id: string
+          created_at?: string
+          details?: string | null
+          event_type: string
+          id?: string
+        }
+        Update: {
+          call_id?: string
+          created_at?: string
+          details?: string | null
+          event_type?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_call_events_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "training_calls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       training_call_invitees: {
         Row: {
           call_id: string
