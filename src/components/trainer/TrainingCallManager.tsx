@@ -624,7 +624,7 @@ function CallCard({ call, onCancel, onDelete, onDuplicate, onReschedule, onResen
             <h4 className="font-medium text-foreground text-sm">
               {call.title.replace(/^\[DUPLICATE\]\s*/, '')}
               {call.title.startsWith("[DUPLICATE]") && (
-                <span className="text-yellow-400 font-semibold not-italic ml-1.5 bg-black px-1.5 py-0.5 rounded text-[10px]">(Cloned)</span>
+                <span className="text-yellow-300 font-normal not-italic ml-1.5 bg-black px-1.5 py-0.5 rounded text-[10px]">(Cloned)</span>
               )}
             </h4>
             {call.recurrence_rule !== "none" && (
