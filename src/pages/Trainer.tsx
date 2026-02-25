@@ -58,6 +58,7 @@ export default function TrainerDashboard() {
   const [caseStudies, setCaseStudies] = useState<CaseStudyRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("pipeline");
+  const [trainingRefreshKey, setTrainingRefreshKey] = useState(0);
   const [expandedCaseStudy, setExpandedCaseStudy] = useState<string | null>(null);
   const [revisionNotes, setRevisionNotes] = useState<Record<string, string>>({});
 
@@ -173,8 +174,8 @@ export default function TrainerDashboard() {
           </TabsContent>
 
           <TabsContent value="training-calls" className="space-y-6">
-            <TrainingCalendar />
-            <TrainingCallManager />
+            <TrainingCalendar refreshKey={trainingRefreshKey} />
+            <TrainingCallManager onCallsChanged={() => setTrainingRefreshKey((current) => current + 1)} />
           </TabsContent>
 
           <TabsContent value="cases-pr" className="space-y-4">

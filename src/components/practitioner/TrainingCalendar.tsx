@@ -41,9 +41,10 @@ const TIMEZONE_OPTIONS = [
 
 interface TrainingCalendarProps {
   compact?: boolean;
+  refreshKey?: number;
 }
 
-export default function TrainingCalendar({ compact = false }: TrainingCalendarProps) {
+export default function TrainingCalendar({ compact = false, refreshKey = 0 }: TrainingCalendarProps) {
   const { user } = useAuth();
   const [calls, setCalls] = useState<TrainingCall[]>([]);
   const [loading, setLoading] = useState(true);
@@ -75,7 +76,7 @@ export default function TrainingCalendar({ compact = false }: TrainingCalendarPr
     setLoading(false);
   }, []);
 
-  useEffect(() => { fetchCalls(); }, [fetchCalls]);
+  useEffect(() => { fetchCalls(); }, [fetchCalls, refreshKey]);
 
   async function handleTimezoneChange(tz: string) {
     setTimezone(tz);
@@ -158,7 +159,7 @@ export default function TrainingCalendar({ compact = false }: TrainingCalendarPr
                   </div>
                   {call.zoom_link && (
                     <a href={call.zoom_link} target="_blank" rel="noopener noreferrer">
-                      <Button variant="outline" size="sm" className="h-6 text-[10px] rounded-full">
+                      <Button size="sm" className="h-6 text-[10px] rounded-full bg-[hsl(var(--zoom-blue))] text-primary-foreground hover:bg-[hsl(var(--zoom-blue))]/90">
                         <Video className="h-2.5 w-2.5 mr-0.5" />Join
                       </Button>
                     </a>
@@ -286,7 +287,7 @@ export default function TrainingCalendar({ compact = false }: TrainingCalendarPr
                       </div>
                       {call.zoom_link && (
                         <a href={call.zoom_link} target="_blank" rel="noopener noreferrer">
-                          <Button size="sm" className="rounded-full h-8 text-xs">
+                          <Button size="sm" className="rounded-full h-8 text-xs bg-[hsl(var(--zoom-blue))] text-primary-foreground hover:bg-[hsl(var(--zoom-blue))]/90">
                             <Video className="h-3 w-3 mr-1" />Join Zoom
                           </Button>
                         </a>

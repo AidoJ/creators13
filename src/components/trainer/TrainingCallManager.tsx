@@ -49,7 +49,11 @@ interface PractitionerOption {
   name: string;
 }
 
-export default function TrainingCallManager() {
+interface TrainingCallManagerProps {
+  onCallsChanged?: () => void;
+}
+
+export default function TrainingCallManager({ onCallsChanged }: TrainingCallManagerProps) {
   const { user } = useAuth();
   const [calls, setCalls] = useState<TrainingCall[]>([]);
   const [loading, setLoading] = useState(true);
@@ -252,6 +256,7 @@ export default function TrainingCallManager() {
       sendInvites(callsToCreate[0], selectedPractitionerUserIds, externalEmails);
       resetForm();
       await fetchCalls();
+      onCallsChanged?.();
     }
     setSubmitting(false);
   }
@@ -293,7 +298,8 @@ export default function TrainingCallManager() {
         });
       } catch (e) { console.error("Error sending cancel notifications:", e); }
       toast({ title: "Call cancelled", description: "All invitees have been notified." });
-      fetchCalls();
+      await fetchCalls();
+      onCallsChanged?.();
     }
   }
 
@@ -320,7 +326,8 @@ export default function TrainingCallManager() {
       });
     } catch (e) { console.error("Error sending reschedule notifications:", e); }
     toast({ title: "Call rescheduled", description: "All invitees have been notified." });
-    fetchCalls();
+    await fetchCalls();
+    onCallsChanged?.();
   }
 
   async function handleDuplicate(id: string) {
@@ -341,17 +348,31 @@ export default function TrainingCallManager() {
     } else {
       await supabase.from("training_call_events").insert({ call_id: data.id, event_type: "created", details: `Duplicated from "${call.title}"` });
       toast({ title: "Call duplicated", description: "Edit the duplicate to update details and remove the DUPLICATE label." });
-      fetchCalls();
+      await fetchCalls();
+      onCallsChanged?.();
     }
   }
 
   async function handleDelete(id: string) {
+    const { error: inviteesError } = await supabase.from("training_call_invitees").delete().eq("call_id", id);
+    if (inviteesError) {
+      toast({ title: "Error", description: inviteesError.message, variant: "destructive" });
+      return;
+    }
+
+    const { error: eventsError } = await supabase.from("training_call_events").delete().eq("call_id", id);
+    if (eventsError) {
+      toast({ title: "Error", description: eventsError.message, variant: "destructive" });
+      return;
+    }
+
     const { error } = await supabase.from("training_calls").delete().eq("id", id);
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Call deleted" });
-      fetchCalls();
+      await fetchCalls();
+      onCallsChanged?.();
     }
   }
 
@@ -663,7 +684,7 @@ function CallCard({ call, onCancel, onDelete, onDuplicate, onReschedule, onResen
         <div className="flex items-center gap-1.5 flex-shrink-0">
           {call.zoom_link && (
             <a href={call.zoom_link} target="_blank" rel="noopener noreferrer">
-              <Button size="sm" className="h-7 text-xs bg-[#0B5CFF] text-white hover:bg-[#0B5CFF]/90"><Video className="h-3 w-3 mr-1" />Zoom</Button>
+              <Button size="sm" className="h-7 text-xs bg-[hsl(var(--zoom-blue))] text-primary-foreground hover:bg-[hsl(var(--zoom-blue))]/90"><Video className="h-3 w-3 mr-1" />Zoom</Button>
             </a>
           )}
           {!past && !cancelled && (
