@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.send-training-invite]
 verify_jwt = false
+
+[functions.send-training-reminders]
+verify_jwt = false
