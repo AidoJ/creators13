@@ -7,7 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Calendar, Plus, Video, Clock, Repeat, Send, Trash2, X, Users, UserPlus, Mail, CheckCircle, Bell, XCircle, Edit, CircleDot } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Calendar, Plus, Video, Clock, Repeat, Send, Trash2, X, Users, UserPlus, Mail, CheckCircle, Bell, XCircle, Edit, CircleDot, ChevronDown } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
@@ -634,11 +635,16 @@ function CallCard({ call, onCancel, onDelete, onResend, sending, past, cancelled
 
       {/* Timeline */}
       {events && events.length > 0 && (
-        <details className="border-t border-border pt-2">
-          <summary className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider cursor-pointer flex items-center gap-1">
-            <CircleDot className="h-3 w-3" /> Timeline ({events.length})
-          </summary>
-          <div className="mt-2 ml-1.5 border-l-2 border-border pl-3 space-y-1.5">
+        <Collapsible className="border-t border-border pt-2">
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" size="sm" className="w-full justify-between px-2 py-1.5 h-auto text-[10px] font-semibold text-muted-foreground uppercase tracking-wider hover:bg-accent/50 group">
+              <span className="flex items-center gap-1.5">
+                <CircleDot className="h-3 w-3" /> Timeline ({events.length})
+              </span>
+              <ChevronDown className="h-3 w-3 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-2 ml-1.5 border-l-2 border-border pl-3 space-y-1.5">
             {events.map(evt => {
               const evtDate = new Date(evt.created_at);
               const icon = evt.event_type === "created" ? <Plus className="h-3 w-3 text-primary" /> :
@@ -665,7 +671,6 @@ function CallCard({ call, onCancel, onDelete, onResend, sending, past, cancelled
                 </div>
               );
             })}
-            {/* Auto-derive completed status for past calls */}
             {past && !cancelled && !events.some(e => e.event_type === "completed") && (
               <div className="flex items-start gap-2">
                 <div className="mt-0.5 flex-shrink-0"><CheckCircle className="h-3 w-3 text-green-600" /></div>
@@ -675,8 +680,8 @@ function CallCard({ call, onCancel, onDelete, onResend, sending, past, cancelled
                 </div>
               </div>
             )}
-          </div>
-        </details>
+          </CollapsibleContent>
+        </Collapsible>
       )}
 
       {/* Inline invite-more panel */}
