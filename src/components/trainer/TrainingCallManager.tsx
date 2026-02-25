@@ -621,13 +621,12 @@ function CallCard({ call, onCancel, onDelete, onDuplicate, onReschedule, onResen
       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <h4 className="font-medium text-foreground text-sm">{call.title.replace(/^\[DUPLICATE\]\s*/, '')}</h4>
-            {call.title.startsWith("[DUPLICATE]") && (
-              <Badge className="text-[10px] bg-purple-500 text-white border-purple-500/30">
-                <Copy className="h-2.5 w-2.5 mr-0.5" />
-                DUPLICATE
-              </Badge>
-            )}
+            <h4 className="font-medium text-foreground text-sm">
+              {call.title.replace(/^\[DUPLICATE\]\s*/, '')}
+              {call.title.startsWith("[DUPLICATE]") && (
+                <span className="text-muted-foreground font-normal italic ml-1">(Cloned)</span>
+              )}
+            </h4>
             {call.recurrence_rule !== "none" && (
               <Badge variant="outline" className="text-[10px]">
                 <Repeat className="h-2.5 w-2.5 mr-0.5" />
