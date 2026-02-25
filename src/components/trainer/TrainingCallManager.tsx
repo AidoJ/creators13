@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Calendar, Plus, Video, Clock, Repeat, Send, Trash2, X, Users, UserPlus, Mail, CheckCircle, Bell, XCircle, Edit, CircleDot, ChevronDown, CalendarClock } from "lucide-react";
+import { Calendar, Plus, Video, Clock, Repeat, Send, Trash2, X, Users, UserPlus, Mail, CheckCircle, Bell, XCircle, Edit, CircleDot, ChevronDown, CalendarClock, Copy } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
@@ -319,6 +319,28 @@ export default function TrainingCallManager() {
     fetchCalls();
   }
 
+  async function handleDuplicate(id: string) {
+    const call = calls.find(c => c.id === id);
+    if (!call || !user) return;
+    const { data, error } = await supabase.from("training_calls").insert({
+      title: `[DUPLICATE] ${call.title}`,
+      description: call.description,
+      scheduled_at: call.scheduled_at,
+      duration_minutes: call.duration_minutes,
+      zoom_link: call.zoom_link,
+      recurrence_rule: call.recurrence_rule,
+      recurrence_end_date: call.recurrence_end_date,
+      created_by: user.id,
+    }).select("id").single();
+    if (error) {
+      toast({ title: "Error duplicating call", description: error.message, variant: "destructive" });
+    } else {
+      await supabase.from("training_call_events").insert({ call_id: data.id, event_type: "created", details: `Duplicated from "${call.title}"` });
+      toast({ title: "Call duplicated", description: "Edit the duplicate to update details and remove the DUPLICATE label." });
+      fetchCalls();
+    }
+  }
+
   async function handleDelete(id: string) {
     const { error } = await supabase.from("training_calls").delete().eq("id", id);
     if (error) {
@@ -502,7 +524,7 @@ export default function TrainingCallManager() {
             <div className="space-y-2">
               <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Upcoming</h3>
               {upcomingCalls.map(call => (
-                <CallCard key={call.id} call={call} onCancel={handleCancel} onDelete={handleDelete} onReschedule={handleReschedule} onResend={(c) => sendInvites(c)} sending={sending === call.id} practitioners={practitioners} onSendInvites={sendInvites} onLoadPractitioners={fetchPractitioners} practLoading={practLoading} invitees={inviteesByCall[call.id] || []} events={eventsByCall[call.id] || []} onInvitesSent={() => fetchInvitees(calls.map(c => c.id))} />
+                <CallCard key={call.id} call={call} onCancel={handleCancel} onDelete={handleDelete} onDuplicate={handleDuplicate} onReschedule={handleReschedule} onResend={(c) => sendInvites(c)} sending={sending === call.id} practitioners={practitioners} onSendInvites={sendInvites} onLoadPractitioners={fetchPractitioners} practLoading={practLoading} invitees={inviteesByCall[call.id] || []} events={eventsByCall[call.id] || []} onInvitesSent={() => fetchInvitees(calls.map(c => c.id))} />
               ))}
             </div>
           )}
@@ -510,7 +532,7 @@ export default function TrainingCallManager() {
             <div className="space-y-2">
               <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Past</h3>
               {pastCalls.slice(0, 10).map(call => (
-                <CallCard key={call.id} call={call} onCancel={handleCancel} onDelete={handleDelete} onResend={(c) => sendInvites(c)} sending={sending === call.id} past invitees={inviteesByCall[call.id] || []} events={eventsByCall[call.id] || []} />
+                <CallCard key={call.id} call={call} onCancel={handleCancel} onDelete={handleDelete} onDuplicate={handleDuplicate} onResend={(c) => sendInvites(c)} sending={sending === call.id} past invitees={inviteesByCall[call.id] || []} events={eventsByCall[call.id] || []} />
               ))}
             </div>
           )}
@@ -519,7 +541,7 @@ export default function TrainingCallManager() {
               <summary className="text-xs font-semibold text-muted-foreground uppercase tracking-wider cursor-pointer">Cancelled ({cancelledCalls.length})</summary>
               <div className="space-y-2 mt-2">
                 {cancelledCalls.map(call => (
-                  <CallCard key={call.id} call={call} onCancel={handleCancel} onDelete={handleDelete} onResend={(c) => sendInvites(c)} sending={false} cancelled invitees={inviteesByCall[call.id] || []} events={eventsByCall[call.id] || []} />
+                  <CallCard key={call.id} call={call} onCancel={handleCancel} onDelete={handleDelete} onDuplicate={handleDuplicate} onResend={(c) => sendInvites(c)} sending={false} cancelled invitees={inviteesByCall[call.id] || []} events={eventsByCall[call.id] || []} />
                 ))}
               </div>
             </details>
@@ -530,10 +552,11 @@ export default function TrainingCallManager() {
   );
 }
 
-function CallCard({ call, onCancel, onDelete, onReschedule, onResend, sending, past, cancelled, practitioners, onSendInvites, onLoadPractitioners, practLoading, invitees, events, onInvitesSent }: {
+function CallCard({ call, onCancel, onDelete, onDuplicate, onReschedule, onResend, sending, past, cancelled, practitioners, onSendInvites, onLoadPractitioners, practLoading, invitees, events, onInvitesSent }: {
   call: TrainingCall;
   onCancel: (id: string) => void;
   onDelete: (id: string) => void;
+  onDuplicate?: (id: string) => void;
   onReschedule?: (id: string, newDate: string, newTime: string) => void;
   onResend: (call: TrainingCall) => void;
   sending: boolean;
@@ -598,7 +621,13 @@ function CallCard({ call, onCancel, onDelete, onReschedule, onResend, sending, p
       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <h4 className="font-medium text-foreground text-sm">{call.title}</h4>
+            <h4 className="font-medium text-foreground text-sm">{call.title.replace(/^\[DUPLICATE\]\s*/, '')}</h4>
+            {call.title.startsWith("[DUPLICATE]") && (
+              <Badge className="text-[10px] bg-purple-500 text-white border-purple-500/30">
+                <Copy className="h-2.5 w-2.5 mr-0.5" />
+                DUPLICATE
+              </Badge>
+            )}
             {call.recurrence_rule !== "none" && (
               <Badge variant="outline" className="text-[10px]">
                 <Repeat className="h-2.5 w-2.5 mr-0.5" />
@@ -668,6 +697,11 @@ function CallCard({ call, onCancel, onDelete, onReschedule, onResend, sending, p
                 </AlertDialogContent>
               </AlertDialog>
             </>
+          )}
+          {onDuplicate && (
+            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => onDuplicate(call.id)}>
+              <Copy className="h-3 w-3 mr-1" />Duplicate
+            </Button>
           )}
           <AlertDialog>
             <AlertDialogTrigger asChild>
