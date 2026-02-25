@@ -634,55 +634,67 @@ function CallCard({ call, onCancel, onDelete, onResend, sending, past, cancelled
       </div>
 
       {/* Timeline */}
-      {events && events.length > 0 && (
-        <Collapsible className="border-t border-border pt-2">
-          <CollapsibleTrigger asChild>
-            <Button variant="ghost" size="sm" className="w-full justify-between px-2 py-1.5 h-auto text-[10px] font-semibold text-muted-foreground uppercase tracking-wider hover:bg-accent/50 group">
-              <span className="flex items-center gap-1.5">
-                <CircleDot className="h-3 w-3" /> Timeline ({events.length})
-              </span>
-              <ChevronDown className="h-3 w-3 transition-transform duration-200 group-data-[state=open]:rotate-180" />
-            </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="mt-2 ml-1.5 border-l-2 border-border pl-3 space-y-1.5">
-            {events.map(evt => {
-              const evtDate = new Date(evt.created_at);
-              const icon = evt.event_type === "created" ? <Plus className="h-3 w-3 text-primary" /> :
-                evt.event_type === "invites_sent" ? <Send className="h-3 w-3 text-primary" /> :
-                evt.event_type === "reminder_sent" ? <Bell className="h-3 w-3 text-amber-500" /> :
-                evt.event_type === "cancelled" ? <XCircle className="h-3 w-3 text-destructive" /> :
-                evt.event_type === "completed" ? <CheckCircle className="h-3 w-3 text-green-600" /> :
-                evt.event_type === "updated" ? <Edit className="h-3 w-3 text-muted-foreground" /> :
-                <CircleDot className="h-3 w-3 text-muted-foreground" />;
-              const label = evt.event_type === "created" ? "Created" :
-                evt.event_type === "invites_sent" ? "Invites Sent" :
-                evt.event_type === "reminder_sent" ? "Reminder Sent" :
-                evt.event_type === "cancelled" ? "Cancelled" :
-                evt.event_type === "completed" ? "Completed" :
-                evt.event_type === "updated" ? "Updated" : evt.event_type;
-              return (
-                <div key={evt.id} className="flex items-start gap-2">
-                  <div className="mt-0.5 flex-shrink-0">{icon}</div>
+      {(() => {
+        const hasEvents = events && events.length > 0;
+        const eventCount = hasEvents ? events.length : 1;
+        return (
+          <Collapsible className="border-t border-border pt-2">
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" size="sm" className="w-full justify-between px-2 py-1.5 h-auto text-[10px] font-semibold text-muted-foreground uppercase tracking-wider hover:bg-accent/50 group">
+                <span className="flex items-center gap-1.5">
+                  <CircleDot className="h-3 w-3" /> Timeline ({eventCount})
+                </span>
+                <ChevronDown className="h-3 w-3 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-2 ml-1.5 border-l-2 border-border pl-3 space-y-1.5">
+              {hasEvents ? events.map(evt => {
+                const evtDate = new Date(evt.created_at);
+                const icon = evt.event_type === "created" ? <Plus className="h-3 w-3 text-primary" /> :
+                  evt.event_type === "invites_sent" ? <Send className="h-3 w-3 text-primary" /> :
+                  evt.event_type === "reminder_sent" ? <Bell className="h-3 w-3 text-amber-500" /> :
+                  evt.event_type === "cancelled" ? <XCircle className="h-3 w-3 text-destructive" /> :
+                  evt.event_type === "completed" ? <CheckCircle className="h-3 w-3 text-green-600" /> :
+                  evt.event_type === "updated" ? <Edit className="h-3 w-3 text-muted-foreground" /> :
+                  <CircleDot className="h-3 w-3 text-muted-foreground" />;
+                const label = evt.event_type === "created" ? "Created" :
+                  evt.event_type === "invites_sent" ? "Invites Sent" :
+                  evt.event_type === "reminder_sent" ? "Reminder Sent" :
+                  evt.event_type === "cancelled" ? "Cancelled" :
+                  evt.event_type === "completed" ? "Completed" :
+                  evt.event_type === "updated" ? "Updated" : evt.event_type;
+                return (
+                  <div key={evt.id} className="flex items-start gap-2">
+                    <div className="mt-0.5 flex-shrink-0">{icon}</div>
+                    <div className="min-w-0">
+                      <span className="text-xs font-medium text-foreground">{label}</span>
+                      {evt.details && <span className="text-[10px] text-muted-foreground ml-1.5">— {evt.details}</span>}
+                      <p className="text-[10px] text-muted-foreground">{evtDate.toLocaleString("en-AU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</p>
+                    </div>
+                  </div>
+                );
+              }) : (
+                <div className="flex items-start gap-2">
+                  <div className="mt-0.5 flex-shrink-0"><Plus className="h-3 w-3 text-primary" /></div>
                   <div className="min-w-0">
-                    <span className="text-xs font-medium text-foreground">{label}</span>
-                    {evt.details && <span className="text-[10px] text-muted-foreground ml-1.5">— {evt.details}</span>}
-                    <p className="text-[10px] text-muted-foreground">{evtDate.toLocaleString("en-AU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</p>
+                    <span className="text-xs font-medium text-foreground">Scheduled</span>
+                    <p className="text-[10px] text-muted-foreground">{new Date(call.created_at).toLocaleString("en-AU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</p>
                   </div>
                 </div>
-              );
-            })}
-            {past && !cancelled && !events.some(e => e.event_type === "completed") && (
-              <div className="flex items-start gap-2">
-                <div className="mt-0.5 flex-shrink-0"><CheckCircle className="h-3 w-3 text-green-600" /></div>
-                <div>
-                  <span className="text-xs font-medium text-foreground">Completed</span>
-                  <p className="text-[10px] text-muted-foreground">Session time has passed</p>
+              )}
+              {past && !cancelled && !(hasEvents && events.some(e => e.event_type === "completed")) && (
+                <div className="flex items-start gap-2">
+                  <div className="mt-0.5 flex-shrink-0"><CheckCircle className="h-3 w-3 text-green-600" /></div>
+                  <div>
+                    <span className="text-xs font-medium text-foreground">Completed</span>
+                    <p className="text-[10px] text-muted-foreground">Session time has passed</p>
+                  </div>
                 </div>
-              </div>
-            )}
-          </CollapsibleContent>
-        </Collapsible>
-      )}
+              )}
+            </CollapsibleContent>
+          </Collapsible>
+        );
+      })()}
 
       {/* Inline invite-more panel */}
       {showInviteMore && (
