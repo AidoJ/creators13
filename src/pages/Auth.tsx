@@ -59,7 +59,7 @@ export default function Auth() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <a href="/" className="inline-block mb-4">
-            <img src={logoFull} alt="13 Creators" className="h-16 w-auto mx-auto" />
+            <img src={logoFull} alt="13 Creators" className="h-64 w-auto mx-auto" />
           </a>
           <h1 className="text-2xl font-display font-bold text-foreground">
             {isLogin ? "Welcome back" : "Create your account"}
