@@ -54,6 +54,7 @@
     --warm-white: 45 25% 99%;
     --magenta: 338 75% 42%;
     --ocean: 210 65% 50%;
+    --zoom-blue: 220 100% 52%;
     --terracotta: 20 55% 50%;
 
     --sidebar-background: 338 60% 22%;
@@ -87,6 +88,7 @@
 
     --accent: 210 55% 45%;
     --accent-foreground: 0 0% 100%;
+    --zoom-blue: 220 100% 52%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 100%;
