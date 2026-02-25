@@ -303,7 +303,11 @@ export default function TrainingCallManager() {
     const previousScheduledAt = call.scheduled_at;
     const newScheduledAt = new Date(`${newDate}T${newTime}`).toISOString();
 
-    const { error } = await supabase.from("training_calls").update({ scheduled_at: newScheduledAt }).eq("id", id);
+    const updatePayload: Record<string, any> = { scheduled_at: newScheduledAt };
+    if (call.title.startsWith("[DUPLICATE]")) {
+      updatePayload.title = call.title.replace(/^\[DUPLICATE\]\s*/, '');
+    }
+    const { error } = await supabase.from("training_calls").update(updatePayload).eq("id", id);
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
       return;
