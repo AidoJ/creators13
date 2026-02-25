@@ -8,7 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Calendar, Plus, Video, Clock, Repeat, Send, Trash2, X, Users, UserPlus, Mail, CheckCircle, Bell, XCircle, Edit, CircleDot, ChevronDown } from "lucide-react";
+import { Calendar, Plus, Video, Clock, Repeat, Send, Trash2, X, Users, UserPlus, Mail, CheckCircle, Bell, XCircle, Edit, CircleDot, ChevronDown, CalendarClock } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
@@ -284,9 +286,37 @@ export default function TrainingCallManager() {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
       await supabase.from("training_call_events").insert({ call_id: id, event_type: "cancelled", details: "Call cancelled" });
-      toast({ title: "Call cancelled" });
+      // Notify invitees
+      try {
+        await supabase.functions.invoke("send-training-update", {
+          body: { callId: id, updateType: "cancelled" },
+        });
+      } catch (e) { console.error("Error sending cancel notifications:", e); }
+      toast({ title: "Call cancelled", description: "All invitees have been notified." });
       fetchCalls();
     }
+  }
+
+  async function handleReschedule(id: string, newDate: string, newTime: string) {
+    const call = calls.find(c => c.id === id);
+    if (!call) return;
+    const previousScheduledAt = call.scheduled_at;
+    const newScheduledAt = new Date(`${newDate}T${newTime}`).toISOString();
+
+    const { error } = await supabase.from("training_calls").update({ scheduled_at: newScheduledAt }).eq("id", id);
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+      return;
+    }
+    await supabase.from("training_call_events").insert({ call_id: id, event_type: "updated", details: `Rescheduled from ${new Date(previousScheduledAt).toLocaleString("en-AU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}` });
+    // Notify invitees
+    try {
+      await supabase.functions.invoke("send-training-update", {
+        body: { callId: id, updateType: "rescheduled", previousScheduledAt },
+      });
+    } catch (e) { console.error("Error sending reschedule notifications:", e); }
+    toast({ title: "Call rescheduled", description: "All invitees have been notified." });
+    fetchCalls();
   }
 
   async function handleDelete(id: string) {
@@ -472,7 +502,7 @@ export default function TrainingCallManager() {
             <div className="space-y-2">
               <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Upcoming</h3>
               {upcomingCalls.map(call => (
-                <CallCard key={call.id} call={call} onCancel={handleCancel} onDelete={handleDelete} onResend={(c) => sendInvites(c)} sending={sending === call.id} practitioners={practitioners} onSendInvites={sendInvites} onLoadPractitioners={fetchPractitioners} practLoading={practLoading} invitees={inviteesByCall[call.id] || []} events={eventsByCall[call.id] || []} onInvitesSent={() => fetchInvitees(calls.map(c => c.id))} />
+                <CallCard key={call.id} call={call} onCancel={handleCancel} onDelete={handleDelete} onReschedule={handleReschedule} onResend={(c) => sendInvites(c)} sending={sending === call.id} practitioners={practitioners} onSendInvites={sendInvites} onLoadPractitioners={fetchPractitioners} practLoading={practLoading} invitees={inviteesByCall[call.id] || []} events={eventsByCall[call.id] || []} onInvitesSent={() => fetchInvitees(calls.map(c => c.id))} />
               ))}
             </div>
           )}
@@ -500,10 +530,11 @@ export default function TrainingCallManager() {
   );
 }
 
-function CallCard({ call, onCancel, onDelete, onResend, sending, past, cancelled, practitioners, onSendInvites, onLoadPractitioners, practLoading, invitees, events, onInvitesSent }: {
+function CallCard({ call, onCancel, onDelete, onReschedule, onResend, sending, past, cancelled, practitioners, onSendInvites, onLoadPractitioners, practLoading, invitees, events, onInvitesSent }: {
   call: TrainingCall;
   onCancel: (id: string) => void;
   onDelete: (id: string) => void;
+  onReschedule?: (id: string, newDate: string, newTime: string) => void;
   onResend: (call: TrainingCall) => void;
   sending: boolean;
   past?: boolean;
@@ -521,6 +552,9 @@ function CallCard({ call, onCancel, onDelete, onResend, sending, past, cancelled
   const [addExternalEmails, setAddExternalEmails] = useState<string[]>([]);
   const [addNewEmail, setAddNewEmail] = useState("");
   const [inviteSending, setInviteSending] = useState(false);
+  const [showReschedule, setShowReschedule] = useState(false);
+  const [rescheduleDate, setRescheduleDate] = useState("");
+  const [rescheduleTime, setRescheduleTime] = useState("");
 
   const dt = new Date(call.scheduled_at);
   const dateStr = dt.toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
@@ -602,15 +636,37 @@ function CallCard({ call, onCancel, onDelete, onResend, sending, past, cancelled
           )}
           {!past && !cancelled && (
             <>
+              <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => {
+                const dt = new Date(call.scheduled_at);
+                setRescheduleDate(dt.toISOString().slice(0, 10));
+                setRescheduleTime(dt.toTimeString().slice(0, 5));
+                setShowReschedule(true);
+              }}>
+                <CalendarClock className="h-3 w-3 mr-1" />Reschedule
+              </Button>
               <Button variant="outline" size="sm" className="h-7 text-xs" onClick={handleOpenInviteMore}>
                 <UserPlus className="h-3 w-3 mr-1" />Invite More
               </Button>
               <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => onResend(call)} disabled={sending}>
                 <Send className="h-3 w-3 mr-1" />{sending ? "Sending…" : "Resend All"}
               </Button>
-              <Button variant="ghost" size="sm" className="h-7 text-xs text-amber-600" onClick={() => onCancel(call.id)}>
-                Cancel
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive">
+                    Cancel
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Cancel this training call?</AlertDialogTitle>
+                    <AlertDialogDescription>All invitees will be notified by email that this call has been cancelled.</AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Keep Call</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => onCancel(call.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Cancel Call</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </>
           )}
           <AlertDialog>
@@ -754,6 +810,42 @@ function CallCard({ call, onCancel, onDelete, onResend, sending, past, cancelled
           </Button>
         </div>
       )}
+
+      {/* Reschedule Dialog */}
+      <Dialog open={showReschedule} onOpenChange={setShowReschedule}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CalendarClock className="h-4 w-4 text-primary" />
+              Reschedule: {call.title}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <p className="text-xs text-muted-foreground">
+              All invitees will be notified of the new date &amp; time by email.
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">New Date</Label>
+                <Input type="date" value={rescheduleDate} onChange={e => setRescheduleDate(e.target.value)} className="mt-1" />
+              </div>
+              <div>
+                <Label className="text-xs">New Time</Label>
+                <Input type="time" value={rescheduleTime} onChange={e => setRescheduleTime(e.target.value)} className="mt-1" />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setShowReschedule(false)}>Cancel</Button>
+            <Button size="sm" disabled={!rescheduleDate || !rescheduleTime} onClick={() => {
+              onReschedule?.(call.id, rescheduleDate, rescheduleTime);
+              setShowReschedule(false);
+            }}>
+              <CalendarClock className="h-3 w-3 mr-1" />Reschedule &amp; Notify
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
