@@ -631,12 +631,12 @@ function CallCard({ call, onCancel, onDelete, onReschedule, onResend, sending, p
         <div className="flex items-center gap-1.5 flex-shrink-0">
           {call.zoom_link && (
             <a href={call.zoom_link} target="_blank" rel="noopener noreferrer">
-              <Button variant="outline" size="sm" className="h-7 text-xs"><Video className="h-3 w-3 mr-1" />Zoom</Button>
+              <Button size="sm" className="h-7 text-xs bg-[#0B5CFF] text-white hover:bg-[#0B5CFF]/90"><Video className="h-3 w-3 mr-1" />Zoom</Button>
             </a>
           )}
           {!past && !cancelled && (
             <>
-              <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => {
+              <Button size="sm" className="h-7 text-xs bg-orange-500 text-white hover:bg-orange-600" onClick={() => {
                 const dt = new Date(call.scheduled_at);
                 setRescheduleDate(dt.toISOString().slice(0, 10));
                 setRescheduleTime(dt.toTimeString().slice(0, 5));
@@ -644,15 +644,15 @@ function CallCard({ call, onCancel, onDelete, onReschedule, onResend, sending, p
               }}>
                 <CalendarClock className="h-3 w-3 mr-1" />Reschedule
               </Button>
-              <Button variant="outline" size="sm" className="h-7 text-xs" onClick={handleOpenInviteMore}>
+              <Button size="sm" className="h-7 text-xs bg-green-600 text-white hover:bg-green-700" onClick={handleOpenInviteMore}>
                 <UserPlus className="h-3 w-3 mr-1" />Invite More
               </Button>
-              <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => onResend(call)} disabled={sending}>
+              <Button size="sm" className="h-7 text-xs bg-yellow-500 text-white hover:bg-yellow-600" onClick={() => onResend(call)} disabled={sending}>
                 <Send className="h-3 w-3 mr-1" />{sending ? "Sending…" : "Resend All"}
               </Button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive">
+                  <Button size="sm" className="h-7 text-xs bg-red-600 text-white hover:bg-red-700">
                     Cancel
                   </Button>
                 </AlertDialogTrigger>
