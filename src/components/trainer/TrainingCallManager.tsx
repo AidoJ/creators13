@@ -678,6 +678,11 @@ function CallCard({ call, onCancel, onDelete, onDuplicate, onReschedule, onResen
               <Button size="sm" className="h-7 text-xs bg-yellow-500 text-white hover:bg-yellow-600" onClick={() => onResend(call)} disabled={sending}>
                 <Send className="h-3 w-3 mr-1" />{sending ? "Sending…" : "Resend All"}
               </Button>
+              {onDuplicate && (
+                <Button size="sm" className="h-7 text-xs bg-blue-900 text-white hover:bg-blue-950" onClick={() => onDuplicate(call.id)}>
+                  <Copy className="h-3 w-3 mr-1" />Duplicate
+                </Button>
+              )}
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button size="sm" className="h-7 text-xs bg-red-600 text-white hover:bg-red-700">
@@ -696,11 +701,6 @@ function CallCard({ call, onCancel, onDelete, onDuplicate, onReschedule, onResen
                 </AlertDialogContent>
               </AlertDialog>
             </>
-          )}
-          {onDuplicate && (
-            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => onDuplicate(call.id)}>
-              <Copy className="h-3 w-3 mr-1" />Duplicate
-            </Button>
           )}
           <AlertDialog>
             <AlertDialogTrigger asChild>
