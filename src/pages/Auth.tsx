@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect } from "react";
 import { Leaf } from "lucide-react";
+import logoFull from "@/assets/13creators-logo-full.png";
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -57,9 +58,8 @@ export default function Auth() {
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <a href="/" className="inline-flex items-center gap-2 mb-4">
-            <span className="text-3xl font-display font-bold text-primary">13</span>
-            <span className="text-xl font-display font-semibold text-foreground">Creators</span>
+          <a href="/" className="inline-block mb-4">
+            <img src={logoFull} alt="13 Creators" className="h-16 w-auto mx-auto" />
           </a>
           <h1 className="text-2xl font-display font-bold text-foreground">
             {isLogin ? "Welcome back" : "Create your account"}
