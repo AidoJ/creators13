@@ -290,15 +290,20 @@ export default function CaseStudyPipeline({ onSelectClient, onStartCaseStudy }: 
                 key={cs.id}
                 className="flex items-center justify-between gap-3 rounded-lg bg-card border border-border px-3 py-2"
               >
-                <div className="min-w-0">
+              <div className="min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">{cs.title}</p>
                   <p className="text-xs text-muted-foreground">
                     {cs.subject_name} · Updated {new Date(cs.updated_at).toLocaleDateString("en-AU")}
                   </p>
                 </div>
-                <Badge variant="outline" className="text-[10px] bg-accent/10 text-accent border-accent/20 shrink-0">
-                  Continue
-                </Badge>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs shrink-0 bg-accent/10 text-accent border-accent/20 hover:bg-accent/20"
+                  onClick={() => cs.subject_user_id && onStartCaseStudy?.(cs.subject_user_id, cs.subject_name)}
+                >
+                  Continue <ArrowRight className="h-3 w-3 ml-1" />
+                </Button>
               </div>
             ))}
           </div>
