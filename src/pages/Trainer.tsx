@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FileText, CheckCircle, XCircle, Clock, BarChart3, Eye, EyeOff, GitBranch, Save, Calendar, ArrowLeft } from "lucide-react";
+import { FileText, CheckCircle, XCircle, Clock, BarChart3, Eye, EyeOff, GitBranch, Save, Calendar, ArrowLeft, Mail } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
 import CompositePhotoLayout from "@/components/profiling/CompositePhotoLayout";
@@ -17,6 +17,7 @@ import { getCreatorTypeColor } from "@/lib/creatorTypes";
 import TrainingCallManager from "@/components/trainer/TrainingCallManager";
 import TrainingCalendar from "@/components/practitioner/TrainingCalendar";
 import CaseStudySearch from "@/components/shared/CaseStudySearch";
+import InvitationsManager from "@/components/admin/InvitationsManager";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 type EnrollmentStep = Database["public"]["Enums"]["enrollment_step"];
@@ -189,6 +190,7 @@ export default function TrainerDashboard() {
             <TabsTrigger value="training-calls"><Calendar className="h-3.5 w-3.5 mr-1" />Training Calls</TabsTrigger>
             <TabsTrigger value="cases-pr"><FileText className="h-3.5 w-3.5 mr-1" />Case Studies (PR) {pendingCaseStudies > 0 && <Badge className="ml-1 h-5 text-[10px]" variant="destructive">{pendingCaseStudies}</Badge>}</TabsTrigger>
             <TabsTrigger value="cases-dt"><FileText className="h-3.5 w-3.5 mr-1" />Case Studies (Dt) {draftCaseStudies > 0 && <Badge className="ml-1 h-5 text-[10px]" variant="outline">{draftCaseStudies}</Badge>}</TabsTrigger>
+            <TabsTrigger value="invitations"><Mail className="h-3.5 w-3.5 mr-1" />Invitations</TabsTrigger>
           </TabsList>
 
           <TabsContent value="pipeline" className="space-y-4">
@@ -240,6 +242,10 @@ export default function TrainerDashboard() {
               userId={user?.id}
               showActions={false}
             />
+          </TabsContent>
+
+          <TabsContent value="invitations" className="space-y-4">
+            <InvitationsManager />
           </TabsContent>
         </Tabs>
       </main>

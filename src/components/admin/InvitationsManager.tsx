@@ -151,7 +151,7 @@ export default function InvitationsManager() {
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Delete invitation?</AlertDialogTitle>
+                      <AlertDialogTitle>Are you sure you want to delete this invitation?</AlertDialogTitle>
                       <AlertDialogDescription>
                         This will permanently delete the invitation for <strong>{inv.name}</strong> ({inv.email}). This action cannot be undone.
                       </AlertDialogDescription>
