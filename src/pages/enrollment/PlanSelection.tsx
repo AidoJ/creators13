@@ -89,40 +89,49 @@ export default function PlanSelection() {
       <main className="container mx-auto px-4 py-12 max-w-5xl">
         <div className="text-center mb-10">
           <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-3">
-            Choose Your Level
+            {urlCaseStudy ? "Your Case Study Invitation" : "Choose Your Level"}
           </h1>
           <p className="text-muted-foreground max-w-lg mx-auto">
-            Start your Creator Types journey. Pick the level that suits where you are right now.
+            {urlCaseStudy
+              ? "You've been invited to participate as a case study. Review your plan below and continue."
+              : "Start your Creator Types journey. Pick the level that suits where you are right now."}
           </p>
         </div>
 
-        {/* Billing toggle */}
-        <div className="flex justify-center mb-10">
-          <div className="inline-flex items-center gap-1 bg-muted rounded-full p-1">
-            <button
-              onClick={() => setAnnual(false)}
-              className={cn(
-                "px-5 py-2 rounded-full text-sm font-semibold transition-all",
-                !annual ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              Monthly
-            </button>
-            <button
-              onClick={() => setAnnual(true)}
-              className={cn(
-                "px-5 py-2 rounded-full text-sm font-semibold transition-all",
-                annual ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              Annual <span className="text-xs opacity-75 ml-1">Save 17%</span>
-            </button>
+        {/* Billing toggle — hidden for case study invites */}
+        {!urlCaseStudy && (
+          <div className="flex justify-center mb-10">
+            <div className="inline-flex items-center gap-1 bg-muted rounded-full p-1">
+              <button
+                onClick={() => setAnnual(false)}
+                className={cn(
+                  "px-5 py-2 rounded-full text-sm font-semibold transition-all",
+                  !annual ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Monthly
+              </button>
+              <button
+                onClick={() => setAnnual(true)}
+                className={cn(
+                  "px-5 py-2 rounded-full text-sm font-semibold transition-all",
+                  annual ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Annual <span className="text-xs opacity-75 ml-1">Save 17%</span>
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Tier cards */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-          {(Object.entries(TIERS) as [TierKey, typeof TIERS[TierKey]][]).map(([key, tier]) => {
+        <div className={cn(
+          "grid gap-5 mb-8",
+          urlCaseStudy ? "max-w-sm mx-auto" : "sm:grid-cols-2 lg:grid-cols-4"
+        )}>
+          {(Object.entries(TIERS) as [TierKey, typeof TIERS[TierKey]][])
+            .filter(([key]) => !urlCaseStudy || key === "wren")
+            .map(([key, tier]) => {
             const isSelected = selectedTier === key;
             const price = annual ? Math.round(tier.annualPrice / 12) : tier.monthlyPrice;
 
@@ -140,7 +149,7 @@ export default function PlanSelection() {
                     : "border-border hover:border-primary/40"
                 )}
               >
-                {key === "robin" && (
+                {key === "robin" && !urlCaseStudy && (
                   <span className="absolute top-3 right-3 z-10 bg-primary text-primary-foreground text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
                     Popular
                   </span>
