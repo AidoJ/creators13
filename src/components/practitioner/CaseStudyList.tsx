@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FileText, Sparkles, Clock, CheckCircle, AlertCircle, Eye, EyeOff, MessageSquare, Pencil } from "lucide-react";
+import { FileText, Sparkles, Clock, CheckCircle, AlertCircle, Eye, EyeOff, MessageSquare, Pencil, ArrowLeft } from "lucide-react";
 import CompositePhotoLayout from "@/components/profiling/CompositePhotoLayout";
 import AttachmentGallery from "./AttachmentGallery";
 import CaseStudyFormDataView from "@/components/admin/CaseStudyFormDataView";
@@ -30,12 +30,19 @@ interface CaseStudy {
 interface CaseStudyListProps {
   practitionerId: string;
   onEditCaseStudy?: (caseStudy: CaseStudy) => void;
+  filterCaseStudyId?: string | null;
+  onClearFilter?: () => void;
 }
 
-export default function CaseStudyList({ practitionerId, onEditCaseStudy }: CaseStudyListProps) {
+export default function CaseStudyList({ practitionerId, onEditCaseStudy, filterCaseStudyId, onClearFilter }: CaseStudyListProps) {
   const [studies, setStudies] = useState<CaseStudy[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(filterCaseStudyId || null);
+
+  // When filter changes, auto-expand it
+  useEffect(() => {
+    if (filterCaseStudyId) setExpandedId(filterCaseStudyId);
+  }, [filterCaseStudyId]);
 
   useEffect(() => {
     async function fetch() {
@@ -77,6 +84,8 @@ export default function CaseStudyList({ practitionerId, onEditCaseStudy }: CaseS
     );
   }
 
+  const displayStudies = filterCaseStudyId ? studies.filter(s => s.id === filterCaseStudyId) : studies;
+
   const statusConfig: Record<CaseStudyStatus, { icon: typeof Clock; label: string; className: string }> = {
     draft: { icon: Clock, label: "Draft", className: "bg-muted/50 text-muted-foreground border-border" },
     submitted: { icon: AlertCircle, label: "Pending Review", className: "bg-amber-500/10 text-amber-600 border-amber-500/20" },
@@ -86,7 +95,12 @@ export default function CaseStudyList({ practitionerId, onEditCaseStudy }: CaseS
 
   return (
     <div className="space-y-3">
-      {studies.map(cs => {
+      {filterCaseStudyId && onClearFilter && (
+        <Button variant="ghost" size="sm" className="text-xs" onClick={onClearFilter}>
+          <ArrowLeft className="h-3 w-3 mr-1" /> Show all case studies
+        </Button>
+      )}
+      {displayStudies.map(cs => {
         const sc = statusConfig[cs.status];
         const StatusIcon = sc.icon;
         const isExpanded = expandedId === cs.id;

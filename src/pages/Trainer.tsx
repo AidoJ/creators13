@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FileText, CheckCircle, XCircle, Clock, BarChart3, Eye, EyeOff, GitBranch, Save, Calendar } from "lucide-react";
+import { FileText, CheckCircle, XCircle, Clock, BarChart3, Eye, EyeOff, GitBranch, Save, Calendar, ArrowLeft } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
 import CompositePhotoLayout from "@/components/profiling/CompositePhotoLayout";
@@ -62,6 +62,7 @@ export default function TrainerDashboard() {
   const [trainingRefreshKey, setTrainingRefreshKey] = useState(0);
   const [expandedCaseStudy, setExpandedCaseStudy] = useState<string | null>(null);
   const [revisionNotes, setRevisionNotes] = useState<Record<string, string>>({});
+  const [searchFilterId, setSearchFilterId] = useState<string | null>(null);
 
   const fetchUsers = useCallback(async () => {
     const [profilesRes, rolesRes, subsRes] = await Promise.all([
@@ -145,15 +146,16 @@ export default function TrainerDashboard() {
           <h1 className="text-2xl font-display font-bold text-foreground">Trainer Panel</h1>
           <CaseStudySearch
             onSelectCaseStudy={(id) => {
+              setSearchFilterId(id);
               setExpandedCaseStudy(id);
               const cs = caseStudies.find(c => c.id === id);
               if (cs?.status === "submitted") setActiveTab("cases-pr");
               else setActiveTab("cases-dt");
             }}
             onSelectClient={(clientId) => {
-              // Find first case study for this client
               const cs = caseStudies.find(c => c.subject_user_id === clientId);
               if (cs) {
+                setSearchFilterId(cs.id);
                 setExpandedCaseStudy(cs.id);
                 if (cs.status === "submitted") setActiveTab("cases-pr");
                 else setActiveTab("cases-dt");
@@ -199,8 +201,13 @@ export default function TrainerDashboard() {
           </TabsContent>
 
           <TabsContent value="cases-pr" className="space-y-4">
+            {searchFilterId && (
+              <Button variant="ghost" size="sm" className="text-xs mb-2" onClick={() => { setSearchFilterId(null); setExpandedCaseStudy(null); }}>
+                <ArrowLeft className="h-3 w-3 mr-1" /> Show all pending reviews
+              </Button>
+            )}
             <CaseStudyList
-              caseStudies={caseStudies.filter(c => c.status === "submitted")}
+              caseStudies={caseStudies.filter(c => c.status === "submitted").filter(c => !searchFilterId || c.id === searchFilterId)}
               emptyMessage="No case studies pending review."
               expandedCaseStudy={expandedCaseStudy}
               setExpandedCaseStudy={setExpandedCaseStudy}
@@ -215,8 +222,13 @@ export default function TrainerDashboard() {
           </TabsContent>
 
           <TabsContent value="cases-dt" className="space-y-4">
+            {searchFilterId && (
+              <Button variant="ghost" size="sm" className="text-xs mb-2" onClick={() => { setSearchFilterId(null); setExpandedCaseStudy(null); }}>
+                <ArrowLeft className="h-3 w-3 mr-1" /> Show all drafts
+              </Button>
+            )}
             <CaseStudyList
-              caseStudies={caseStudies.filter(c => c.status === "draft")}
+              caseStudies={caseStudies.filter(c => c.status === "draft").filter(c => !searchFilterId || c.id === searchFilterId)}
               emptyMessage="No draft case studies."
               expandedCaseStudy={expandedCaseStudy}
               setExpandedCaseStudy={setExpandedCaseStudy}
