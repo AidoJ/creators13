@@ -18,6 +18,7 @@ import ResourceLibrary from "@/components/practitioner/ResourceLibrary";
 import { toast } from "@/hooks/use-toast";
 import FAQPanel from "@/components/practitioner/FAQPanel";
 import TrainingCalendar from "@/components/practitioner/TrainingCalendar";
+import CaseStudySearch from "@/components/shared/CaseStudySearch";
 
 export default function PractitionerDashboard() {
   const { user, signOut } = useAuth();
@@ -82,6 +83,16 @@ export default function PractitionerDashboard() {
             <h1 className="text-2xl font-display font-bold text-foreground">Practitioner Dashboard</h1>
             <p className="text-sm text-muted-foreground mt-1">Manage clients, create assessments, and access training resources.</p>
           </div>
+
+          <CaseStudySearch
+            onSelectCaseStudy={(id) => {
+              setActiveTab("cases");
+            }}
+            onSelectClient={(clientId) => {
+              handleSelectClient(clientId);
+              setActiveTab("clients");
+            }}
+          />
 
           {/* Practitioner code display */}
           {practitionerCode && (

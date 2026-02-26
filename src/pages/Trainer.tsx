@@ -16,6 +16,7 @@ import CreatorTypeEditor from "@/components/admin/CreatorTypeEditor";
 import { getCreatorTypeColor } from "@/lib/creatorTypes";
 import TrainingCallManager from "@/components/trainer/TrainingCallManager";
 import TrainingCalendar from "@/components/practitioner/TrainingCalendar";
+import CaseStudySearch from "@/components/shared/CaseStudySearch";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 type EnrollmentStep = Database["public"]["Enums"]["enrollment_step"];
@@ -140,7 +141,26 @@ export default function TrainerDashboard() {
     <div className="min-h-screen bg-background">
       <DashboardHeader email={user?.email} onSignOut={signOut} />
       <main className="container mx-auto px-4 py-8 max-w-6xl space-y-6">
-        <h1 className="text-2xl font-display font-bold text-foreground">Trainer Panel</h1>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <h1 className="text-2xl font-display font-bold text-foreground">Trainer Panel</h1>
+          <CaseStudySearch
+            onSelectCaseStudy={(id) => {
+              setExpandedCaseStudy(id);
+              const cs = caseStudies.find(c => c.id === id);
+              if (cs?.status === "submitted") setActiveTab("cases-pr");
+              else setActiveTab("cases-dt");
+            }}
+            onSelectClient={(clientId) => {
+              // Find first case study for this client
+              const cs = caseStudies.find(c => c.subject_user_id === clientId);
+              if (cs) {
+                setExpandedCaseStudy(cs.id);
+                if (cs.status === "submitted") setActiveTab("cases-pr");
+                else setActiveTab("cases-dt");
+              }
+            }}
+          />
+        </div>
 
         {/* Enrollment pipeline visual */}
         <div className="rounded-xl border border-border bg-card p-4">
