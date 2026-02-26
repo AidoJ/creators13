@@ -29,6 +29,7 @@ export default function PractitionerDashboard() {
   const [practitionerCode, setPractitionerCode] = useState<string | null>(null);
   const [codeCopied, setCodeCopied] = useState(false);
   const [activeTab, setActiveTab] = useState("pipeline");
+  const [searchFilterCaseStudyId, setSearchFilterCaseStudyId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -86,9 +87,11 @@ export default function PractitionerDashboard() {
 
           <CaseStudySearch
             onSelectCaseStudy={(id) => {
+              setSearchFilterCaseStudyId(id);
               setActiveTab("cases");
             }}
             onSelectClient={(clientId) => {
+              setSearchFilterCaseStudyId(null);
               handleSelectClient(clientId);
               setActiveTab("clients");
             }}
@@ -205,7 +208,7 @@ export default function PractitionerDashboard() {
                 />
               </div>
             ) : (
-              user && <CaseStudyList practitionerId={user.id} onEditCaseStudy={handleEditCaseStudy} />
+              user && <CaseStudyList practitionerId={user.id} onEditCaseStudy={handleEditCaseStudy} filterCaseStudyId={searchFilterCaseStudyId} onClearFilter={() => setSearchFilterCaseStudyId(null)} />
             )}
           </TabsContent>
 
