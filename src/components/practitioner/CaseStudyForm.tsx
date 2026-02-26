@@ -335,8 +335,8 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
         </div>
       </div>
 
-      {/* Mode selector — only shown when creating new (not editing) */}
-      {!isEditing && !mode && (
+      {/* Mode selector — shown when mode not yet chosen, OR as a switcher when a mode is active */}
+      {!mode ? (
         <div className="space-y-3">
           <p className="text-sm font-medium text-foreground">How would you like to complete this assessment?</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -358,22 +358,24 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
             </button>
           </div>
         </div>
+      ) : (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span>Mode: <span className="font-semibold text-foreground">{mode === "online" ? "Online Form" : "Paper Upload"}</span></span>
+          {paperFiles.length === 0 && existingAttachments.length === 0 && (
+            <Button variant="ghost" size="sm" className="text-xs h-6 px-2" onClick={() => setMode(mode === "online" ? "paper" : "online")}>
+              Switch to {mode === "online" ? "Paper Upload" : "Online Form"}
+            </Button>
+          )}
+        </div>
       )}
 
       {/* Paper upload mode */}
       {mode === "paper" && (
         <div className="space-y-4">
           <div className="rounded-lg border border-border bg-muted/20 p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-foreground flex items-center gap-2">
-                <FileImage className="h-4 w-4 text-primary" /> Upload Scanned Assessment Pages
-              </p>
-              {!isEditing && paperFiles.length === 0 && existingAttachments.length === 0 && (
-                <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setMode("" as any)}>
-                  <ChevronLeft className="h-3 w-3 mr-1" /> Change Method
-                </Button>
-              )}
-            </div>
+            <p className="text-sm font-medium text-foreground flex items-center gap-2">
+              <FileImage className="h-4 w-4 text-primary" /> Upload Scanned Assessment Pages
+            </p>
             <p className="text-xs text-muted-foreground">
               Take photos or scan your handwritten assessment pages and upload them here. You can upload multiple pages.
             </p>
