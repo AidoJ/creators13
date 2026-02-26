@@ -364,9 +364,16 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
       {mode === "paper" && (
         <div className="space-y-4">
           <div className="rounded-lg border border-border bg-muted/20 p-4 space-y-3">
-            <p className="text-sm font-medium text-foreground flex items-center gap-2">
-              <FileImage className="h-4 w-4 text-primary" /> Upload Scanned Assessment Pages
-            </p>
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-foreground flex items-center gap-2">
+                <FileImage className="h-4 w-4 text-primary" /> Upload Scanned Assessment Pages
+              </p>
+              {!isEditing && paperFiles.length === 0 && existingAttachments.length === 0 && (
+                <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setMode("" as any)}>
+                  <ChevronLeft className="h-3 w-3 mr-1" /> Change Method
+                </Button>
+              )}
+            </div>
             <p className="text-xs text-muted-foreground">
               Take photos or scan your handwritten assessment pages and upload them here. You can upload multiple pages.
             </p>
