@@ -460,8 +460,8 @@ export default function Photos() {
             </div>
           )}
 
-          {/* Actions */}
-          <div className="flex items-center gap-3 justify-center">
+          {/* Actions - sticky on mobile */}
+          <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t border-border py-4 -mx-4 px-4 flex items-center gap-3 justify-center z-10">
             <Button variant="outline" onClick={() => setViewMode("wizard")} className="rounded-full">
               <ArrowLeft className="mr-2 h-4 w-4" /> Edit Photos
             </Button>
@@ -605,8 +605,8 @@ export default function Photos() {
 
         {photo.error && <p className="text-sm text-destructive text-center mb-4">{photo.error}</p>}
 
-        {/* Navigation */}
-        <div className="flex items-center gap-3">
+        {/* Navigation - sticky on mobile */}
+        <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t border-border py-4 -mx-4 px-4 flex items-center gap-3 z-10">
           <Button variant="outline" onClick={goPrev} disabled={currentStep === 0} className="rounded-full flex-1">
             <ArrowLeft className="mr-2 h-4 w-4" /> Previous
           </Button>
