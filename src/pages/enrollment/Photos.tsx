@@ -254,18 +254,25 @@ export default function Photos() {
     }
     if (!state.review) return null;
     return (
-      <div className={cn(
-        "flex items-start gap-1.5 text-xs rounded-xl px-3 py-2",
-        state.review.pass
-          ? "bg-forest/10 text-forest"
-          : "bg-destructive/10 text-destructive"
-      )}>
-        {state.review.pass ? (
-          <CheckCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-        ) : (
-          <XCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+      <div className="space-y-1.5">
+        <div className={cn(
+          "flex items-start gap-1.5 text-xs rounded-xl px-3 py-2",
+          state.review.pass
+            ? "bg-forest/10 text-forest"
+            : "bg-destructive/10 text-destructive"
+        )}>
+          {state.review.pass ? (
+            <CheckCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+          ) : (
+            <XCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+          )}
+          <span>{state.review.feedback}</span>
+        </div>
+        {!state.review.pass && (
+          <p className="text-xs text-muted-foreground px-3">
+            💡 If the photo looks correct to you, you can still proceed — the AI check is just a guide. You'll be able to submit all photos regardless.
+          </p>
         )}
-        <span>{state.review.feedback}</span>
       </div>
     );
   };
@@ -345,11 +352,11 @@ export default function Photos() {
         <main className="container mx-auto px-4 py-6 max-w-4xl">
            <div className="text-center mb-6">
              <h1 className="text-2xl font-display font-bold text-foreground mb-2">Review Your Photos</h1>
-             <p className="text-sm text-muted-foreground">
-               {anyFailed
-                 ? "Some photos have AI feedback below. You can re-take them or continue with your submission."
-                 : "All photos look good! Check the layout below and submit when ready."}
-             </p>
+           <p className="text-sm text-muted-foreground">
+                {anyFailed
+                  ? "Some photos have AI suggestions below. The AI review is only a guide — if the photos look right to you, go ahead and submit."
+                  : "All photos look good! Check the layout below and submit when ready."}
+              </p>
            </div>
 
           {/* Composite layout */}
