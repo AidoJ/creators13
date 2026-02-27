@@ -22,6 +22,7 @@ interface ClientListProps {
 }
 
 export default function ClientList({ onSelectClient, selectedClientId }: ClientListProps) {
+  const detailRef = typeof window !== "undefined" ? document.getElementById("client-detail-panel") : null;
   const { user } = useAuth();
   const [clients, setClients] = useState<ClientRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -128,8 +129,13 @@ export default function ClientList({ onSelectClient, selectedClientId }: ClientL
           filtered.map(client => (
             <button
               key={client.client_id}
-              onClick={() => onSelectClient(client.client_id)}
-              className={`w-full text-left px-4 py-3 border-b border-border last:border-0 hover:bg-accent/50 transition-colors flex items-center gap-3 ${
+              onClick={() => {
+                onSelectClient(client.client_id);
+                setTimeout(() => {
+                  document.getElementById("client-detail-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }, 100);
+              }}
+              className={`group w-full text-left px-4 py-3 border-b border-border last:border-0 hover:bg-accent/50 transition-colors flex items-center gap-3 cursor-pointer ${
                 selectedClientId === client.client_id ? "bg-accent/30" : ""
               }`}
             >
@@ -147,7 +153,7 @@ export default function ClientList({ onSelectClient, selectedClientId }: ClientL
                   {client.creatorType}
                 </Badge>
               )}
-              <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <ChevronRight className="h-4 w-4 text-primary/60 group-hover:text-primary flex-shrink-0 transition-colors" />
             </button>
           ))
         )}
