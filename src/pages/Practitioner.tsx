@@ -144,7 +144,7 @@ export default function PractitionerDashboard() {
               <div className="lg:col-span-1">
                 <ClientList onSelectClient={handleSelectClient} selectedClientId={selectedClientId} />
               </div>
-              <div className="lg:col-span-2 space-y-4">
+              <div id="client-detail-panel" className="lg:col-span-2 space-y-4">
                 {selectedClientId ? (
                   <>
                     {!showCaseStudy ? (
