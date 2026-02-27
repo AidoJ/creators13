@@ -133,45 +133,50 @@ export default function Booking() {
           </div>
         </div>
 
-        {/* Confirm booking time — shown after Calendly booking detected */}
-        {calendlyBooked && !calendlyEventTime && (
-          <div className="bg-green-500/10 border border-green-500/20 rounded-2xl p-6 mb-6">
-            <div className="flex items-start gap-3 mb-4">
+        {/* Always show date/time entry so we capture booking details */}
+        <div className="bg-green-500/10 border border-green-500/20 rounded-2xl p-6 mb-6">
+          <div className="flex items-start gap-3 mb-4">
+            {calendlyBooked ? (
               <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 shrink-0" />
-              <div>
-                <h3 className="font-semibold text-foreground">Booking Confirmed!</h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Please enter your scheduled date and time so we can display it on your dashboard.
-                </p>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-8">
-              <div>
-                <Label htmlFor="booking-date" className="text-xs font-medium text-foreground">Date</Label>
-                <Input
-                  id="booking-date"
-                  type="date"
-                  value={manualDate}
-                  onChange={e => setManualDate(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label htmlFor="booking-time" className="text-xs font-medium text-foreground">Time</Label>
-                <Input
-                  id="booking-time"
-                  type="time"
-                  value={manualTime}
-                  onChange={e => setManualTime(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
+            ) : (
+              <Calendar className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+            )}
+            <div>
+              <h3 className="font-semibold text-foreground">
+                {calendlyBooked ? "Booking Confirmed!" : "Enter Your Booking Details"}
+              </h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Please enter the date and time you booked so we can display it on your dashboard.
+              </p>
             </div>
           </div>
-        )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-8">
+            <div>
+              <Label htmlFor="booking-date" className="text-xs font-medium text-foreground">Date</Label>
+              <Input
+                id="booking-date"
+                type="date"
+                value={manualDate}
+                onChange={e => setManualDate(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="booking-time" className="text-xs font-medium text-foreground">Time</Label>
+              <Input
+                id="booking-time"
+                type="time"
+                value={manualTime}
+                onChange={e => setManualTime(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+          </div>
+        </div>
 
         <div className="mt-8 text-center space-y-3 sm:space-y-0 sm:space-x-4">
           <Button
+            disabled={!manualDate || !manualTime}
             onClick={async () => {
               if (user) {
                 // Build scheduled_at from calendly event or manual input
