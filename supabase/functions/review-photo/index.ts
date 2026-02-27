@@ -10,7 +10,7 @@ const PHOTO_REQUIREMENTS: Record<string, string> = {
   face_front_closed:
     "A front-facing photo of the person's face with mouth closed and a neutral expression. The entire face must be visible including forehead, ears, and jawline. No glasses, no makeup, hair tied back.",
   face_front_smiling:
-    "A front-facing photo of the person's face smiling with teeth showing. The entire face must be visible including forehead, ears, and jawline. No glasses, no makeup, hair tied back.",
+    "A front-facing photo of the person's face smiling with teeth showing. The face should be mostly visible including forehead and jawline. No glasses, no makeup, hair tied back. The photo can be in portrait or landscape orientation — do not fail based on orientation alone.",
   face_side:
     "A clear side profile of the person's face. The ear, jawline, and nose profile should be clearly visible. No glasses, hair tied back behind the ear.",
   body_front:
@@ -56,14 +56,19 @@ serve(async (req) => {
     const systemPrompt = `You are a photo quality reviewer for a body profiling service called 13 Creators. 
 Your job is to check if a submitted photo meets specific requirements.
 
-Be helpful but honest. If the photo clearly doesn't match the requirements, say so clearly.
+Be helpful and lenient. Only fail a photo if it is clearly wrong (e.g. completely wrong body part, extremely blurry, or completely cut off).
+Do NOT fail a photo for:
+- Photo orientation (portrait vs landscape) — either is fine
+- Minor framing issues where the subject is still clearly visible
+- Slight variations in expression or posture
+
 Focus on these key checks:
 1. Does the photo match the expected type (face/body/feet/hands)?
-2. Is the subject properly visible and not cut off?
-3. Are the clothing/accessory guidelines followed (no glasses, no shoes, tight clothing for body shots, hair tied back)?
-4. Is the photo clear and well-lit enough for assessment?
+2. Is the subject reasonably visible and not severely cut off?
+3. Are the major clothing/accessory guidelines mostly followed?
+4. Is the photo clear enough for a practitioner to assess?
 
-Respond using the tool provided.`;
+When in doubt, pass the photo. Respond using the tool provided.`;
 
     const userPrompt = `Review this photo. It should be: ${requirement}
 
