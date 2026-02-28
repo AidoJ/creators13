@@ -264,14 +264,14 @@ export default function ResourceUploadPanel() {
             </button>
           )}
         </div>
-        <table className="w-full text-sm">
+        <table className="w-full min-w-[760px] text-sm">
           <thead>
             <tr className="border-b border-border bg-muted/30">
               <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Resource</th>
               <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Type</th>
               <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Size</th>
               <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Uploaded</th>
-              <th className="w-10"></th>
+              <th className="w-16 text-left px-2 py-2.5 font-medium text-muted-foreground text-xs sticky right-0 bg-muted/30">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -280,7 +280,7 @@ export default function ResourceUploadPanel() {
             ) : filteredResources.length === 0 ? (
               <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">{activeFilters.size > 0 ? "No resources match the selected filters." : "No resources uploaded yet."}</td></tr>
             ) : filteredResources.map(r => (
-              <tr key={r.id} className="border-b border-border last:border-0 hover:bg-accent/20">
+              <tr key={r.id} className="group border-b border-border last:border-0 hover:bg-accent/20">
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
                     {typeIcon(r.resource_type)}
@@ -295,7 +295,7 @@ export default function ResourceUploadPanel() {
                 </td>
                 <td className="px-4 py-3 text-xs text-muted-foreground">{formatBytes(r.file_size_bytes)}</td>
                 <td className="px-4 py-3 text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString("en-AU")}</td>
-                <td className="px-4 py-3">
+                <td className="px-2 py-3 sticky right-0 bg-card group-hover:bg-accent/20">
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive">
