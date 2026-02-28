@@ -330,24 +330,38 @@ export default function TrainingCallManager({ onCallsChanged }: TrainingCallMana
     onCallsChanged?.();
   }
 
-  async function handleDuplicate(id: string) {
+  // Duplicate dialog state
+  const [duplicateSource, setDuplicateSource] = useState<TrainingCall | null>(null);
+  const [duplicateDate, setDuplicateDate] = useState("");
+  const [duplicateTime, setDuplicateTime] = useState("");
+
+  function openDuplicateDialog(id: string) {
     const call = calls.find(c => c.id === id);
-    if (!call || !user) return;
+    if (!call) return;
+    const dt = new Date(call.scheduled_at);
+    setDuplicateDate(dt.toISOString().slice(0, 10));
+    setDuplicateTime(dt.toTimeString().slice(0, 5));
+    setDuplicateSource(call);
+  }
+
+  async function handleDuplicate() {
+    if (!duplicateSource || !user || !duplicateDate || !duplicateTime) return;
+    const newScheduledAt = new Date(`${duplicateDate}T${duplicateTime}`).toISOString();
     const { data, error } = await supabase.from("training_calls").insert({
-      title: `[DUPLICATE] ${call.title}`,
-      description: call.description,
-      scheduled_at: call.scheduled_at,
-      duration_minutes: call.duration_minutes,
-      zoom_link: call.zoom_link,
-      recurrence_rule: call.recurrence_rule,
-      recurrence_end_date: call.recurrence_end_date,
+      title: duplicateSource.title.replace(/^\[DUPLICATE\]\s*/, ''),
+      description: duplicateSource.description,
+      scheduled_at: newScheduledAt,
+      duration_minutes: duplicateSource.duration_minutes,
+      zoom_link: duplicateSource.zoom_link,
+      recurrence_rule: "none",
       created_by: user.id,
     }).select("id").single();
     if (error) {
       toast({ title: "Error duplicating call", description: error.message, variant: "destructive" });
     } else {
-      await supabase.from("training_call_events").insert({ call_id: data.id, event_type: "created", details: `Duplicated from "${call.title}"` });
-      toast({ title: "Call duplicated", description: "Edit the duplicate to update details and remove the DUPLICATE label." });
+      await supabase.from("training_call_events").insert({ call_id: data.id, event_type: "created", details: `Duplicated from "${duplicateSource.title}"` });
+      toast({ title: "Call duplicated", description: `Scheduled for ${new Date(newScheduledAt).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })}.` });
+      setDuplicateSource(null);
       await fetchCalls();
       onCallsChanged?.();
     }
@@ -549,7 +563,7 @@ export default function TrainingCallManager({ onCallsChanged }: TrainingCallMana
             <div className="space-y-2">
               <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Upcoming</h3>
               {upcomingCalls.map(call => (
-                <CallCard key={call.id} call={call} onCancel={handleCancel} onDelete={handleDelete} onDuplicate={handleDuplicate} onReschedule={handleReschedule} onResend={(c) => sendInvites(c)} sending={sending === call.id} practitioners={practitioners} onSendInvites={sendInvites} onLoadPractitioners={fetchPractitioners} practLoading={practLoading} invitees={inviteesByCall[call.id] || []} events={eventsByCall[call.id] || []} onInvitesSent={() => fetchInvitees(calls.map(c => c.id))} />
+                <CallCard key={call.id} call={call} onCancel={handleCancel} onDelete={handleDelete} onDuplicate={openDuplicateDialog} onReschedule={handleReschedule} onResend={(c) => sendInvites(c)} sending={sending === call.id} practitioners={practitioners} onSendInvites={sendInvites} onLoadPractitioners={fetchPractitioners} practLoading={practLoading} invitees={inviteesByCall[call.id] || []} events={eventsByCall[call.id] || []} onInvitesSent={() => fetchInvitees(calls.map(c => c.id))} />
               ))}
             </div>
           )}
@@ -557,7 +571,7 @@ export default function TrainingCallManager({ onCallsChanged }: TrainingCallMana
             <div className="space-y-2">
               <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Past</h3>
               {pastCalls.slice(0, 10).map(call => (
-                <CallCard key={call.id} call={call} onCancel={handleCancel} onDelete={handleDelete} onDuplicate={handleDuplicate} onResend={(c) => sendInvites(c)} sending={sending === call.id} past invitees={inviteesByCall[call.id] || []} events={eventsByCall[call.id] || []} />
+                <CallCard key={call.id} call={call} onCancel={handleCancel} onDelete={handleDelete} onDuplicate={openDuplicateDialog} onResend={(c) => sendInvites(c)} sending={sending === call.id} past invitees={inviteesByCall[call.id] || []} events={eventsByCall[call.id] || []} />
               ))}
             </div>
           )}
@@ -566,13 +580,46 @@ export default function TrainingCallManager({ onCallsChanged }: TrainingCallMana
               <summary className="text-xs font-semibold text-muted-foreground uppercase tracking-wider cursor-pointer">Cancelled ({cancelledCalls.length})</summary>
               <div className="space-y-2 mt-2">
                 {cancelledCalls.map(call => (
-                  <CallCard key={call.id} call={call} onCancel={handleCancel} onDelete={handleDelete} onDuplicate={handleDuplicate} onResend={(c) => sendInvites(c)} sending={false} cancelled invitees={inviteesByCall[call.id] || []} events={eventsByCall[call.id] || []} />
+                  <CallCard key={call.id} call={call} onCancel={handleCancel} onDelete={handleDelete} onDuplicate={openDuplicateDialog} onResend={(c) => sendInvites(c)} sending={false} cancelled invitees={inviteesByCall[call.id] || []} events={eventsByCall[call.id] || []} />
                 ))}
               </div>
             </details>
           )}
         </>
       )}
+
+      {/* Duplicate Dialog */}
+      <Dialog open={!!duplicateSource} onOpenChange={(open) => { if (!open) setDuplicateSource(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Copy className="h-4 w-4 text-primary" />
+              Duplicate: {duplicateSource?.title.replace(/^\[DUPLICATE\]\s*/, '')}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <p className="text-xs text-muted-foreground">
+              Choose the date &amp; time for the duplicated call.
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Date</Label>
+                <Input type="date" value={duplicateDate} onChange={e => setDuplicateDate(e.target.value)} className="mt-1" />
+              </div>
+              <div>
+                <Label className="text-xs">Time</Label>
+                <Input type="time" value={duplicateTime} onChange={e => setDuplicateTime(e.target.value)} className="mt-1" />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setDuplicateSource(null)}>Cancel</Button>
+            <Button size="sm" disabled={!duplicateDate || !duplicateTime} onClick={handleDuplicate}>
+              <Copy className="h-3 w-3 mr-1" />Duplicate Call
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
