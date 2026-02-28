@@ -6,7 +6,7 @@ import { FileText, Sparkles, Clock, CheckCircle, AlertCircle, Eye, EyeOff, Messa
 import CompositePhotoLayout from "@/components/profiling/CompositePhotoLayout";
 import AttachmentGallery from "./AttachmentGallery";
 import CaseStudyFormDataView from "@/components/admin/CaseStudyFormDataView";
-import { getCreatorTypeColor } from "@/lib/creatorTypes";
+import { getCreatorTypeColor, sortCreatorTypes } from "@/lib/creatorTypes";
 import type { Database } from "@/integrations/supabase/types";
 
 type CaseStudyStatus = Database["public"]["Enums"]["case_study_status"];
@@ -118,7 +118,7 @@ export default function CaseStudyList({ practitionerId, onEditCaseStudy, filterC
                   {cs.creator_types_identified && cs.creator_types_identified.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2 items-center">
                       <Sparkles className="h-3 w-3 text-secondary mt-0.5" />
-                      {cs.creator_types_identified.map(t => {
+                      {sortCreatorTypes(cs.creator_types_identified).map(t => {
                         const c = getCreatorTypeColor(t);
                         return (
                           <span

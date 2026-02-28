@@ -5,7 +5,7 @@ import CreatorTypeAssignmentForm from "@/components/practitioner/CreatorTypeAssi
 import ClientSubscriptionCard from "@/components/practitioner/ClientSubscriptionCard";
 import { User, Calendar, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { getCreatorTypeColor } from "@/lib/creatorTypes";
+import { getCreatorTypeColor, sortCreatorTypes } from "@/lib/creatorTypes";
 
 interface ProfileData {
   first_name: string | null;
@@ -94,10 +94,11 @@ export default function ClientDetail({ clientId, onClientNameLoaded }: ClientDet
                   {profile.enrollment_step.replace(/_/g, " ")}
                 </Badge>
               )}
-              {[creatorType?.primary_type, creatorType?.secondary_type, creatorType?.type_3, creatorType?.type_4]
-                .filter(Boolean)
-                .map((t) => (
-                  <Badge key={t} className="text-xs capitalize text-white border-0" style={{ backgroundColor: getCreatorTypeColor(t!) }}>
+              {sortCreatorTypes(
+                [creatorType?.primary_type, creatorType?.secondary_type, creatorType?.type_3, creatorType?.type_4]
+                  .filter(Boolean) as string[]
+              ).map((t) => (
+                  <Badge key={t} className="text-xs capitalize text-white border-0" style={{ backgroundColor: getCreatorTypeColor(t) }}>
                     <Sparkles className="h-3 w-3 mr-1" />
                     {t}
                   </Badge>

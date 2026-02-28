@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Users, ChevronRight, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { getCreatorTypeColor } from "@/lib/creatorTypes";
+import { getCreatorTypeColor, sortCreatorTypes } from "@/lib/creatorTypes";
 
 interface ClientRow {
   client_id: string;
@@ -155,7 +155,7 @@ export default function ClientList({ onSelectClient, selectedClientId }: ClientL
               <Badge variant="outline" className={`text-[10px] flex-shrink-0 ${stepColor(client.profile?.enrollment_step || null)}`}>
                 {stepLabel(client.profile?.enrollment_step || null)}
               </Badge>
-              {client.creatorTypes.map(t => {
+              {sortCreatorTypes(client.creatorTypes).map(t => {
                 const color = getCreatorTypeColor(t);
                 return (
                   <span

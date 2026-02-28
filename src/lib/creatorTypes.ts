@@ -19,13 +19,24 @@ export const CREATOR_TYPE_COLORS: Record<string, string> = {
   lake:      "#00A8CC",
 };
 
-/** Ordered list of all creator type names (title case, matching DB). */
+/** Ordered list of all creator type names in canonical display order. */
 export const CREATOR_TYPE_NAMES = [
   "Lava", "Fire", "Whirlwind",
-  "Sun", "Lightning", "Snow", "Sky",
-  "Mountain", "Tree", "Soil",
-  "River", "Ocean", "Lake",
+  "Snow", "Lightning", "Sun",
+  "Lake", "Ocean",
+  "Tree", "Mountain", "Soil",
+  "River", "Sky",
 ] as const;
+
+/** Sort an array of creator type names into canonical display order. */
+export function sortCreatorTypes(types: string[]): string[] {
+  const orderMap = new Map(CREATOR_TYPE_NAMES.map((n, i) => [n.toLowerCase(), i]));
+  return [...types].sort((a, b) => {
+    const ia = orderMap.get(a.toLowerCase()) ?? 999;
+    const ib = orderMap.get(b.toLowerCase()) ?? 999;
+    return ia - ib;
+  });
+}
 
 /** Returns the hex colour for a creator type name (case-insensitive). Falls back to a neutral. */
 export function getCreatorTypeColor(name: string): string {

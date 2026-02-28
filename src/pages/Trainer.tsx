@@ -13,7 +13,7 @@ import CompositePhotoLayout from "@/components/profiling/CompositePhotoLayout";
 import CaseStudyFormDataView from "@/components/admin/CaseStudyFormDataView";
 import BodyOutlineSVG from "@/components/practitioner/BodyOutlineSVG";
 import CreatorTypeEditor from "@/components/admin/CreatorTypeEditor";
-import { getCreatorTypeColor } from "@/lib/creatorTypes";
+import { getCreatorTypeColor, sortCreatorTypes } from "@/lib/creatorTypes";
 import TrainingCallManager from "@/components/trainer/TrainingCallManager";
 import TrainingCalendar from "@/components/practitioner/TrainingCalendar";
 import CaseStudySearch from "@/components/shared/CaseStudySearch";
@@ -296,7 +296,7 @@ function CaseStudyList({ caseStudies, emptyMessage, expandedCaseStudy, setExpand
                   <p className="text-xs text-muted-foreground mt-0.5">By {cs.practitioner_name} · {new Date(cs.created_at).toLocaleDateString("en-AU")}</p>
                   {cs.creator_types_identified && cs.creator_types_identified.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-1.5">
-                      {cs.creator_types_identified.map(t => {
+                      {sortCreatorTypes(cs.creator_types_identified).map(t => {
                         const c = getCreatorTypeColor(t);
                         return <span key={t} className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold capitalize" style={{ backgroundColor: `${c}22`, color: c, border: `1px solid ${c}44` }}>{t}</span>;
                       })}
