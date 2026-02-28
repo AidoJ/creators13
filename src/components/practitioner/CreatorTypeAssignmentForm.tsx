@@ -56,7 +56,7 @@ export default function CreatorTypeAssignmentForm({ clientId, clientName }: Crea
     async function load() {
       const [typesRes, profileRes, subRes, caseStudyRes, practitionerProfileRes] = await Promise.all([
         supabase.from("creator_types").select("name, family, element, color_hex").order("sort_order"),
-        supabase.from("creator_type_profiles").select("id, primary_type, secondary_type, profiling_data").eq("user_id", clientId).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
+        supabase.from("creator_type_profiles").select("id, primary_type, secondary_type, type_3, type_4, profiling_data").eq("user_id", clientId).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("subscriptions").select("tier").eq("user_id", clientId).maybeSingle(),
         supabase.from("case_studies").select("id").eq("subject_user_id", clientId).limit(1),
         user ? supabase.from("profiles").select("practitioner_status").eq("user_id", user.id).maybeSingle() : Promise.resolve({ data: null }),
@@ -73,8 +73,8 @@ export default function CreatorTypeAssignmentForm({ clientId, clientName }: Crea
         setTypes([
           profileRes.data.primary_type || "",
           profileRes.data.secondary_type || "",
-          (data?.type_3 as string) || "",
-          (data?.type_4 as string) || "",
+          profileRes.data.type_3 || (data?.type_3 as string) || "",
+          profileRes.data.type_4 || (data?.type_4 as string) || "",
         ]);
         setNotes((data?.notes as string) || "");
       }
@@ -93,6 +93,8 @@ export default function CreatorTypeAssignmentForm({ clientId, clientName }: Crea
       user_id: clientId,
       primary_type: types[0],
       secondary_type: types[1] || null,
+      type_3: types[2] || null,
+      type_4: types[3] || null,
       profiled_by: user.id,
       profiled_at: new Date().toISOString(),
       profiling_data: {
