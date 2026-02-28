@@ -26,8 +26,9 @@ interface CreatorProfileCardProps {
 interface ProfileResult {
   primary_type: string | null;
   secondary_type: string | null;
+  type_3: string | null;
+  type_4: string | null;
   profiled_at: string | null;
-  profiling_data: Record<string, unknown> | null;
 }
 
 interface ProfileContent {
@@ -65,7 +66,7 @@ export default function CreatorProfileCard({ userId }: CreatorProfileCardProps) 
     async function load() {
       const { data } = await supabase
         .from("creator_type_profiles")
-        .select("primary_type, secondary_type, profiled_at, profiling_data")
+        .select("primary_type, secondary_type, type_3, type_4, profiled_at")
         .eq("user_id", userId)
         .order("updated_at", { ascending: false })
         .limit(1)
@@ -82,9 +83,8 @@ export default function CreatorProfileCard({ userId }: CreatorProfileCardProps) 
     async function fetchTypeInfo() {
       const names: string[] = [profile!.primary_type!];
       if (profile!.secondary_type) names.push(profile!.secondary_type);
-      const data = profile!.profiling_data;
-      if (data?.type_3 && typeof data.type_3 === "string") names.push(data.type_3);
-      if (data?.type_4 && typeof data.type_4 === "string") names.push(data.type_4);
+      if (profile!.type_3) names.push(profile!.type_3);
+      if (profile!.type_4) names.push(profile!.type_4);
 
       const { data: typesData } = await supabase
         .from("creator_types")
