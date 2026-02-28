@@ -233,7 +233,7 @@ export default function ResourceUploadPanel() {
       </div>
 
       {/* Resource list */}
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className="rounded-xl border border-border bg-card overflow-x-auto">
         {/* Filter bar */}
         <div className="flex flex-wrap gap-2 items-center px-4 py-3 border-b border-border bg-muted/20">
           <span className="text-xs font-medium text-muted-foreground">Filter:</span>
