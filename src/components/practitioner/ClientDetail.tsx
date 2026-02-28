@@ -5,6 +5,7 @@ import CreatorTypeAssignmentForm from "@/components/practitioner/CreatorTypeAssi
 import ClientSubscriptionCard from "@/components/practitioner/ClientSubscriptionCard";
 import { User, Calendar, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { getCreatorTypeColor } from "@/lib/creatorTypes";
 
 interface ProfileData {
   first_name: string | null;
@@ -30,6 +31,8 @@ interface BookingData {
 interface CreatorTypeData {
   primary_type: string | null;
   secondary_type: string | null;
+  type_3: string | null;
+  type_4: string | null;
   profiled_at: string | null;
 }
 
@@ -50,7 +53,7 @@ export default function ClientDetail({ clientId, onClientNameLoaded }: ClientDet
       const [profileRes, bookingRes, ctRes] = await Promise.all([
         supabase.from("profiles").select("first_name, last_name, email, enrollment_step, date_of_birth, gender, height_cm, shoe_size, city, state, country, case_study_consent_at").eq("user_id", clientId).maybeSingle(),
         supabase.from("bookings").select("scheduled_at, status, zoom_link").eq("client_id", clientId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
-        supabase.from("creator_type_profiles").select("primary_type, secondary_type, profiled_at").eq("user_id", clientId).maybeSingle(),
+        supabase.from("creator_type_profiles").select("primary_type, secondary_type, type_3, type_4, profiled_at").eq("user_id", clientId).maybeSingle(),
       ]);
       if (profileRes.data) {
         setProfile(profileRes.data);
@@ -91,12 +94,14 @@ export default function ClientDetail({ clientId, onClientNameLoaded }: ClientDet
                   {profile.enrollment_step.replace(/_/g, " ")}
                 </Badge>
               )}
-              {creatorType?.primary_type && (
-                <Badge variant="secondary" className="text-xs capitalize">
-                  <Sparkles className="h-3 w-3 mr-1" />
-                  {creatorType.primary_type}
-                </Badge>
-              )}
+              {[creatorType?.primary_type, creatorType?.secondary_type, creatorType?.type_3, creatorType?.type_4]
+                .filter(Boolean)
+                .map((t) => (
+                  <Badge key={t} className="text-xs capitalize text-white border-0" style={{ backgroundColor: getCreatorTypeColor(t!) }}>
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    {t}
+                  </Badge>
+                ))}
               <Badge
                 variant="outline"
                 className={`text-xs ${profile.case_study_consent_at ? "bg-green-500/10 text-green-600 border-green-500/20" : "bg-muted/50 text-muted-foreground border-border"}`}
