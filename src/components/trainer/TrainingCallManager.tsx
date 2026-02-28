@@ -252,8 +252,13 @@ export default function TrainingCallManager({ onCallsChanged }: TrainingCallMana
       // Build recipient lists
       const selectedPractitionerUserIds = Array.from(selectedUserIds);
 
-      // Send email invites
-      sendInvites(callsToCreate[0], selectedPractitionerUserIds, externalEmails);
+      // Send email invites using the first inserted call's ID
+      const firstInsertedCall = insertedCalls?.[0];
+      const callForInvite = {
+        ...callsToCreate[0],
+        id: firstInsertedCall?.id || "",
+      };
+      sendInvites(callForInvite, selectedPractitionerUserIds, externalEmails);
       resetForm();
       await fetchCalls();
       onCallsChanged?.();
@@ -278,7 +283,17 @@ export default function TrainingCallManager({ onCallsChanged }: TrainingCallMana
         },
       });
       if (error) throw error;
-      toast({ title: "Invites sent!", description: `${data?.sent || 0} email${(data?.sent || 0) !== 1 ? "s" : ""} sent.` });
+      const failedCount = data?.failed || 0;
+      const sentCount = data?.sent || 0;
+      if (failedCount > 0) {
+        toast({
+          title: "Some invites failed",
+          description: `${sentCount} sent, ${failedCount} failed: ${(data?.errors || []).join(", ")}`,
+          variant: "destructive",
+        });
+      } else {
+        toast({ title: "Invites sent!", description: `${sentCount} email${sentCount !== 1 ? "s" : ""} sent.` });
+      }
     } catch (err: any) {
       toast({ title: "Error sending invites", description: err.message, variant: "destructive" });
     }
