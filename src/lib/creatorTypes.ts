@@ -11,7 +11,7 @@ export const CREATOR_TYPE_COLORS: Record<string, string> = {
   lightning: "#7CC800",
   snow:      "#00B887",
   sky:       "#5BB8D4",
-  mountain:  "#BE1558",
+  mountain:  "#F02000",
   tree:      "#b00000",
   soil:      "#8B1717",
   river:     "#00AAEE",
