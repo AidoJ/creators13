@@ -332,6 +332,7 @@ export default function TrainingCallManager({ onCallsChanged }: TrainingCallMana
 
   // Duplicate dialog state
   const [duplicateSource, setDuplicateSource] = useState<TrainingCall | null>(null);
+  const [duplicateTitle, setDuplicateTitle] = useState("");
   const [duplicateDate, setDuplicateDate] = useState("");
   const [duplicateTime, setDuplicateTime] = useState("");
 
@@ -339,6 +340,7 @@ export default function TrainingCallManager({ onCallsChanged }: TrainingCallMana
     const call = calls.find(c => c.id === id);
     if (!call) return;
     const dt = new Date(call.scheduled_at);
+    setDuplicateTitle(call.title.replace(/^\[DUPLICATE\]\s*/, ''));
     setDuplicateDate(dt.toISOString().slice(0, 10));
     setDuplicateTime(dt.toTimeString().slice(0, 5));
     setDuplicateSource(call);
@@ -348,7 +350,7 @@ export default function TrainingCallManager({ onCallsChanged }: TrainingCallMana
     if (!duplicateSource || !user || !duplicateDate || !duplicateTime) return;
     const newScheduledAt = new Date(`${duplicateDate}T${duplicateTime}`).toISOString();
     const { data, error } = await supabase.from("training_calls").insert({
-      title: duplicateSource.title.replace(/^\[DUPLICATE\]\s*/, ''),
+      title: duplicateTitle.trim() || duplicateSource.title.replace(/^\[DUPLICATE\]\s*/, ''),
       description: duplicateSource.description,
       scheduled_at: newScheduledAt,
       duration_minutes: duplicateSource.duration_minutes,
@@ -594,13 +596,17 @@ export default function TrainingCallManager({ onCallsChanged }: TrainingCallMana
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Copy className="h-4 w-4 text-primary" />
-              Duplicate: {duplicateSource?.title.replace(/^\[DUPLICATE\]\s*/, '')}
+              Duplicate Call
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3 py-2">
             <p className="text-xs text-muted-foreground">
-              Choose the date &amp; time for the duplicated call.
+              Edit the title and choose the date &amp; time for the duplicated call.
             </p>
+            <div>
+              <Label className="text-xs">Title</Label>
+              <Input value={duplicateTitle} onChange={e => setDuplicateTitle(e.target.value)} className="mt-1" placeholder="Call title" />
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="text-xs">Date</Label>
