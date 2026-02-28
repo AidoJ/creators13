@@ -64,6 +64,8 @@ export default function TrainerDashboard() {
   const [expandedCaseStudy, setExpandedCaseStudy] = useState<string | null>(null);
   const [revisionNotes, setRevisionNotes] = useState<Record<string, string>>({});
   const [searchFilterId, setSearchFilterId] = useState<string | null>(null);
+  const [pipelineStatusFilter, setPipelineStatusFilter] = useState<string | null>(null);
+  const [pipelinePractitionerFilter, setPipelinePractitionerFilter] = useState<string | null>(null);
 
   const fetchUsers = useCallback(async () => {
     const [profilesRes, rolesRes, subsRes] = await Promise.all([
@@ -194,7 +196,22 @@ export default function TrainerDashboard() {
           </TabsList>
 
           <TabsContent value="pipeline" className="space-y-4">
-            <TrainerCaseStudyPipeline caseStudies={caseStudies} users={users} />
+            <TrainerCaseStudyPipeline
+              caseStudies={caseStudies}
+              users={users}
+              onFilterByStatus={(status) => {
+                setPipelineStatusFilter(status);
+                setPipelinePractitionerFilter(null);
+                setSearchFilterId(null);
+                setActiveTab("cases-filtered");
+              }}
+              onFilterByPractitioner={(practitionerId, practitionerName) => {
+                setPipelinePractitionerFilter(practitionerId);
+                setPipelineStatusFilter(null);
+                setSearchFilterId(null);
+                setActiveTab("cases-filtered");
+              }}
+            />
           </TabsContent>
 
           <TabsContent value="training-calls" className="space-y-6">
@@ -241,6 +258,29 @@ export default function TrainerDashboard() {
               fetchCaseStudies={fetchCaseStudies}
               userId={user?.id}
               showActions={false}
+            />
+          </TabsContent>
+
+          <TabsContent value="cases-filtered" className="space-y-4">
+            <Button variant="ghost" size="sm" className="text-xs mb-2" onClick={() => { setPipelineStatusFilter(null); setPipelinePractitionerFilter(null); setActiveTab("pipeline"); }}>
+              <ArrowLeft className="h-3 w-3 mr-1" /> Back to Pipeline
+            </Button>
+            <CaseStudyList
+              caseStudies={caseStudies.filter(c => {
+                if (pipelineStatusFilter && c.status !== pipelineStatusFilter) return false;
+                if (pipelinePractitionerFilter && c.practitioner_id !== pipelinePractitionerFilter) return false;
+                return true;
+              })}
+              emptyMessage="No matching case studies."
+              expandedCaseStudy={expandedCaseStudy}
+              setExpandedCaseStudy={setExpandedCaseStudy}
+              revisionNotes={revisionNotes}
+              setRevisionNotes={setRevisionNotes}
+              handleCaseStudyAction={handleCaseStudyAction}
+              setCaseStudies={setCaseStudies}
+              fetchCaseStudies={fetchCaseStudies}
+              userId={user?.id}
+              showActions
             />
           </TabsContent>
 
@@ -384,7 +424,7 @@ function CaseStudyList({ caseStudies, emptyMessage, expandedCaseStudy, setExpand
   );
 }
 
-function TrainerCaseStudyPipeline({ caseStudies, users }: { caseStudies: CaseStudyRow[]; users: UserRow[] }) {
+function TrainerCaseStudyPipeline({ caseStudies, users, onFilterByStatus, onFilterByPractitioner }: { caseStudies: CaseStudyRow[]; users: UserRow[]; onFilterByStatus?: (status: string) => void; onFilterByPractitioner?: (practitionerId: string, practitionerName: string) => void }) {
   const practitioners = users.filter(u => u.roles.includes("practitioner") || u.roles.includes("trainee") || u.roles.includes("trainer"));
   const STAGES = [
     { key: "draft", label: "In Progress", icon: Clock, dotColor: "bg-orange-500", cardColor: "bg-orange-500/10 text-orange-600 border-orange-500/20" },
@@ -420,11 +460,11 @@ function TrainerCaseStudyPipeline({ caseStudies, users }: { caseStudies: CaseStu
         <div className="h-2 rounded-full bg-muted overflow-hidden flex">
           {STAGES.map(stage => { const count = byStatus[stage.key]?.length || 0; const pct = total > 0 ? (count / total) * 100 : 0; if (pct === 0) return null; return <div key={stage.key} className={`${stage.dotColor} h-full`} style={{ width: `${pct}%` }} title={`${stage.label}: ${count}`} />; })}
         </div>
-        <div className="grid grid-cols-4 gap-2 mt-4">
-          {STAGES.map(stage => { const count = byStatus[stage.key]?.length || 0; const StageIcon = stage.icon; return (
-            <div key={stage.key} className={`rounded-xl border p-3 text-center transition-all ${count > 0 ? stage.cardColor : "bg-muted/20 text-muted-foreground/40 border-border/50"}`}>
-              <StageIcon className="h-4 w-4 mx-auto mb-1" /><div className="text-xl font-bold">{count}</div><div className="text-[10px] font-medium leading-tight">{stage.label}</div>
-            </div>
+         <div className="grid grid-cols-4 gap-2 mt-4">
+           {STAGES.map(stage => { const count = byStatus[stage.key]?.length || 0; const StageIcon = stage.icon; return (
+             <button key={stage.key} onClick={() => count > 0 && onFilterByStatus?.(stage.key)} className={`rounded-xl border p-3 text-center transition-all ${count > 0 ? `${stage.cardColor} cursor-pointer hover:opacity-80` : "bg-muted/20 text-muted-foreground/40 border-border/50"}`} disabled={count === 0}>
+               <StageIcon className="h-4 w-4 mx-auto mb-1" /><div className="text-xl font-bold">{count}</div><div className="text-[10px] font-medium leading-tight">{stage.label}</div>
+             </button>
           ); })}
         </div>
       </div>
@@ -443,7 +483,7 @@ function TrainerCaseStudyPipeline({ caseStudies, users }: { caseStudies: CaseStu
                     <div key={id} className="flex items-center gap-3 rounded-lg bg-muted/20 border border-border px-3 py-2">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-foreground">{p.name}</span>
+                          <button className="text-sm font-medium text-foreground hover:text-primary hover:underline cursor-pointer transition-colors" onClick={() => onFilterByPractitioner?.(id, p.name)}>{p.name}</button>
                           {p.status && <Badge variant="outline" className={`text-[10px] capitalize ${pracStatusColors[p.status] || ""}`}>{p.status.replace(/_/g, " ")}</Badge>}
                         </div>
                         <div className="flex gap-2 mt-1">
