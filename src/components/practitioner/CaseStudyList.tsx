@@ -31,10 +31,11 @@ interface CaseStudyListProps {
   practitionerId: string;
   onEditCaseStudy?: (caseStudy: CaseStudy) => void;
   filterCaseStudyId?: string | null;
+  filterStatus?: string | null;
   onClearFilter?: () => void;
 }
 
-export default function CaseStudyList({ practitionerId, onEditCaseStudy, filterCaseStudyId, onClearFilter }: CaseStudyListProps) {
+export default function CaseStudyList({ practitionerId, onEditCaseStudy, filterCaseStudyId, filterStatus, onClearFilter }: CaseStudyListProps) {
   const [studies, setStudies] = useState<CaseStudy[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(filterCaseStudyId || null);
@@ -84,7 +85,11 @@ export default function CaseStudyList({ practitionerId, onEditCaseStudy, filterC
     );
   }
 
-  const displayStudies = filterCaseStudyId ? studies.filter(s => s.id === filterCaseStudyId) : studies;
+  const displayStudies = filterCaseStudyId
+    ? studies.filter(s => s.id === filterCaseStudyId)
+    : filterStatus
+      ? studies.filter(s => s.status === filterStatus)
+      : studies;
 
   const statusConfig: Record<CaseStudyStatus, { icon: typeof Clock; label: string; className: string }> = {
     draft: { icon: Clock, label: "Draft", className: "bg-muted/50 text-muted-foreground border-border" },
@@ -95,9 +100,9 @@ export default function CaseStudyList({ practitionerId, onEditCaseStudy, filterC
 
   return (
     <div className="space-y-3">
-      {filterCaseStudyId && onClearFilter && (
+      {(filterCaseStudyId || filterStatus) && onClearFilter && (
         <Button variant="ghost" size="sm" className="text-xs" onClick={onClearFilter}>
-          <ArrowLeft className="h-3 w-3 mr-1" /> Show all case studies
+          <ArrowLeft className="h-3 w-3 mr-1" /> {filterStatus ? `Showing: ${filterStatus.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())} — Show all` : "Show all case studies"}
         </Button>
       )}
       {displayStudies.map(cs => {
