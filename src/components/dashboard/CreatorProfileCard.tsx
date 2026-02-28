@@ -158,11 +158,11 @@ export default function CreatorProfileCard({ userId }: CreatorProfileCardProps) 
       </div>
 
       {typeInfos.length === 1 ? (
-        <TypePanel info={primaryInfo} glyphUrl={glyphUrls[primaryInfo.name.toLowerCase()]} slotLabel="Type 1" />
+        <TypePanel info={primaryInfo} glyphUrl={glyphUrls[primaryInfo.name.toLowerCase()]} />
       ) : (
         <Tabs defaultValue={primaryInfo.name.toLowerCase()} className="w-full">
           <TabsList className="w-full flex gap-1 bg-transparent p-1">
-            {typeInfos.map((info, idx) => {
+            {typeInfos.map((info) => {
               const glyph = glyphUrls[info.name.toLowerCase()];
               const tabColor = info.color_hex || "hsl(var(--primary))";
               return (
@@ -178,18 +178,16 @@ export default function CreatorProfileCard({ userId }: CreatorProfileCardProps) 
                     <img src={glyph} alt="" className="w-5 h-5 object-contain brightness-0 invert" />
                   )}
                   <span className="capitalize">{info.name}</span>
-                  <span className="hidden sm:inline text-[10px] opacity-80">(Type {idx + 1})</span>
                 </TabsTrigger>
               );
             })}
           </TabsList>
 
-          {typeInfos.map((info, idx) => (
+          {typeInfos.map((info) => (
               <TabsContent key={info.name} value={info.name.toLowerCase()} className="mt-4">
                 <TypePanel
                   info={info}
                   glyphUrl={glyphUrls[info.name.toLowerCase()]}
-                  slotLabel={`Type ${idx + 1}`}
                 />
               </TabsContent>
             ))}
@@ -200,7 +198,7 @@ export default function CreatorProfileCard({ userId }: CreatorProfileCardProps) 
 }
 
 /* ─── Single type panel (reused per tab) ─── */
-function TypePanel({ info, glyphUrl, slotLabel }: { info: CreatorTypeInfo; glyphUrl?: string; slotLabel: string }) {
+function TypePanel({ info, glyphUrl }: { info: CreatorTypeInfo; glyphUrl?: string }) {
   const color = info.color_hex || "hsl(var(--primary))";
   const content = info.profile_content;
 
@@ -217,14 +215,9 @@ function TypePanel({ info, glyphUrl, slotLabel }: { info: CreatorTypeInfo; glyph
           </div>
         )}
         <div className="flex-1 text-center sm:text-left space-y-1.5">
-          <div className="flex items-center gap-2 justify-center sm:justify-start">
-            <p className="text-2xl font-display font-bold capitalize" style={{ color }}>
-              {info.name}
-            </p>
-            <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border" style={{ borderColor: `${color}40`, color }}>
-              {slotLabel}
-            </span>
-          </div>
+          <p className="text-2xl font-display font-bold uppercase" style={{ color }}>
+            {info.name} <span className="normal-case">Creator</span>
+          </p>
           {content?.tagline && (
             <p className="text-sm italic text-muted-foreground">{content.tagline}</p>
           )}
