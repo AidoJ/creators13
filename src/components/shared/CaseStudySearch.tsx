@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Search, FileText, User, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { getCreatorTypeColor } from "@/lib/creatorTypes";
+import { getCreatorTypeColor, sortCreatorTypes } from "@/lib/creatorTypes";
 import type { Database } from "@/integrations/supabase/types";
 
 type CaseStudyStatus = Database["public"]["Enums"]["case_study_status"];
@@ -187,7 +187,7 @@ export default function CaseStudySearch({ onSelectCaseStudy, onSelectClient }: C
                       {statusStyles[r.status].label}
                     </Badge>
                   )}
-                  {r.creatorTypes?.slice(0, 2).map(t => {
+                  {(r.creatorTypes ? sortCreatorTypes(r.creatorTypes) : []).slice(0, 2).map(t => {
                     const c = getCreatorTypeColor(t);
                     return (
                       <span key={t} className="inline-flex px-1.5 py-0.5 rounded-full text-[9px] font-semibold capitalize" style={{ backgroundColor: `${c}22`, color: c }}>

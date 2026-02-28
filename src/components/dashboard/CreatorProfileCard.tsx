@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Sparkles, Lock, Zap, AlertTriangle, Eye } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
+import { sortCreatorTypes } from "@/lib/creatorTypes";
 const GLYPH_IMPORTS: Record<string, () => Promise<{ default: string }>> = {
   lava: () => import("@/assets/glyph-lava.png"),
   fire: () => import("@/assets/glyph-fire.png"),
@@ -81,7 +81,8 @@ export default function CreatorProfileCard({ userId }: CreatorProfileCardProps) 
     if (!profile?.primary_type) return;
 
     async function fetchTypeInfo() {
-      const names: string[] = [profile!.primary_type!];
+      const names: string[] = [];
+      if (profile!.primary_type) names.push(profile!.primary_type);
       if (profile!.secondary_type) names.push(profile!.secondary_type);
       if (profile!.type_3) names.push(profile!.type_3);
       if (profile!.type_4) names.push(profile!.type_4);
@@ -92,7 +93,8 @@ export default function CreatorProfileCard({ userId }: CreatorProfileCardProps) 
         .in("name", names);
 
       if (typesData) {
-        const ordered = names
+        const sortedNames = sortCreatorTypes(names);
+        const ordered = sortedNames
           .map(n => typesData.find(d => d.name.toLowerCase() === n.toLowerCase()))
           .filter(Boolean) as CreatorTypeInfo[];
         setTypeInfos(ordered);
