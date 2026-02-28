@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Users, ChevronRight, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { getCreatorTypeColor } from "@/lib/creatorTypes";
 
 interface ClientRow {
   client_id: string;
@@ -13,7 +14,7 @@ interface ClientRow {
     email: string | null;
     enrollment_step: string | null;
   } | null;
-  creatorType: string | null;
+  creatorTypes: string[];
 }
 
 interface ClientListProps {
@@ -52,15 +53,21 @@ export default function ClientList({ onSelectClient, selectedClientId }: ClientL
         .select("user_id, first_name, last_name, email, enrollment_step")
         .in("user_id", clientIds);
 
-      // Fetch creator type profiles
+      // Fetch creator type profiles — all 4 slots
       const { data: creatorProfiles } = await supabase
         .from("creator_type_profiles")
-        .select("user_id, primary_type")
+        .select("user_id, primary_type, secondary_type, type_3, type_4")
         .in("user_id", clientIds);
 
       const rows: ClientRow[] = clientIds.map(cid => {
         const prof = profiles?.find(p => p.user_id === cid) || null;
         const ct = creatorProfiles?.find(c => c.user_id === cid);
+        const types: string[] = [];
+        if (ct) {
+          [ct.primary_type, ct.secondary_type, ct.type_3, ct.type_4].forEach(t => {
+            if (t) types.push(t);
+          });
+        }
         return {
           client_id: cid,
           profile: prof ? {
@@ -69,7 +76,7 @@ export default function ClientList({ onSelectClient, selectedClientId }: ClientL
             email: prof.email,
             enrollment_step: prof.enrollment_step,
           } : null,
-          creatorType: ct?.primary_type || null,
+          creatorTypes: types,
         };
       });
 
@@ -148,11 +155,18 @@ export default function ClientList({ onSelectClient, selectedClientId }: ClientL
               <Badge variant="outline" className={`text-[10px] flex-shrink-0 ${stepColor(client.profile?.enrollment_step || null)}`}>
                 {stepLabel(client.profile?.enrollment_step || null)}
               </Badge>
-              {client.creatorType && (
-                <Badge variant="secondary" className="text-[10px] flex-shrink-0 capitalize">
-                  {client.creatorType}
-                </Badge>
-              )}
+              {client.creatorTypes.map(t => {
+                const color = getCreatorTypeColor(t);
+                return (
+                  <span
+                    key={t}
+                    className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold capitalize flex-shrink-0"
+                    style={{ backgroundColor: `${color}22`, color, border: `1px solid ${color}44` }}
+                  >
+                    {t}
+                  </span>
+                );
+              })}
               <ChevronRight className="h-4 w-4 text-primary/60 group-hover:text-primary flex-shrink-0 transition-colors" />
             </button>
           ))
