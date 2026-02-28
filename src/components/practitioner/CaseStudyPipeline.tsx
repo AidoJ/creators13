@@ -96,12 +96,39 @@ export default function CaseStudyPipeline({ onSelectClient, onStartCaseStudy }: 
 
       const clientIds = (assignments || []).map(a => a.client_id);
 
-      // Fetch case studies
+      // Fetch case studies by this practitioner
       const { data: studies } = await supabase
         .from("case_studies")
         .select("id, title, status, subject_user_id, updated_at")
         .eq("practitioner_id", user!.id)
         .order("updated_at", { ascending: false });
+
+      // Also fetch approved case studies for these clients by ANY practitioner
+      const { data: allStudiesForClients } = clientIds.length > 0
+        ? await supabase
+            .from("case_studies")
+            .select("id, status, subject_user_id")
+            .in("subject_user_id", clientIds)
+            .eq("status", "approved")
+        : { data: [] };
+
+      // Fetch creator type profiles to detect already-profiled clients
+      const { data: creatorProfiles } = clientIds.length > 0
+        ? await supabase
+            .from("creator_type_profiles")
+            .select("user_id, primary_type")
+            .in("user_id", clientIds)
+        : { data: [] };
+
+      const profiledClientIds = new Set(
+        (creatorProfiles || []).filter(cp => cp.primary_type).map(cp => cp.user_id)
+      );
+
+      const clientsWithApprovedStudy = new Set(
+        (allStudiesForClients || [])
+          .filter(s => s.subject_user_id)
+          .map(s => s.subject_user_id!)
+      );
 
       // Build name map
       const allUserIds = [
@@ -121,19 +148,19 @@ export default function CaseStudyPipeline({ onSelectClient, onStartCaseStudy }: 
         emailMap[p.user_id] = p.email;
       });
 
-      // Clients with case studies
-      const clientsWithStudy = new Set(
+      // Clients with case studies from THIS practitioner
+      const clientsWithOwnStudy = new Set(
         (studies || []).filter(s => s.subject_user_id).map(s => s.subject_user_id!)
       );
 
-      // Clients without any case study
-      setClientsWithoutStudy(
-        clientIds
-          .filter(id => !clientsWithStudy.has(id))
-          .map(id => ({ id, name: nameMap[id] || "Unknown", email: emailMap[id] || null }))
-      );
+      // Clients truly awaiting assessment: no study from this practitioner AND not already profiled
+      const awaitingAssessment = clientIds
+        .filter(id => !clientsWithOwnStudy.has(id) && !profiledClientIds.has(id) && !clientsWithApprovedStudy.has(id))
+        .map(id => ({ id, name: nameMap[id] || "Unknown", email: emailMap[id] || null }));
 
-      // Group studies by status
+      setClientsWithoutStudy(awaitingAssessment);
+
+      // Group this practitioner's studies by status
       const grouped: Record<string, CaseStudySummary[]> = {};
       (studies || []).forEach(s => {
         const status = s.status as CaseStudyStatus;
@@ -144,6 +171,25 @@ export default function CaseStudyPipeline({ onSelectClient, onStartCaseStudy }: 
           subject_name: s.subject_user_id ? (nameMap[s.subject_user_id] || "Unknown") : "—",
         });
       });
+
+      // Add externally-profiled clients as virtual "approved" entries in the pipeline
+      const externallyProfiled = clientIds.filter(
+        id => !clientsWithOwnStudy.has(id) && (profiledClientIds.has(id) || clientsWithApprovedStudy.has(id))
+      );
+      if (externallyProfiled.length > 0) {
+        if (!grouped["approved"]) grouped["approved"] = [];
+        externallyProfiled.forEach(id => {
+          grouped["approved"]!.push({
+            id: `profiled-${id}`,
+            title: `${nameMap[id] || "Unknown"} — Profiled`,
+            status: "approved",
+            subject_user_id: id,
+            subject_name: nameMap[id] || "Unknown",
+            updated_at: new Date().toISOString(),
+          });
+        });
+      }
+
       setStudiesByStatus(grouped);
       setLoading(false);
     }
