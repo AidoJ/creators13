@@ -143,6 +143,7 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
         .upload(path, file, { contentType: file.type, upsert: true });
       if (error) {
         console.error("Upload error:", error);
+        toast({ title: "Upload failed", description: `${file.name}: ${error.message}`, variant: "destructive" });
       } else {
         paths.push(path);
       }
