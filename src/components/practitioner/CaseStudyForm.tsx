@@ -34,8 +34,8 @@ interface CaseStudyFormProps {
 }
 
 const CREATOR_TYPES = [
-  "Lava", "Fire", "Whirlwind", "Sun", "Lightning", "Sky",
-  "Mountain", "Tree", "Soil", "River", "Ocean", "Lake", "Snow",
+  "Lava", "Fire", "Whirlwind", "Snow", "Lightning", "Sun",
+  "Lake", "Ocean", "Tree", "Mountain", "Soil", "River", "Sky",
 ];
 
 const PAGES = ["assessment", "details", "preparation", "reflection"] as const;
