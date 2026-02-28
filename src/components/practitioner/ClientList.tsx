@@ -142,32 +142,34 @@ export default function ClientList({ onSelectClient, selectedClientId }: ClientL
                   document.getElementById("client-detail-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
                 }, 100);
               }}
-              className={`group w-full text-left px-4 py-3 border-b border-border last:border-0 hover:bg-accent/50 transition-colors flex items-center gap-3 cursor-pointer ${
+              className={`group w-full text-left px-4 py-3 border-b border-border last:border-0 hover:bg-accent/50 transition-colors cursor-pointer ${
                 selectedClientId === client.client_id ? "bg-accent/30" : ""
               }`}
             >
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-foreground truncate">
+              <div className="flex items-center gap-2 mb-1">
+                <p className="font-medium text-foreground truncate flex-1">
                   {client.profile?.first_name || "Unknown"} {client.profile?.last_name || ""}
                 </p>
-                <p className="text-xs text-muted-foreground truncate">{client.profile?.email || ""}</p>
+                <ChevronRight className="h-4 w-4 text-primary/60 group-hover:text-primary flex-shrink-0 transition-colors" />
               </div>
-              <Badge variant="outline" className={`text-[10px] flex-shrink-0 ${stepColor(client.profile?.enrollment_step || null)}`}>
-                {stepLabel(client.profile?.enrollment_step || null)}
-              </Badge>
-              {sortCreatorTypes(client.creatorTypes).map(t => {
-                const color = getCreatorTypeColor(t);
-                return (
-                  <span
-                    key={t}
-                    className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold capitalize flex-shrink-0"
-                    style={{ backgroundColor: `${color}22`, color, border: `1px solid ${color}44` }}
-                  >
-                    {t}
-                  </span>
-                );
-              })}
-              <ChevronRight className="h-4 w-4 text-primary/60 group-hover:text-primary flex-shrink-0 transition-colors" />
+              <p className="text-xs text-muted-foreground truncate mb-1.5">{client.profile?.email || ""}</p>
+              <div className="flex flex-wrap gap-1">
+                <Badge variant="outline" className={`text-[10px] ${stepColor(client.profile?.enrollment_step || null)}`}>
+                  {stepLabel(client.profile?.enrollment_step || null)}
+                </Badge>
+                {sortCreatorTypes(client.creatorTypes).map(t => {
+                  const color = getCreatorTypeColor(t);
+                  return (
+                    <span
+                      key={t}
+                      className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold capitalize"
+                      style={{ backgroundColor: `${color}22`, color, border: `1px solid ${color}44` }}
+                    >
+                      {t}
+                    </span>
+                  );
+                })}
+              </div>
             </button>
           ))
         )}
