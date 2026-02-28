@@ -28,6 +28,7 @@ interface CaseStudySummary {
 interface CaseStudyPipelineProps {
   onSelectClient?: (clientId: string) => void;
   onStartCaseStudy?: (clientId: string, clientName: string) => void;
+  onFilterByStatus?: (status: string) => void;
 }
 
 const PIPELINE_STAGES = [
@@ -75,7 +76,7 @@ const PIPELINE_STAGES = [
 
 type StageKey = (typeof PIPELINE_STAGES)[number]["key"];
 
-export default function CaseStudyPipeline({ onSelectClient, onStartCaseStudy }: CaseStudyPipelineProps) {
+export default function CaseStudyPipeline({ onSelectClient, onStartCaseStudy, onFilterByStatus }: CaseStudyPipelineProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [clientsWithoutStudy, setClientsWithoutStudy] = useState<ClientInfo[]>([]);
@@ -247,16 +248,18 @@ export default function CaseStudyPipeline({ onSelectClient, onStartCaseStudy }: 
               : (studiesByStatus[stage.key]?.length || 0);
             const StageIcon = stage.icon;
             return (
-              <div
+              <button
                 key={stage.key}
+                onClick={() => stage.key !== "not_started" && count > 0 && onFilterByStatus?.(stage.key)}
                 className={`rounded-xl border p-3 text-center transition-all ${
-                  count > 0 ? stage.color : "bg-muted/20 text-muted-foreground/40 border-border/50"
+                  count > 0 && stage.key !== "not_started" ? `${stage.color} cursor-pointer hover:opacity-80` : "bg-muted/20 text-muted-foreground/40 border-border/50"
                 }`}
+                disabled={stage.key === "not_started" || count === 0}
               >
                 <StageIcon className="h-4 w-4 mx-auto mb-1" />
                 <div className="text-xl font-bold">{count}</div>
                 <div className="text-[10px] font-medium leading-tight">{stage.label}</div>
-              </div>
+              </button>
             );
           })}
         </div>
