@@ -185,6 +185,8 @@ serve(async (req) => {
       const html = replaceTemplateVars(template.html_body, vars);
       const subject = replaceTemplateVars(template.subject, vars);
 
+      // Rate-limit: Resend allows max 2 req/sec
+      if (sentCount > 0) await new Promise((r) => setTimeout(r, 600));
       try {
         const { error } = await resend.emails.send({
           from: "13 Creators <noreply@connect.13creators.com>",
