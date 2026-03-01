@@ -9,7 +9,7 @@ const corsHeaders = {
 };
 
 interface TrainingInviteRequest {
-  callId: string;
+  callId?: string;
   title: string;
   description?: string;
   scheduledAt: string;
@@ -86,6 +86,12 @@ function replaceTemplateVars(
   return result;
 }
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -104,6 +110,7 @@ serve(async (req) => {
 
     const body: TrainingInviteRequest = await req.json();
     const {
+      callId,
       title,
       description,
       scheduledAt,
@@ -149,41 +156,115 @@ serve(async (req) => {
 
     let sentCount = 0;
     const errors: string[] = [];
-    const inviteeRecords: Array<{ call_id: string; user_id: string | null; email: string; name: string | null }> = [];
+    const successfulInviteeRecords: Array<{ call_id: string; user_id: string | null; email: string; name: string | null }> = [];
 
-    // Helper: send to one recipient
-    async function sendToRecipient(
-      email: string,
-      firstName: string,
-      timezone: string,
-      userId: string | null
-    ) {
-      const localTime = formatDateForTimezone(scheduledAt, timezone);
+    type Recipient = {
+      email: string;
+      firstName: string;
+      timezone: string;
+      userId: string | null;
+    };
+
+    const recipientsByEmail = new Map<string, Recipient>();
+
+    function addRecipient(recipient: Recipient) {
+      const normalized = normalizeEmail(recipient.email);
+      if (!EMAIL_REGEX.test(normalized)) return;
+      if (!recipientsByEmail.has(normalized)) {
+        recipientsByEmail.set(normalized, { ...recipient, email: normalized });
+      }
+    }
+
+    // --- Build recipient list from practitioners ---
+    if (practitionerUserIds && practitionerUserIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, email, first_name, timezone")
+        .in("user_id", practitionerUserIds);
+
+      const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p]));
+
+      for (const practitionerUserId of practitionerUserIds) {
+        const profile = profileMap.get(practitionerUserId);
+        if (!profile) {
+          errors.push(`missing_profile:${practitionerUserId}`);
+          continue;
+        }
+
+        let email = profile.email ? normalizeEmail(profile.email) : "";
+
+        // Fallback to auth email if profile.email is missing
+        if (!email) {
+          try {
+            const { data: authData, error: authErr } = await supabase.auth.admin.getUserById(practitionerUserId);
+            if (!authErr && authData?.user?.email) {
+              email = normalizeEmail(authData.user.email);
+            }
+          } catch (authLookupErr) {
+            console.error("Auth email lookup failed:", authLookupErr);
+          }
+        }
+
+        if (!email || !EMAIL_REGEX.test(email)) {
+          errors.push(`missing_email:${profile.first_name || practitionerUserId}`);
+          continue;
+        }
+
+        addRecipient({
+          email,
+          firstName: profile.first_name || "Practitioner",
+          timezone: profile.timezone || "Australia/Sydney",
+          userId: profile.user_id,
+        });
+      }
+    }
+
+    // --- Build recipient list from external guest emails ---
+    if (externalEmails && externalEmails.length > 0) {
+      for (const guestEmail of externalEmails) {
+        const normalized = normalizeEmail(guestEmail || "");
+        if (!EMAIL_REGEX.test(normalized)) {
+          errors.push(`invalid_email:${guestEmail}`);
+          continue;
+        }
+        addRecipient({
+          email: normalized,
+          firstName: "there",
+          timezone: "UTC",
+          userId: null,
+        });
+      }
+    }
+
+    const recipients = Array.from(recipientsByEmail.values());
+
+    if (recipients.length === 0) {
+      throw new Error("No valid recipients found for this call.");
+    }
+
+    // --- Send emails ---
+    for (const recipient of recipients) {
+      const localTime = formatDateForTimezone(scheduledAt, recipient.timezone);
 
       const vars: Record<string, string> = {
-        firstName,
+        firstName: recipient.firstName,
         title,
         description: descriptionHtml,
         localTime,
         durationMinutes: String(durationMinutes),
-        timezone,
+        timezone: recipient.timezone,
         recurrenceText,
         zoomButton,
-        email,
+        email: recipient.email,
       };
 
       const html = replaceTemplateVars(template.html_body, vars);
       const subject = replaceTemplateVars(template.subject, vars);
 
-      // Track invitee
-      if (body.callId) {
-        inviteeRecords.push({ call_id: body.callId, user_id: userId, email, name: firstName !== "there" ? firstName : null });
-      }
-
       try {
         const { error } = await resend.emails.send({
           from: "13 Creators <noreply@connect.13creators.com>",
-          to: [email],
+          to: [recipient.email],
           subject,
           html,
           attachments: [
@@ -191,62 +272,58 @@ serve(async (req) => {
           ],
         });
         if (error) {
-          console.error(`Error sending to ${email}:`, error);
-          errors.push(email);
+          console.error(`Error sending to ${recipient.email}:`, error);
+          errors.push(`${recipient.email}${error.message ? ` (${error.message})` : ""}`);
         } else {
           sentCount++;
+          if (callId) {
+            successfulInviteeRecords.push({
+              call_id: callId,
+              user_id: recipient.userId,
+              email: recipient.email,
+              name: recipient.firstName !== "there" ? recipient.firstName : null,
+            });
+          }
         }
       } catch (e) {
-        console.error(`Exception sending to ${email}:`, e);
-        errors.push(email);
+        console.error(`Exception sending to ${recipient.email}:`, e);
+        errors.push(`${recipient.email} (exception)`);
       }
     }
 
-    // --- Send to selected practitioners ---
-    if (practitionerUserIds && practitionerUserIds.length > 0) {
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, email, first_name, timezone")
-        .in("user_id", practitionerUserIds);
-
-      for (const profile of profiles || []) {
-        if (!profile.email) continue;
-        await sendToRecipient(
-          profile.email,
-          profile.first_name || "Practitioner",
-          profile.timezone || "Australia/Sydney",
-          profile.user_id
-        );
-      }
-    }
-
-    // --- Send to external guest emails ---
-    if (externalEmails && externalEmails.length > 0) {
-      for (const guestEmail of externalEmails) {
-        if (!guestEmail || !guestEmail.includes("@")) continue;
-        await sendToRecipient(guestEmail, "there", "UTC", null);
-      }
-    }
-
-    // --- Record invitees in DB ---
-    if (inviteeRecords.length > 0) {
-      const { error: insertErr } = await supabase
+    // --- Record successful invitees in DB (without duplicating existing rows) ---
+    if (callId && successfulInviteeRecords.length > 0) {
+      const { data: existingInvitees } = await supabase
         .from("training_call_invitees")
-        .insert(inviteeRecords);
-      if (insertErr) console.error("Error recording invitees:", insertErr);
+        .select("email")
+        .eq("call_id", callId);
+
+      const existingEmails = new Set((existingInvitees || []).map((i: any) => normalizeEmail(i.email || "")));
+      const recordsToInsert = successfulInviteeRecords.filter((record) => !existingEmails.has(normalizeEmail(record.email)));
+
+      if (recordsToInsert.length > 0) {
+        const { error: insertErr } = await supabase
+          .from("training_call_invitees")
+          .insert(recordsToInsert);
+        if (insertErr) console.error("Error recording invitees:", insertErr);
+      }
     }
 
     // Record timeline event
-    if (body.callId && sentCount > 0) {
+    if (callId) {
+      const details = errors.length > 0
+        ? `Invites sent to ${sentCount} of ${recipients.length} recipients | Failed: ${errors.slice(0, 5).join(", ")}`
+        : `Invites sent to ${sentCount} recipient${sentCount !== 1 ? "s" : ""}`;
+
       await supabase.from("training_call_events").insert({
-        call_id: body.callId,
+        call_id: callId,
         event_type: "invites_sent",
-        details: `Invites sent to ${sentCount} recipient${sentCount !== 1 ? "s" : ""}`,
+        details,
       });
     }
 
     return new Response(
-      JSON.stringify({ success: true, sent: sentCount, failed: errors.length, errors }),
+      JSON.stringify({ success: true, sent: sentCount, totalRecipients: recipients.length, failed: errors.length, errors }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err: unknown) {
