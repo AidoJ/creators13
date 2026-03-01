@@ -258,7 +258,7 @@ export default function CaseStudyPipeline({ onSelectClient, onStartCaseStudy, on
               >
                 <StageIcon className="h-4 w-4 mx-auto mb-1" />
                 <div className="text-xl font-bold">{count}</div>
-                <div className="text-[10px] font-medium leading-tight">{stage.label}</div>
+                <div className="text-xs font-medium leading-tight">{stage.label}</div>
               </button>
             );
           })}
@@ -317,7 +317,7 @@ export default function CaseStudyPipeline({ onSelectClient, onStartCaseStudy, on
                     {cs.subject_name} · Updated {new Date(cs.updated_at).toLocaleDateString("en-AU")}
                   </p>
                 </div>
-                <Badge variant="outline" className="text-[10px] bg-destructive/10 text-destructive border-destructive/20 shrink-0">
+                <Badge variant="outline" className="text-xs bg-destructive/10 text-destructive border-destructive/20 shrink-0">
                   Review Feedback
                 </Badge>
               </div>

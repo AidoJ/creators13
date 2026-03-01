@@ -113,9 +113,12 @@
     @apply border-border;
   }
 
+  html {
+    font-size: 24px;
+  }
+
   body {
     @apply bg-background text-foreground font-body antialiased;
-    font-size: 24px;
   }
 
   h1, h2, h3, h4, h5, h6 {

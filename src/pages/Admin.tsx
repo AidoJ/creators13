@@ -322,7 +322,7 @@ export default function AdminDashboard() {
             {["plan_selected", "signed_up", "payment_complete", "photos_uploaded", "booking_made", "awaiting_profiling", "complete"].map(step => (
               <div key={step} className="space-y-1">
                 <div className="text-lg font-bold text-foreground">{byStep[step] || 0}</div>
-                <div className="text-[10px] text-muted-foreground capitalize">{step.replace(/_/g, " ")}</div>
+                <div className="text-xs text-muted-foreground capitalize">{step.replace(/_/g, " ")}</div>
                 <div className="h-1.5 rounded-full bg-muted overflow-hidden">
                   <div
                     className="h-full bg-primary rounded-full transition-all"
