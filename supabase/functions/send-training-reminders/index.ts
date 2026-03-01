@@ -34,6 +34,12 @@ function replaceTemplateVars(template: string, vars: Record<string, string>): st
   return result;
 }
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -70,23 +76,22 @@ serve(async (req) => {
       });
     }
 
-    // Check which calls already got reminders
+    // Track per-recipient reminder sends so failures can be retried safely
     const callIds = calls.map((c: any) => c.id);
-    const { data: existingEvents } = await supabase
+    const { data: existingRecipientEvents } = await supabase
       .from("training_call_events")
-      .select("call_id")
+      .select("call_id, details")
       .in("call_id", callIds)
-      .eq("event_type", "reminder_sent");
+      .eq("event_type", "reminder_sent_email");
 
-    const alreadyReminded = new Set((existingEvents || []).map((e: any) => e.call_id));
-    const callsToRemind = calls.filter((c: any) => !alreadyReminded.has(c.id));
-
-    if (callsToRemind.length === 0) {
-      return new Response(JSON.stringify({ message: "All reminders already sent", sent: 0 }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    const alreadyReminded = new Set(
+      (existingRecipientEvents || [])
+        .map((e: any) => {
+          const email = normalizeEmail(e.details || "");
+          return EMAIL_REGEX.test(email) ? `${e.call_id}:${email}` : null;
+        })
+        .filter(Boolean)
+    );
 
     // Fetch reminder template
     const { data: template, error: tplError } = await supabase
@@ -100,8 +105,11 @@ serve(async (req) => {
     }
 
     let totalSent = 0;
+    let totalFailed = 0;
+    let totalAlreadySent = 0;
+    let totalCandidates = 0;
 
-    for (const call of callsToRemind) {
+    for (const call of calls) {
       // Get invitees for this call
       const { data: invitees } = await supabase
         .from("training_call_invitees")
@@ -110,8 +118,25 @@ serve(async (req) => {
 
       if (!invitees || invitees.length === 0) continue;
 
+      // Dedupe invitees by normalized email to avoid duplicate sends
+      const inviteesByEmail = new Map<string, any>();
+      for (const invitee of invitees) {
+        const normalized = normalizeEmail(invitee.email || "");
+        if (!EMAIL_REGEX.test(normalized)) continue;
+
+        const existing = inviteesByEmail.get(normalized);
+        if (!existing || (!existing.user_id && invitee.user_id)) {
+          inviteesByEmail.set(normalized, { ...invitee, email: normalized });
+        }
+      }
+
+      const uniqueInvitees = Array.from(inviteesByEmail.values());
+      if (uniqueInvitees.length === 0) continue;
+
+      totalCandidates += uniqueInvitees.length;
+
       // Get profiles for user_ids to get timezones
-      const userIds = invitees.filter((i: any) => i.user_id).map((i: any) => i.user_id);
+      const userIds = uniqueInvitees.filter((i: any) => i.user_id).map((i: any) => i.user_id);
       let profileMap: Record<string, { first_name: string; timezone: string }> = {};
       if (userIds.length > 0) {
         const { data: profiles } = await supabase
@@ -134,7 +159,16 @@ serve(async (req) => {
         : "";
 
       let callSent = 0;
-      for (const inv of invitees) {
+      const sentEmails: string[] = [];
+      const failedEmails: string[] = [];
+
+      for (const inv of uniqueInvitees) {
+        const sendKey = `${call.id}:${inv.email}`;
+        if (alreadyReminded.has(sendKey)) {
+          totalAlreadySent++;
+          continue;
+        }
+
         const profile = inv.user_id ? profileMap[inv.user_id] : null;
         const firstName = inv.name || profile?.first_name || "there";
         const timezone = profile?.timezone || "UTC";
@@ -156,25 +190,51 @@ serve(async (req) => {
             subject,
             html,
           });
-          if (!error) callSent++;
-          else console.error(`Reminder error for ${inv.email}:`, error);
+          if (!error) {
+            callSent++;
+            totalSent++;
+            sentEmails.push(inv.email);
+            alreadyReminded.add(sendKey);
+          } else {
+            console.error(`Reminder error for ${inv.email}:`, error);
+            totalFailed++;
+            failedEmails.push(inv.email);
+          }
         } catch (e) {
           console.error(`Reminder exception for ${inv.email}:`, e);
+          totalFailed++;
+          failedEmails.push(inv.email);
         }
       }
 
-      totalSent += callSent;
+      if (sentEmails.length > 0) {
+        await supabase.from("training_call_events").insert(
+          sentEmails.map((email) => ({
+            call_id: call.id,
+            event_type: "reminder_sent_email",
+            details: email,
+          }))
+        );
+      }
 
-      // Record the reminder event
-      await supabase.from("training_call_events").insert({
-        call_id: call.id,
-        event_type: "reminder_sent",
-        details: `Reminder sent to ${callSent} of ${invitees.length} invitees`,
+      if (sentEmails.length > 0 || failedEmails.length > 0) {
+        await supabase.from("training_call_events").insert({
+          call_id: call.id,
+          event_type: "reminder_sent",
+          details: `Reminder sent to ${callSent} of ${uniqueInvitees.length} invitees${failedEmails.length > 0 ? ` | Failed: ${failedEmails.slice(0, 5).join(", ")}` : ""}`,
+        });
+      }
+    }
+
+    if (totalSent === 0 && totalFailed === 0) {
+      return new Response(JSON.stringify({ message: "All reminders already sent", sent: 0, alreadySent: totalAlreadySent }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     return new Response(
-      JSON.stringify({ success: true, callsProcessed: callsToRemind.length, sent: totalSent }),
+      JSON.stringify({ success: true, callsProcessed: calls.length, candidates: totalCandidates, sent: totalSent, failed: totalFailed, alreadySent: totalAlreadySent }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err: unknown) {

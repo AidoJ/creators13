@@ -59,6 +59,8 @@ export default function TrainingCallManager({ onCallsChanged }: TrainingCallMana
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [sending, setSending] = useState<string | null>(null);
+  const [testEmail, setTestEmail] = useState("");
+  const [sendingTestEmail, setSendingTestEmail] = useState(false);
 
    // Practitioner list for invitee selection
   const [practitioners, setPractitioners] = useState<PractitionerOption[]>([]);
@@ -86,7 +88,7 @@ export default function TrainingCallManager({ onCallsChanged }: TrainingCallMana
     if (callIds.length === 0) return;
     const [{ data: invData }, { data: evtData }] = await Promise.all([
       supabase.from("training_call_invitees").select("id, call_id, email, name, user_id, invited_at").in("call_id", callIds).order("invited_at", { ascending: true }),
-      supabase.from("training_call_events").select("id, call_id, event_type, details, created_at").in("call_id", callIds).order("created_at", { ascending: true }),
+      supabase.from("training_call_events").select("id, call_id, event_type, details, created_at").in("call_id", callIds).not("event_type", "eq", "reminder_sent_email").order("created_at", { ascending: true }),
     ]);
     const groupedInv: Record<string, Invitee[]> = {};
     (invData || []).forEach((row: any) => {
@@ -252,13 +254,17 @@ export default function TrainingCallManager({ onCallsChanged }: TrainingCallMana
       // Build recipient lists
       const selectedPractitionerUserIds = Array.from(selectedUserIds);
 
-      // Send email invites using the first inserted call's ID
-      const firstInsertedCall = insertedCalls?.[0];
-      const callForInvite = {
-        ...callsToCreate[0],
-        id: firstInsertedCall?.id || "",
-      };
-      sendInvites(callForInvite, selectedPractitionerUserIds, externalEmails);
+      // Send invites for every created call (important for recurring series)
+      if (insertedCalls && insertedCalls.length > 0) {
+        for (let idx = 0; idx < insertedCalls.length; idx++) {
+          const inserted = insertedCalls[idx];
+          const callForInvite = {
+            ...callsToCreate[Math.min(idx, callsToCreate.length - 1)],
+            id: inserted.id,
+          };
+          await sendInvites(callForInvite, selectedPractitionerUserIds, externalEmails);
+        }
+      }
       resetForm();
       await fetchCalls();
       onCallsChanged?.();
@@ -294,10 +300,73 @@ export default function TrainingCallManager({ onCallsChanged }: TrainingCallMana
       } else {
         toast({ title: "Invites sent!", description: `${sentCount} email${sentCount !== 1 ? "s" : ""} sent.` });
       }
+      if (call.id) {
+        await fetchInvitees([call.id]);
+      }
     } catch (err: any) {
       toast({ title: "Error sending invites", description: err.message, variant: "destructive" });
     }
     setSending(null);
+  }
+
+  async function handleResendAll(call: TrainingCall) {
+    const currentInvitees = inviteesByCall[call.id] || [];
+    if (currentInvitees.length === 0) {
+      toast({ title: "No invitees found", description: "Add invitees first, then resend." , variant: "destructive" });
+      return;
+    }
+
+    const practitionerUserIds = Array.from(
+      new Set(currentInvitees.filter((inv) => !!inv.user_id).map((inv) => inv.user_id as string))
+    );
+    const externalGuestEmails = Array.from(
+      new Set(currentInvitees.filter((inv) => !inv.user_id).map((inv) => inv.email.toLowerCase()))
+    );
+
+    await sendInvites(call, practitionerUserIds, externalGuestEmails);
+  }
+
+  async function handleSendTestEmail() {
+    const email = testEmail.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast({ title: "Invalid email", description: "Enter a valid test email address.", variant: "destructive" });
+      return;
+    }
+
+    setSendingTestEmail(true);
+    try {
+      const referenceCall = calls.find((c) => !c.cancelled && new Date(c.scheduled_at) >= new Date()) || calls.find((c) => !c.cancelled);
+      const scheduledAt = referenceCall?.scheduled_at || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+      const { data, error } = await supabase.functions.invoke("send-training-invite", {
+        body: {
+          title: referenceCall?.title || "Training Call Test",
+          description: referenceCall?.description || "This is a test training call email sent from the Trainer panel.",
+          scheduledAt,
+          durationMinutes: referenceCall?.duration_minutes || 60,
+          zoomLink: referenceCall?.zoom_link || "",
+          recurrenceRule: referenceCall?.recurrence_rule || "none",
+          practitionerUserIds: [],
+          externalEmails: [email],
+        },
+      });
+
+      if (error) throw error;
+
+      const failedCount = data?.failed || 0;
+      if (failedCount > 0) {
+        toast({
+          title: "Test email failed",
+          description: (data?.errors || []).join(", "),
+          variant: "destructive",
+        });
+      } else {
+        toast({ title: "Test email sent", description: `Delivered via training invite template to ${email}.` });
+      }
+    } catch (err: any) {
+      toast({ title: "Error sending test email", description: err.message, variant: "destructive" });
+    }
+    setSendingTestEmail(false);
   }
 
   async function handleCancel(id: string) {
@@ -413,7 +482,7 @@ export default function TrainingCallManager({ onCallsChanged }: TrainingCallMana
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h2 className="text-lg font-display font-bold text-foreground flex items-center gap-2">
           <Calendar className="h-5 w-5 text-primary" />
           Training Calls
@@ -421,6 +490,22 @@ export default function TrainingCallManager({ onCallsChanged }: TrainingCallMana
         <Button size="sm" onClick={() => setShowForm(true)} className="rounded-full">
           <Plus className="h-3.5 w-3.5 mr-1" /> Schedule Call
         </Button>
+      </div>
+
+      <div className="rounded-xl border border-border bg-card p-3 space-y-2">
+        <p className="text-xs font-semibold text-foreground">Email Delivery Test</p>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Input
+            value={testEmail}
+            onChange={(e) => setTestEmail(e.target.value)}
+            placeholder="trainer-test@example.com"
+            className="sm:max-w-sm"
+          />
+          <Button size="sm" onClick={handleSendTestEmail} disabled={sendingTestEmail}>
+            <Mail className="h-3.5 w-3.5 mr-1" />
+            {sendingTestEmail ? "Sending…" : "Send Test Email"}
+          </Button>
+        </div>
       </div>
 
       {/* Create form */}
@@ -580,7 +665,7 @@ export default function TrainingCallManager({ onCallsChanged }: TrainingCallMana
             <div className="space-y-2">
               <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Upcoming</h3>
               {upcomingCalls.map(call => (
-                <CallCard key={call.id} call={call} onCancel={handleCancel} onDelete={handleDelete} onDuplicate={openDuplicateDialog} onReschedule={handleReschedule} onResend={(c) => sendInvites(c)} sending={sending === call.id} practitioners={practitioners} onSendInvites={sendInvites} onLoadPractitioners={fetchPractitioners} practLoading={practLoading} invitees={inviteesByCall[call.id] || []} events={eventsByCall[call.id] || []} onInvitesSent={() => fetchInvitees(calls.map(c => c.id))} />
+                <CallCard key={call.id} call={call} onCancel={handleCancel} onDelete={handleDelete} onDuplicate={openDuplicateDialog} onReschedule={handleReschedule} onResend={handleResendAll} sending={sending === call.id} practitioners={practitioners} onSendInvites={sendInvites} onLoadPractitioners={fetchPractitioners} practLoading={practLoading} invitees={inviteesByCall[call.id] || []} events={eventsByCall[call.id] || []} onInvitesSent={() => fetchInvitees(calls.map(c => c.id))} />
               ))}
             </div>
           )}
@@ -588,7 +673,7 @@ export default function TrainingCallManager({ onCallsChanged }: TrainingCallMana
             <div className="space-y-2">
               <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Past</h3>
               {pastCalls.slice(0, 10).map(call => (
-                <CallCard key={call.id} call={call} onCancel={handleCancel} onDelete={handleDelete} onDuplicate={openDuplicateDialog} onResend={(c) => sendInvites(c)} sending={sending === call.id} past invitees={inviteesByCall[call.id] || []} events={eventsByCall[call.id] || []} />
+                <CallCard key={call.id} call={call} onCancel={handleCancel} onDelete={handleDelete} onDuplicate={openDuplicateDialog} onResend={handleResendAll} sending={sending === call.id} past invitees={inviteesByCall[call.id] || []} events={eventsByCall[call.id] || []} />
               ))}
             </div>
           )}
@@ -597,7 +682,7 @@ export default function TrainingCallManager({ onCallsChanged }: TrainingCallMana
               <summary className="text-xs font-semibold text-muted-foreground uppercase tracking-wider cursor-pointer">Cancelled ({cancelledCalls.length})</summary>
               <div className="space-y-2 mt-2">
                 {cancelledCalls.map(call => (
-                  <CallCard key={call.id} call={call} onCancel={handleCancel} onDelete={handleDelete} onDuplicate={openDuplicateDialog} onResend={(c) => sendInvites(c)} sending={false} cancelled invitees={inviteesByCall[call.id] || []} events={eventsByCall[call.id] || []} />
+                  <CallCard key={call.id} call={call} onCancel={handleCancel} onDelete={handleDelete} onDuplicate={openDuplicateDialog} onResend={handleResendAll} sending={false} cancelled invitees={inviteesByCall[call.id] || []} events={eventsByCall[call.id] || []} />
                 ))}
               </div>
             </details>
