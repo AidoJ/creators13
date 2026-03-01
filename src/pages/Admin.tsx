@@ -361,7 +361,7 @@ export default function AdminDashboard() {
 
           {/* ======= SUBSCRIBERS TAB ======= */}
           <TabsContent value="subscribers" className="space-y-4">
-            <SubscribersTab users={users} assignments={assignments} />
+            <SubscribersTab users={users} caseStudies={caseStudies} />
           </TabsContent>
 
           {/* ======= ALL USERS TAB ======= */}

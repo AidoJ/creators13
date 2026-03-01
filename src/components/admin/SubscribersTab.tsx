@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
+import { isPaidTier, buildCaseStudySubjectSet } from "@/lib/clientClassification";
 
 interface UserRow {
   user_id: string;
@@ -14,15 +15,13 @@ interface UserRow {
   sub_status: string | null;
 }
 
-interface AssignmentRow {
-  client_id: string;
-  practitioner_id: string;
-  active: boolean;
+interface CaseStudySubject {
+  subject_user_id: string | null;
 }
 
 interface SubscribersTabProps {
   users: UserRow[];
-  assignments: AssignmentRow[];
+  caseStudies: CaseStudySubject[];
 }
 
 const tierColors: Record<string, string> = {
@@ -32,23 +31,19 @@ const tierColors: Record<string, string> = {
   owl: "bg-amber-500/10 text-amber-600 border-amber-500/20",
 };
 
-export default function SubscribersTab({ users, assignments }: SubscribersTabProps) {
+export default function SubscribersTab({ users, caseStudies }: SubscribersTabProps) {
   const [search, setSearch] = useState("");
 
-  // Subscribers are clients who came in via subscription (not assigned as case study clients)
-  const assignedClientIds = useMemo(() => {
-    return new Set(assignments.filter(a => a.active).map(a => a.client_id));
-  }, [assignments]);
+  const caseStudySubjects = useMemo(
+    () => buildCaseStudySubjectSet(caseStudies),
+    [caseStudies]
+  );
 
+  // Paying subscribers = users with a paid tier (robin/falcon/owl)
+  // Case study subjects on Wren are NOT subscribers — they appear under Practitioners
   const subscribers = useMemo(() => {
-    return users.filter(u => {
-      const isClient = u.roles.includes("client");
-      const isSubscriber = u.tier != null;
-      const isNotAssigned = !assignedClientIds.has(u.user_id);
-      // Show users who are either general subscribers or unassigned clients
-      return (isClient || isSubscriber) && isNotAssigned;
-    });
-  }, [users, assignedClientIds]);
+    return users.filter(u => isPaidTier(u.tier));
+  }, [users]);
 
   const filtered = useMemo(() => {
     if (!search) return subscribers;
@@ -85,43 +80,56 @@ export default function SubscribersTab({ users, assignments }: SubscribersTabPro
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Tier</th>
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Status</th>
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Enrollment</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Origin</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
-                    No general subscribers found.
+                  <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                    No paying subscribers found.
                   </td>
                 </tr>
               ) : (
-                filtered.map(u => (
-                  <tr key={u.user_id} className="border-b border-border last:border-0 hover:bg-accent/20 transition-colors">
-                    <td className="px-4 py-2.5 font-medium text-foreground">
-                      {u.first_name || "—"} {u.last_name || ""}
-                    </td>
-                    <td className="px-4 py-2.5 text-muted-foreground text-xs">{u.email || "—"}</td>
-                    <td className="px-4 py-2.5">
-                      {u.tier ? (
-                        <Badge variant="outline" className={`text-[10px] capitalize ${tierColors[u.tier] || ""}`}>
-                          {u.tier}
-                        </Badge>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-2.5">
-                      {u.sub_status ? (
-                        <Badge variant="outline" className="text-[10px] capitalize">{u.sub_status}</Badge>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <Badge variant="outline" className="text-[10px] capitalize">{stepLabel(u.enrollment_step)}</Badge>
-                    </td>
-                  </tr>
-                ))
+                filtered.map(u => {
+                  const wasCS = caseStudySubjects.has(u.user_id);
+                  return (
+                    <tr key={u.user_id} className="border-b border-border last:border-0 hover:bg-accent/20 transition-colors">
+                      <td className="px-4 py-2.5 font-medium text-foreground">
+                        {u.first_name || "—"} {u.last_name || ""}
+                      </td>
+                      <td className="px-4 py-2.5 text-muted-foreground text-xs">{u.email || "—"}</td>
+                      <td className="px-4 py-2.5">
+                        {u.tier ? (
+                          <Badge variant="outline" className={`text-[10px] capitalize ${tierColors[u.tier] || ""}`}>
+                            {u.tier}
+                          </Badge>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-2.5">
+                        {u.sub_status ? (
+                          <Badge variant="outline" className="text-[10px] capitalize">{u.sub_status}</Badge>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <Badge variant="outline" className="text-[10px] capitalize">{stepLabel(u.enrollment_step)}</Badge>
+                      </td>
+                      <td className="px-4 py-2.5">
+                        {wasCS ? (
+                          <Badge variant="outline" className="text-[10px] bg-purple-500/10 text-purple-600 border-purple-500/20">
+                            Upgraded from Case Study
+                          </Badge>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground">Direct</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -129,7 +137,7 @@ export default function SubscribersTab({ users, assignments }: SubscribersTabPro
       </div>
 
       <p className="text-[10px] text-muted-foreground">
-        Showing {filtered.length} general subscriber{filtered.length !== 1 ? "s" : ""} (clients not assigned to a practitioner for case studies).
+        Showing {filtered.length} paying subscriber{filtered.length !== 1 ? "s" : ""} (Robin, Falcon, or Owl tier).
       </p>
     </div>
   );
