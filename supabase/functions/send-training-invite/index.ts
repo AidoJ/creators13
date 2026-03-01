@@ -242,8 +242,11 @@ serve(async (req) => {
       throw new Error("No valid recipients found for this call.");
     }
 
-    // --- Send emails ---
-    for (const recipient of recipients) {
+    // --- Send emails (with rate-limit delay: Resend allows max 2 req/sec) ---
+    const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    for (let i = 0; i < recipients.length; i++) {
+      if (i > 0) await delay(600);
+      const recipient = recipients[i];
       const localTime = formatDateForTimezone(scheduledAt, recipient.timezone);
 
       const vars: Record<string, string> = {
