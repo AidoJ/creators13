@@ -29,7 +29,7 @@ export function Footer() {
 
           {/* A'HaRa info image from original */}
           <div className="max-w-3xl mx-auto mb-12">
-            <img src={origAharaInfo} alt="A'HaRa — Creator Types founder info" className="w-full" />
+            <img src={origAharaInfo} alt="A'HaRa — Creator Types founder info" className="w-full" loading="lazy" decoding="async" />
           </div>
 
           <div className="text-center space-y-2 text-sm text-white/60">
@@ -52,7 +52,7 @@ export function Footer() {
 
       {/* Footer images from original */}
       <div>
-        <img src={origFooterBg} alt="" className="w-full block" />
+        <img src={origFooterBg} alt="" className="w-full block" loading="lazy" decoding="async" />
       </div>
 
       {/* Bottom bar */}

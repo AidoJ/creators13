@@ -27,23 +27,23 @@ export function HeroSection() {
       {/* Background layers - the original site stacks these as parallax/layered images */}
       {/* Main ocean/sunset background */}
       <div className="absolute inset-0">
-        <img src={heroBg1} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <img src={heroBg1} alt="" className="absolute inset-0 w-full h-full object-cover" decoding="async" />
       </div>
       {/* Additional overlay layers from original */}
-      <img src={heroBg2} alt="" className="absolute inset-0 w-full h-full object-cover mix-blend-screen opacity-80" />
-      <img src={heroBg3} alt="" className="absolute inset-0 w-full h-full object-cover mix-blend-multiply opacity-60" />
-      <img src={heroBg4} alt="" className="absolute inset-0 w-full h-full object-cover mix-blend-screen opacity-50" />
-      <img src={heroBg5} alt="" className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-40" />
-      <img src={heroBg6} alt="" className="absolute inset-0 w-full h-full object-cover mix-blend-screen opacity-30" />
-      <img src={heroBg7} alt="" className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-30" />
-      <img src={heroBg8} alt="" className="absolute inset-0 w-full h-full object-cover mix-blend-screen opacity-20" />
-      <img src={heroBg9} alt="" className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-20" />
-      <img src={heroBg10} alt="" className="absolute inset-0 w-full h-full object-cover mix-blend-screen opacity-20" />
-      <img src={heroBg11} alt="" className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-20" />
-      <img src={heroBg12} alt="" className="absolute inset-0 w-full h-full object-cover mix-blend-screen opacity-15" />
-      <img src={heroBg13} alt="" className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-15" />
-      <img src={heroBg14} alt="" className="absolute inset-0 w-full h-full object-cover mix-blend-screen opacity-15" />
-      <img src={heroBg15} alt="" className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-10" />
+      <img src={heroBg2} alt="" className="absolute inset-0 w-full h-full object-cover mix-blend-screen opacity-80" loading="lazy" decoding="async" />
+      <img src={heroBg3} alt="" className="absolute inset-0 w-full h-full object-cover mix-blend-multiply opacity-60" loading="lazy" decoding="async" />
+      <img src={heroBg4} alt="" className="absolute inset-0 w-full h-full object-cover mix-blend-screen opacity-50" loading="lazy" decoding="async" />
+      <img src={heroBg5} alt="" className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-40" loading="lazy" decoding="async" />
+      <img src={heroBg6} alt="" className="absolute inset-0 w-full h-full object-cover mix-blend-screen opacity-30" loading="lazy" decoding="async" />
+      <img src={heroBg7} alt="" className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-30" loading="lazy" decoding="async" />
+      <img src={heroBg8} alt="" className="absolute inset-0 w-full h-full object-cover mix-blend-screen opacity-20" loading="lazy" decoding="async" />
+      <img src={heroBg9} alt="" className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-20" loading="lazy" decoding="async" />
+      <img src={heroBg10} alt="" className="absolute inset-0 w-full h-full object-cover mix-blend-screen opacity-20" loading="lazy" decoding="async" />
+      <img src={heroBg11} alt="" className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-20" loading="lazy" decoding="async" />
+      <img src={heroBg12} alt="" className="absolute inset-0 w-full h-full object-cover mix-blend-screen opacity-15" loading="lazy" decoding="async" />
+      <img src={heroBg13} alt="" className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-15" loading="lazy" decoding="async" />
+      <img src={heroBg14} alt="" className="absolute inset-0 w-full h-full object-cover mix-blend-screen opacity-15" loading="lazy" decoding="async" />
+      <img src={heroBg15} alt="" className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-10" loading="lazy" decoding="async" />
 
       {/* Content */}
       <div className="relative z-10 flex flex-col items-center text-center px-4 pt-20 pb-8">
