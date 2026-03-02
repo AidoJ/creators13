@@ -23,6 +23,24 @@ function Field({ label, value }: { label: string; value?: string }) {
   );
 }
 
+/** Convert snake_case key to a readable label */
+function keyToLabel(key: string): string {
+  return key.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
+}
+
+/** Render all string fields in an object, using known labels where available */
+function DynamicFields({ data, knownLabels }: { data: Record<string, any>; knownLabels?: Record<string, string> }) {
+  return (
+    <>
+      {Object.entries(data).map(([key, value]) => {
+        if (!value || typeof value !== "string") return null;
+        const label = knownLabels?.[key] || keyToLabel(key);
+        return <Field key={key} label={label} value={value} />;
+      })}
+    </>
+  );
+}
+
 export default function CaseStudyFormDataView({ formData }: CaseStudyFormDataViewProps) {
   const p1 = formData.page1 || {};
   const p2 = formData.page2 || {};
@@ -44,40 +62,41 @@ export default function CaseStudyFormDataView({ formData }: CaseStudyFormDataVie
     <div className="space-y-4 bg-card rounded-lg border border-border p-4 max-h-[600px] overflow-y-auto">
       {hasP1 && (
         <Section title="Page 1 — Body Assessment">
-          <Field label="Head / Neck" value={p1.head_neck} />
-          <Field label="Chest / Arms" value={p1.chest_arms} />
-          <Field label="Belly / Waist" value={p1.belly_waist} />
-          <Field label="Upper Thighs / Hips / Buttocks" value={p1.upper_thighs_hips_buttocks} />
-          <Field label="Legs / Feet" value={p1.legs_feet} />
+          <DynamicFields data={p1} knownLabels={{
+            head_neck: "Head / Neck", chest_arms: "Chest / Arms", belly_waist: "Belly / Waist",
+            upper_thighs_hips_buttocks: "Upper Thighs / Hips / Buttocks", legs_feet: "Legs / Feet",
+          }} />
         </Section>
       )}
 
       {hasP2 && (
         <Section title="Page 2 — Assessment Details">
-          <Field label="Prominent Features — Face" value={p2.prominent_features_face} />
-          <Field label="Prominent Features — Body" value={p2.prominent_features_body} />
-          <Field label="Prominent Features — Hands + Feet" value={p2.prominent_features_hands_feet} />
-          <Field label="Concentration of Tissue" value={p2.concentration_of_tissue} />
-          <Field label="Structure Shapes" value={p2.structure_shapes} />
-          <Field label="Other Ailments / Comments" value={p2.other_ailments} />
+          <DynamicFields data={p2} knownLabels={{
+            prominent_features_face: "Prominent Features — Face", prominent_features_body: "Prominent Features — Body",
+            prominent_features_hands_feet: "Prominent Features — Hands + Feet", concentration_of_tissue: "Concentration of Tissue",
+            concentration_tissue: "Concentration of Tissue", structure_shapes: "Structure Shapes",
+            skeletal_shapes: "Skeletal Shapes", other_ailments: "Other Ailments / Comments",
+          }} />
         </Section>
       )}
 
       {hasP3 && (
         <Section title="Page 3 — Feedback Preparation">
-          <Field label="Key Features — CT1" value={p3.key_features_ct1} />
-          <Field label="Key Features — CT2" value={p3.key_features_ct2} />
-          <Field label="Key Features — Other" value={p3.key_features_other} />
-          <Field label="Key Questions" value={p3.key_questions} />
+          <DynamicFields data={p3} knownLabels={{
+            key_features_ct1: "Key Features — CT1", key_features_ct2: "Key Features — CT2",
+            key_features_other: "Key Features — Other", key_questions: "Key Questions",
+            ailments: "Ailments / Comments",
+          }} />
         </Section>
       )}
 
       {hasP4 && (
         <Section title="Page 4 — Feedback Reflection">
-          <Field label="Light Bulb Moments" value={p4.light_bulb_moments} />
-          <Field label="What You Learned" value={p4.what_learned} />
-          <Field label="What Went Well" value={p4.what_went_well} />
-          <Field label="Potential Follow-Up" value={p4.potential_follow_up} />
+          <DynamicFields data={p4} knownLabels={{
+            light_bulb_moments: "Light Bulb Moments", what_learned: "What You Learned",
+            what_went_well: "What Went Well", potential_follow_up: "Potential Follow-Up",
+            notes: "Notes",
+          }} />
         </Section>
       )}
 
