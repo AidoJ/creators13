@@ -21,6 +21,7 @@ interface ProfileData {
   enrollment_step: string | null;
   date_of_birth: string | null;
   gender: string | null;
+  pronouns: string | null;
   height_cm: number | null;
   shoe_size: string | null;
   city: string | null;
@@ -51,7 +52,7 @@ export default function Dashboard() {
     if (!user) return;
     const fetchData = async () => {
       const [profileRes, bookingRes, subRes] = await Promise.all([
-        supabase.from("profiles").select("first_name, last_name, enrollment_step, date_of_birth, gender, height_cm, shoe_size, city, state, country, case_study_consent_at").eq("user_id", user.id).maybeSingle(),
+        supabase.from("profiles").select("first_name, last_name, enrollment_step, date_of_birth, gender, pronouns, height_cm, shoe_size, city, state, country, case_study_consent_at").eq("user_id", user.id).maybeSingle(),
         supabase.from("bookings").select("scheduled_at, status, zoom_link").eq("client_id", user.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("subscriptions").select("tier, status").eq("user_id", user.id).maybeSingle(),
       ]);

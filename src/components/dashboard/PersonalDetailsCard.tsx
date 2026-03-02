@@ -7,6 +7,7 @@ interface ProfileData {
   last_name: string | null;
   date_of_birth: string | null;
   gender: string | null;
+  pronouns: string | null;
   height_cm: number | null;
   shoe_size: string | null;
   city: string | null;
@@ -50,6 +51,7 @@ export default function PersonalDetailsCard({ profile, hasDetails }: PersonalDet
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
         <DetailItem icon={<CalIcon className="h-3.5 w-3.5" />} label="Age" value={age ? `${age} years` : "—"} />
         <DetailItem label="Gender" value={profile?.gender || "—"} />
+        <DetailItem label="Pronouns" value={profile?.pronouns || "—"} />
         <DetailItem icon={<Ruler className="h-3.5 w-3.5" />} label="Height" value={profile?.height_cm ? `${profile.height_cm} cm` : "—"} />
         <DetailItem label="Shoe Size" value={profile?.shoe_size || "—"} />
         {location && (
