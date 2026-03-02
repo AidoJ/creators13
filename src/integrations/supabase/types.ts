@@ -1072,7 +1072,9 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      generate_practitioner_code: { Args: never; Returns: string }
+      generate_practitioner_code:
+        | { Args: never; Returns: string }
+        | { Args: { _first_name?: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
