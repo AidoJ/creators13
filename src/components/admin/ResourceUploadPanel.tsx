@@ -18,11 +18,20 @@ interface Resource {
   title: string;
   description: string | null;
   resource_type: string;
+  category: string;
   file_name: string;
   file_size_bytes: number | null;
   storage_path: string;
   created_at: string;
 }
+
+const CATEGORIES = [
+  { value: "teaching_calls", label: "Teaching Calls" },
+  { value: "case_study_calls", label: "Case Study Calls" },
+  { value: "group_discovery_calls", label: "Group Discovery Calls" },
+  { value: "masterclasses", label: "Masterclasses" },
+  { value: "orientation", label: "Orientation" },
+];
 
 const RESOURCE_TYPES = [
   { value: "video", label: "Video", icon: Video },
@@ -71,6 +80,7 @@ export default function ResourceUploadPanel() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [resourceType, setResourceType] = useState("document");
+  const [category, setCategory] = useState("orientation");
   const [file, setFile] = useState<File | null>(null);
   const [urlValue, setUrlValue] = useState("");
 
@@ -85,12 +95,12 @@ export default function ResourceUploadPanel() {
 
   const filteredResources = activeFilters.size === 0
     ? resources
-    : resources.filter(r => activeFilters.has(r.resource_type));
+    : resources.filter(r => activeFilters.has(r.category));
 
   const fetchResources = useCallback(async () => {
     const { data } = await supabase
       .from("training_resources")
-      .select("id, title, description, resource_type, file_name, file_size_bytes, storage_path, created_at")
+      .select("id, title, description, resource_type, category, file_name, file_size_bytes, storage_path, created_at")
       .order("created_at", { ascending: false });
     setResources(data || []);
     setLoading(false);
@@ -107,6 +117,7 @@ export default function ResourceUploadPanel() {
         title: title.trim(),
         description: description.trim() || null,
         resource_type: "url",
+        category,
         storage_path: urlValue.trim(),
         file_name: urlValue.trim(),
         file_size_bytes: null,
@@ -117,7 +128,7 @@ export default function ResourceUploadPanel() {
         toast({ title: "Save failed", description: dbError.message, variant: "destructive" });
       } else {
         toast({ title: "Link saved" });
-        setTitle(""); setDescription(""); setUrlValue(""); setResourceType("document");
+        setTitle(""); setDescription(""); setUrlValue(""); setResourceType("document"); setCategory("orientation");
         await fetchResources();
       }
       return;
@@ -142,6 +153,7 @@ export default function ResourceUploadPanel() {
       title: title.trim(),
       description: description.trim() || null,
       resource_type: resourceType,
+      category,
       storage_path: storagePath,
       file_name: file.name,
       file_size_bytes: file.size,
@@ -153,7 +165,7 @@ export default function ResourceUploadPanel() {
       toast({ title: "Save failed", description: dbError.message, variant: "destructive" });
     } else {
       toast({ title: "Resource uploaded" });
-      setTitle(""); setDescription(""); setFile(null); setResourceType("document");
+      setTitle(""); setDescription(""); setFile(null); setResourceType("document"); setCategory("orientation");
       await fetchResources();
     }
     setUploading(false);
@@ -185,7 +197,7 @@ export default function ResourceUploadPanel() {
           <Upload className="h-4 w-4 text-primary" /> Upload New Resource
         </h3>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
             <label className="text-xs font-medium text-muted-foreground">Title *</label>
             <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Body Region Training Video" />
@@ -197,6 +209,17 @@ export default function ResourceUploadPanel() {
               <SelectContent>
                 {RESOURCE_TYPES.map(t => (
                   <SelectItem key={t.value} value={t.value} className="text-sm">{t.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">Category</label>
+            <Select value={category} onValueChange={setCategory}>
+              <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {CATEGORIES.map(c => (
+                  <SelectItem key={c.value} value={c.value} className="text-sm">{c.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -237,21 +260,19 @@ export default function ResourceUploadPanel() {
         {/* Filter bar */}
         <div className="flex flex-wrap gap-2 items-center px-4 py-3 border-b border-border bg-muted/20">
           <span className="text-xs font-medium text-muted-foreground">Filter:</span>
-          {RESOURCE_TYPES.map(t => {
-            const Icon = t.icon;
-            const active = activeFilters.has(t.value);
+          {CATEGORIES.map(c => {
+            const active = activeFilters.has(c.value);
             return (
               <button
-                key={t.value}
-                onClick={() => toggleFilter(t.value)}
+                key={c.value}
+                onClick={() => toggleFilter(c.value)}
                 className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
                   active
                     ? "bg-primary text-primary-foreground border-primary"
                     : "bg-card text-muted-foreground border-border hover:border-primary hover:text-foreground"
                 }`}
               >
-                <Icon className="h-3 w-3" />
-                {TYPE_LABELS[t.value]}
+                {c.label}
               </button>
             );
           })}
@@ -268,7 +289,7 @@ export default function ResourceUploadPanel() {
           <thead>
             <tr className="border-b border-border bg-muted/30">
               <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Resource</th>
-              <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Type</th>
+              <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Category</th>
               <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Size</th>
               <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Uploaded</th>
               <th className="w-16 text-left px-2 py-2.5 font-medium text-muted-foreground text-xs sticky right-0 bg-muted/30">Action</th>
@@ -291,7 +312,7 @@ export default function ResourceUploadPanel() {
                   </div>
                 </td>
                 <td className="px-4 py-3">
-                  <Badge variant="secondary" className="text-[10px] capitalize">{r.resource_type}</Badge>
+                  <Badge variant="secondary" className="text-[10px]">{CATEGORIES.find(c => c.value === r.category)?.label ?? r.category}</Badge>
                 </td>
                 <td className="px-4 py-3 text-xs text-muted-foreground">{formatBytes(r.file_size_bytes)}</td>
                 <td className="px-4 py-3 text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString("en-AU")}</td>

@@ -25,6 +25,7 @@ interface Resource {
   title: string;
   description: string | null;
   resource_type: string;
+  category: string;
   file_name: string;
   file_size_bytes: number | null;
   storage_path: string;
@@ -46,13 +47,13 @@ const TYPE_CONFIG: Record<string, { icon: typeof File; color: string }> = {
   url: { icon: ExternalLink, color: "text-cyan-500" },
 };
 
-const ALL_TYPES = ["video", "audio", "document", "image", "url"] as const;
-const TYPE_LABELS: Record<string, string> = {
-  video: "Video",
-  audio: "Audio",
-  document: "Docs",
-  image: "Image",
-  url: "Links",
+const ALL_CATEGORIES = ["teaching_calls", "case_study_calls", "group_discovery_calls", "masterclasses", "orientation"] as const;
+const CATEGORY_LABELS: Record<string, string> = {
+  teaching_calls: "Teaching Calls",
+  case_study_calls: "Case Study Calls",
+  group_discovery_calls: "Group Discovery Calls",
+  masterclasses: "Masterclasses",
+  orientation: "Orientation",
 };
 
 // Glyph map keyed by creator type name (lowercase)
@@ -83,7 +84,7 @@ export default function ResourceLibrary() {
   useEffect(() => {
     supabase
       .from("training_resources")
-      .select("id, title, description, resource_type, file_name, file_size_bytes, storage_path, created_at")
+      .select("id, title, description, resource_type, category, file_name, file_size_bytes, storage_path, created_at")
       .order("created_at", { ascending: false })
       .then(({ data }) => {
         setResources(data || []);
@@ -102,7 +103,7 @@ export default function ResourceLibrary() {
 
   const filteredResources = activeFilters.size === 0
     ? resources
-    : resources.filter(r => activeFilters.has(r.resource_type));
+    : resources.filter(r => activeFilters.has(r.category));
 
   function getPublicUrl(path: string) {
     return supabase.storage.from("training-resources").getPublicUrl(path).data.publicUrl;
@@ -135,25 +136,22 @@ export default function ResourceLibrary() {
 
   return (
     <div className="space-y-4">
-      {/* Type filters */}
+      {/* Category filters */}
       <div className="flex flex-wrap gap-2 items-center">
         <span className="text-xs font-medium text-muted-foreground">Filter:</span>
-        {ALL_TYPES.map(type => {
-          const cfg = TYPE_CONFIG[type] || { icon: File, color: "text-muted-foreground" };
-          const Icon = cfg.icon;
-          const active = activeFilters.has(type);
+        {ALL_CATEGORIES.map(cat => {
+          const active = activeFilters.has(cat);
           return (
             <button
-              key={type}
-              onClick={() => toggleFilter(type)}
+              key={cat}
+              onClick={() => toggleFilter(cat)}
               className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
                 active
                   ? "bg-primary text-primary-foreground border-primary"
                   : "bg-card text-muted-foreground border-border hover:border-primary hover:text-foreground"
               }`}
             >
-              <Icon className="h-3 w-3" />
-              {TYPE_LABELS[type]}
+              {CATEGORY_LABELS[cat]}
             </button>
           );
         })}
@@ -254,7 +252,7 @@ export default function ResourceLibrary() {
                       )}
                       <Badge variant="secondary" className="text-[10px] capitalize gap-1">
                         <Icon className="h-2.5 w-2.5" />
-                        {TYPE_LABELS[r.resource_type] ?? r.resource_type}
+                        {CATEGORY_LABELS[r.category] ?? r.resource_type}
                       </Badge>
                       {r.file_size_bytes ? (
                         <span className="text-[10px] text-muted-foreground">{formatBytes(r.file_size_bytes)}</span>
