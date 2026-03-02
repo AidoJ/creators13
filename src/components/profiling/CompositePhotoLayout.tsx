@@ -88,7 +88,7 @@ export default function CompositePhotoLayout({ userId, subjectName, className }:
       >
         {url ? (
           <>
-            <img src={url} alt={label} className="w-full h-full object-contain bg-muted/30" />
+            <img src={url} alt={label} className="w-full h-full object-contain bg-muted/30" loading="lazy" decoding="async" />
             <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/10 transition-colors flex items-center justify-center">
               <ZoomIn className="h-5 w-5 text-primary-foreground opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
             </div>

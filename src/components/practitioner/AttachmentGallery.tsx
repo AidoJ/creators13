@@ -40,6 +40,8 @@ export default function AttachmentGallery({ attachments, title = "Paper Assessme
                 src={url}
                 alt={getLabel(path)}
                 className="w-full h-full object-contain"
+                loading="lazy"
+                decoding="async"
               />
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                 <ZoomIn className="h-5 w-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />

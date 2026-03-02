@@ -6,7 +6,7 @@ export function AboutSection() {
     <section id="about">
       {/* Sand divider with icons - full width image from original */}
       <div>
-        <img src={origSandDivider} alt="" className="w-full block" />
+        <img src={origSandDivider} alt="" className="w-full block" loading="lazy" decoding="async" />
       </div>
 
       {/* Want To Meet Your Co-Creators */}
@@ -20,7 +20,7 @@ export function AboutSection() {
 
       {/* Sand divider again */}
       <div>
-        <img src={origSandDivider} alt="" className="w-full block" />
+        <img src={origSandDivider} alt="" className="w-full block" loading="lazy" decoding="async" />
       </div>
 
       {/* YouTube embed */}
@@ -49,6 +49,8 @@ export function AboutSection() {
             src={origBodyTypesBanner}
             alt="13 Body Types = 13 Forces of Nature = Unlimited Creative Power"
             className="w-full max-w-5xl mx-auto mb-8"
+            loading="lazy"
+            decoding="async"
           />
           <h2 className="text-3xl md:text-5xl font-display font-bold text-foreground leading-relaxed">
             <span className="text-primary">13 BODY TYPES</span>

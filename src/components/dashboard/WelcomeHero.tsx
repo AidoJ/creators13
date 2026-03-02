@@ -61,6 +61,8 @@ export default function WelcomeHero({ firstName, tier, subscriptionStatus, statu
             src={birdSrc}
             alt={tierData?.name || "Tier"}
             className="w-16 h-16 sm:w-20 sm:h-20 object-contain opacity-80 shrink-0"
+            loading="lazy"
+            decoding="async"
           />
         )}
       </div>

@@ -84,7 +84,7 @@ export function TiersSection() {
     <section id="tiers" className="bg-white">
       {/* Divider from original */}
       <div>
-        <img src={origLevelsDivider} alt="" className="w-full block" />
+        <img src={origLevelsDivider} alt="" className="w-full block" loading="lazy" decoding="async" />
       </div>
 
       <div className="py-16">
@@ -100,7 +100,7 @@ export function TiersSection() {
           </p>
 
           {/* Start Here arrow */}
-          <img src={origStartHere} alt="Start here" className="w-48 mx-auto mb-8" />
+          <img src={origStartHere} alt="Start here" className="w-48 mx-auto mb-8" loading="lazy" decoding="async" />
 
           {/* Billing toggle */}
           <div className="inline-flex items-center gap-1 bg-muted rounded-full p-1 mb-12">
@@ -147,6 +147,8 @@ export function TiersSection() {
                   src={tier.image}
                   alt={`${tier.name} level`}
                   className="w-full"
+                  loading="lazy"
+                  decoding="async"
                 />
 
                 {/* Pricing */}
@@ -190,7 +192,7 @@ export function TiersSection() {
 
       {/* Bottom divider */}
       <div>
-        <img src={origLevelsDivider} alt="" className="w-full block" />
+        <img src={origLevelsDivider} alt="" className="w-full block" loading="lazy" decoding="async" />
       </div>
     </section>
   );

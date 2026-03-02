@@ -23,6 +23,8 @@ export function BodySection() {
                 src={origBodyTemplate}
                 alt="Your body is your template for creation"
                 className="w-full"
+                loading="lazy"
+                decoding="async"
               />
             </div>
             <div className="text-center lg:text-left">
@@ -61,8 +63,8 @@ export function BodySection() {
               </div>
             </div>
             <div className="flex gap-4 justify-center">
-              <img src={origBodyAlive1} alt="Body blueprint" className="w-[45%] object-cover" />
-              <img src={origBodyAlive2} alt="Body profile" className="w-[45%] object-cover" />
+              <img src={origBodyAlive1} alt="Body blueprint" className="w-[45%] object-cover" loading="lazy" decoding="async" />
+              <img src={origBodyAlive2} alt="Body profile" className="w-[45%] object-cover" loading="lazy" decoding="async" />
             </div>
           </div>
         </div>
@@ -70,7 +72,7 @@ export function BodySection() {
 
       {/* Divider */}
       <div>
-        <img src={origDividerSmall} alt="" className="w-full block" />
+        <img src={origDividerSmall} alt="" className="w-full block" loading="lazy" decoding="async" />
       </div>
 
       {/* What's To See In A Body */}
@@ -80,6 +82,8 @@ export function BodySection() {
             src={origWhatsSeHeader}
             alt="What's to see in a body"
             className="w-full max-w-4xl mx-auto mb-8"
+            loading="lazy"
+            decoding="async"
           />
           <h2 className="text-4xl md:text-5xl font-display font-bold text-foreground mb-6">
             What's To See<br />In A Body?
@@ -101,6 +105,8 @@ export function BodySection() {
                 src={img}
                 alt={`Body profiling example ${i + 1}`}
                 className="w-full aspect-square object-cover"
+                loading="lazy"
+                decoding="async"
               />
             ))}
           </div>
@@ -117,6 +123,8 @@ export function BodySection() {
                 src={img}
                 alt={`Body analysis ${i + 5}`}
                 className="w-full object-cover"
+                loading="lazy"
+                decoding="async"
               />
             ))}
           </div>
