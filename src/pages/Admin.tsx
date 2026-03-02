@@ -284,6 +284,12 @@ export default function AdminDashboard() {
   const practitioners = users.filter(u => u.roles.includes("practitioner") || u.roles.includes("trainee") || u.roles.includes("trainer"));
   const clients = users.filter(u => u.roles.includes("client"));
 
+  // Build a map: client_id → practitioner name (from active assignments)
+  const assignedPracMap: Record<string, string> = {};
+  assignments.filter(a => a.active).forEach(a => {
+    assignedPracMap[a.client_id] = a.practitioner_name;
+  });
+
   return (
     <div className="min-h-screen bg-background">
       <DashboardHeader email={user?.email} onSignOut={signOut} />
@@ -361,7 +367,7 @@ export default function AdminDashboard() {
 
           {/* ======= SUBSCRIBERS TAB ======= */}
           <TabsContent value="subscribers" className="space-y-4">
-            <SubscribersTab users={users} caseStudies={caseStudies} />
+            <SubscribersTab users={users} caseStudies={caseStudies} assignedPracMap={assignedPracMap} />
           </TabsContent>
 
           {/* ======= ALL USERS TAB ======= */}
@@ -398,19 +404,21 @@ export default function AdminDashboard() {
                       <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Enrollment</th>
                       <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Roles</th>
                       <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Prac Code</th>
+                      <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Assigned To</th>
                       <th className="w-8"></th>
                     </tr>
                   </thead>
                   <tbody>
                     {loading ? (
-                      <tr><td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">Loading…</td></tr>
+                      <tr><td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">Loading…</td></tr>
                     ) : filtered.length === 0 ? (
-                      <tr><td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">No users found.</td></tr>
+                      <tr><td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">No users found.</td></tr>
                     ) : filtered.map(u => (
                       <UserTableRow key={u.user_id} user={u} isExpanded={expandedUser === u.user_id}
                         onToggle={() => setExpandedUser(expandedUser === u.user_id ? null : u.user_id)}
                         onAddRole={handleAddRole} onRemoveRole={handleRemoveRole} addingRole={addingRole} stepLabel={stepLabel}
                         onStatusChange={handlePractitionerStatus} onRefresh={fetchUsers}
+                        assignedPractitioner={assignedPracMap[u.user_id] || null}
                       />
                     ))}
                   </tbody>
@@ -446,7 +454,7 @@ export default function AdminDashboard() {
 }
 
 
-function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, addingRole, stepLabel, onStatusChange, onRefresh }: {
+function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, addingRole, stepLabel, onStatusChange, onRefresh, assignedPractitioner }: {
   user: UserRow; isExpanded: boolean; onToggle: () => void;
   onAddRole: (userId: string, role: AppRole) => void;
   onRemoveRole: (userId: string, role: AppRole) => void;
@@ -454,6 +462,7 @@ function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, 
   stepLabel: (s: string | null) => string;
   onStatusChange: (userId: string, status: string) => void;
   onRefresh: () => void;
+  assignedPractitioner: string | null;
 }) {
   const [selectedRole, setSelectedRole] = useState<AppRole | "">("");
   const [trainingDate, setTrainingDate] = useState(u.training_started_at || "");
@@ -561,13 +570,14 @@ function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, 
           </div>
         </td>
         <td className="px-4 py-2.5 text-xs font-mono text-muted-foreground">{u.practitioner_code || "—"}</td>
+        <td className="px-4 py-2.5 text-xs text-muted-foreground">{assignedPractitioner || "—"}</td>
         <td className="px-4 py-2.5">
           {isExpanded ? <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
         </td>
       </tr>
       {isExpanded && (
         <tr className="bg-muted/10">
-          <td colSpan={8} className="px-4 py-4">
+          <td colSpan={9} className="px-4 py-4">
             <div className="space-y-4">
               {/* Edit Profile Details */}
               <div className="space-y-2">

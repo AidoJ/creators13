@@ -22,6 +22,7 @@ interface CaseStudySubject {
 interface SubscribersTabProps {
   users: UserRow[];
   caseStudies: CaseStudySubject[];
+  assignedPracMap: Record<string, string>;
 }
 
 const tierColors: Record<string, string> = {
@@ -31,7 +32,7 @@ const tierColors: Record<string, string> = {
   owl: "bg-amber-500/10 text-amber-600 border-amber-500/20",
 };
 
-export default function SubscribersTab({ users, caseStudies }: SubscribersTabProps) {
+export default function SubscribersTab({ users, caseStudies, assignedPracMap }: SubscribersTabProps) {
   const [search, setSearch] = useState("");
 
   const caseStudySubjects = useMemo(
@@ -80,13 +81,14 @@ export default function SubscribersTab({ users, caseStudies }: SubscribersTabPro
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Tier</th>
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Status</th>
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Enrollment</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Practitioner</th>
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Origin</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                  <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
                     No paying subscribers found.
                   </td>
                 </tr>
@@ -117,6 +119,9 @@ export default function SubscribersTab({ users, caseStudies }: SubscribersTabPro
                       </td>
                       <td className="px-4 py-2.5">
                         <Badge variant="outline" className="text-[10px] capitalize">{stepLabel(u.enrollment_step)}</Badge>
+                      </td>
+                      <td className="px-4 py-2.5 text-xs text-muted-foreground">
+                        {assignedPracMap[u.user_id] || "—"}
                       </td>
                       <td className="px-4 py-2.5">
                         {wasCS ? (
