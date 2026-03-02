@@ -13,7 +13,9 @@ interface CreatorTypeEditorProps {
 
 export default function CreatorTypeEditor({ caseStudyId, currentTypes, onUpdated }: CreatorTypeEditorProps) {
   const [editing, setEditing] = useState(false);
-  const [selected, setSelected] = useState<string[]>(currentTypes || []);
+  const [selected, setSelected] = useState<string[]>(() => 
+    [...new Set((currentTypes || []).map(t => t.toLowerCase()))]
+  );
   const [saving, setSaving] = useState(false);
 
   function toggle(type: string) {
@@ -56,7 +58,7 @@ export default function CreatorTypeEditor({ caseStudyId, currentTypes, onUpdated
             </span>
           );
         }) : <span className="text-xs text-muted-foreground italic">None assigned</span>}
-        <Button size="sm" variant="ghost" className="h-6 text-xs ml-1" onClick={() => { setSelected(currentTypes || []); setEditing(true); }}>
+        <Button size="sm" variant="ghost" className="h-6 text-xs ml-1" onClick={() => { setSelected([...new Set((currentTypes || []).map(t => t.toLowerCase()))]); setEditing(true); }}>
           <Pencil className="h-3 w-3 mr-1" />Edit
         </Button>
       </div>
