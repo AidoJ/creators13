@@ -284,10 +284,14 @@ export default function AdminDashboard() {
   const practitioners = users.filter(u => u.roles.includes("practitioner") || u.roles.includes("trainee") || u.roles.includes("trainer"));
   const clients = users.filter(u => u.roles.includes("client"));
 
-  // Build a map: client_id → practitioner name (from active assignments)
+  // Build maps: client_id → practitioner name & code (from active assignments)
   const assignedPracMap: Record<string, string> = {};
+  const assignedPracCodeMap: Record<string, string> = {};
+  const pracCodeLookup: Record<string, string> = {};
+  users.forEach(u => { if (u.practitioner_code) pracCodeLookup[u.user_id] = u.practitioner_code; });
   assignments.filter(a => a.active).forEach(a => {
     assignedPracMap[a.client_id] = a.practitioner_name;
+    assignedPracCodeMap[a.client_id] = pracCodeLookup[a.practitioner_id] || "";
   });
 
   return (
@@ -419,6 +423,7 @@ export default function AdminDashboard() {
                         onAddRole={handleAddRole} onRemoveRole={handleRemoveRole} addingRole={addingRole} stepLabel={stepLabel}
                         onStatusChange={handlePractitionerStatus} onRefresh={fetchUsers}
                         assignedPractitioner={assignedPracMap[u.user_id] || null}
+                        assignedPracCode={assignedPracCodeMap[u.user_id] || null}
                       />
                     ))}
                   </tbody>
@@ -454,7 +459,7 @@ export default function AdminDashboard() {
 }
 
 
-function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, addingRole, stepLabel, onStatusChange, onRefresh, assignedPractitioner }: {
+function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, addingRole, stepLabel, onStatusChange, onRefresh, assignedPractitioner, assignedPracCode }: {
   user: UserRow; isExpanded: boolean; onToggle: () => void;
   onAddRole: (userId: string, role: AppRole) => void;
   onRemoveRole: (userId: string, role: AppRole) => void;
@@ -463,6 +468,7 @@ function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, 
   onStatusChange: (userId: string, status: string) => void;
   onRefresh: () => void;
   assignedPractitioner: string | null;
+  assignedPracCode: string | null;
 }) {
   const [selectedRole, setSelectedRole] = useState<AppRole | "">("");
   const [trainingDate, setTrainingDate] = useState(u.training_started_at || "");
@@ -569,7 +575,7 @@ function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, 
             }) : <span className="text-[10px] text-muted-foreground">No roles</span>}
           </div>
         </td>
-        <td className="px-4 py-2.5 text-xs font-mono text-muted-foreground">{u.practitioner_code || "—"}</td>
+        <td className="px-4 py-2.5 text-xs font-mono text-muted-foreground">{u.practitioner_code || assignedPracCode || "—"}</td>
         <td className="px-4 py-2.5 text-xs text-muted-foreground">{assignedPractitioner || "—"}</td>
         <td className="px-4 py-2.5">
           {isExpanded ? <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
