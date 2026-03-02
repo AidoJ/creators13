@@ -36,6 +36,7 @@ export default function Details() {
   const [phone, setPhone] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [gender, setGender] = useState("");
+  const [pronouns, setPronouns] = useState("");
   const [heightCm, setHeightCm] = useState("");
   const [shoeSize, setShoeSize] = useState("");
   const [addressLine1, setAddressLine1] = useState("");
@@ -52,7 +53,7 @@ export default function Details() {
     const load = async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("first_name, last_name, phone, date_of_birth, gender, height_cm, shoe_size, address_line1, address_line2, city, state, postal_code, country, medical_history")
+        .select("first_name, last_name, phone, date_of_birth, gender, pronouns, height_cm, shoe_size, address_line1, address_line2, city, state, postal_code, country, medical_history")
         .eq("user_id", user.id)
         .maybeSingle();
       if (data) {
@@ -61,6 +62,7 @@ export default function Details() {
         setPhone(data.phone || "");
         setDateOfBirth(data.date_of_birth || "");
         setGender(data.gender || "");
+        setPronouns(data.pronouns || "");
         setHeightCm(data.height_cm != null ? String(data.height_cm) : "");
         setShoeSize(data.shoe_size || "");
         setAddressLine1(data.address_line1 || "");
@@ -93,6 +95,7 @@ export default function Details() {
       phone: phone || null,
       date_of_birth: dateOfBirth || null,
       gender: gender || null,
+      pronouns: pronouns || null,
       height_cm: heightCm ? Number(heightCm) : null,
       shoe_size: shoeSize || null,
       address_line1: addressLine1 || null,
@@ -241,6 +244,10 @@ export default function Details() {
                   <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="pronouns">Pronouns</Label>
+              <Input id="pronouns" value={pronouns} onChange={(e) => setPronouns(e.target.value)} placeholder="e.g. she/her, he/him, they/them" />
             </div>
           </section>
 

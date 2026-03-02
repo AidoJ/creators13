@@ -731,6 +731,7 @@ export type Database = {
           practitioner_status:
             | Database["public"]["Enums"]["practitioner_status"]
             | null
+          pronouns: string | null
           shoe_size: string | null
           state: string | null
           timezone: string | null
@@ -764,6 +765,7 @@ export type Database = {
           practitioner_status?:
             | Database["public"]["Enums"]["practitioner_status"]
             | null
+          pronouns?: string | null
           shoe_size?: string | null
           state?: string | null
           timezone?: string | null
@@ -797,6 +799,7 @@ export type Database = {
           practitioner_status?:
             | Database["public"]["Enums"]["practitioner_status"]
             | null
+          pronouns?: string | null
           shoe_size?: string | null
           state?: string | null
           timezone?: string | null
