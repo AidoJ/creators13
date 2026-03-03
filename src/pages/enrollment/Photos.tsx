@@ -229,7 +229,20 @@ export default function Photos() {
       setPhotos((prev) => ({ ...prev, [s.key]: { ...prev[s.key], uploading: false, uploaded: true } }));
     }
 
-    await supabase.from("profiles").update({ enrollment_step: "photos_uploaded" }).eq("user_id", user.id);
+    // Only advance enrollment_step if not already past photos_uploaded
+    const { data: profileData } = await supabase
+      .from("profiles")
+      .select("enrollment_step")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    const STEP_ORDER = ["plan_selected", "signed_up", "payment_complete", "photos_uploaded", "booking_made", "awaiting_profiling", "complete"];
+    const currentIdx = STEP_ORDER.indexOf(profileData?.enrollment_step || "plan_selected");
+    const photosIdx = STEP_ORDER.indexOf("photos_uploaded");
+
+    if (currentIdx < photosIdx) {
+      await supabase.from("profiles").update({ enrollment_step: "photos_uploaded" }).eq("user_id", user.id);
+    }
     toast({ title: "All photos uploaded successfully!" });
     setSubmitting(false);
 

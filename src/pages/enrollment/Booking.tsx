@@ -17,6 +17,7 @@ export default function Booking() {
   const tier = (params.get("tier") as TierKey) || "wren";
   const tierInfo = TIERS[tier] || TIERS.wren;
   const [calendlyEventTime, setCalendlyEventTime] = useState<string | null>(null);
+  const [calendlyZoomLink, setCalendlyZoomLink] = useState<string | null>(null);
   const [calendlyBooked, setCalendlyBooked] = useState(false);
   const [manualDate, setManualDate] = useState("");
   const [manualTime, setManualTime] = useState("");
@@ -35,6 +36,15 @@ export default function Booking() {
         
         if (directTime && directTime.includes("T")) {
           setCalendlyEventTime(directTime);
+        }
+
+        // Capture join/meeting URL if available
+        const meetingUrl =
+          e.data?.payload?.event?.location?.join_url ||
+          e.data?.payload?.event?.join_url ||
+          e.data?.payload?.invitee?.meeting_url;
+        if (meetingUrl) {
+          setCalendlyZoomLink(meetingUrl);
         }
       }
     };
@@ -189,6 +199,7 @@ export default function Booking() {
                   client_id: user.id,
                   status: "scheduled",
                   scheduled_at: scheduledAt,
+                  zoom_link: calendlyZoomLink || null,
                 });
                 await supabase.from("profiles").update({ enrollment_step: "booking_made" }).eq("user_id", user.id);
               }
