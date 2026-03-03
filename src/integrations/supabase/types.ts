@@ -253,6 +253,36 @@ export type Database = {
         }
         Relationships: []
       }
+      client_recordings: {
+        Row: {
+          client_id: string
+          created_at: string
+          expires_at: string
+          id: string
+          label: string | null
+          practitioner_id: string
+          url: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          label?: string | null
+          practitioner_id: string
+          url: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          label?: string | null
+          practitioner_id?: string
+          url?: string
+        }
+        Relationships: []
+      }
       community_posts: {
         Row: {
           content: string | null

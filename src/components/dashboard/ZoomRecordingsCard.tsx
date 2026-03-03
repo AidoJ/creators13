@@ -2,14 +2,14 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Video, ExternalLink, Clock } from "lucide-react";
-import { format, isPast, parseISO, differenceInDays } from "date-fns";
+import { isPast, parseISO, differenceInDays } from "date-fns";
 
 interface Recording {
   id: string;
   url: string;
   label: string | null;
   expires_at: string;
-  case_study_title: string;
+  source: string;
 }
 
 export default function ZoomRecordingsCard() {
@@ -21,38 +21,58 @@ export default function ZoomRecordingsCard() {
     if (!user) return;
 
     async function fetch() {
-      // Get case studies where this user is the subject
-      const { data: caseStudies } = await supabase
-        .from("case_studies")
-        .select("id, title")
-        .eq("subject_user_id", user!.id);
+      // Fetch from both sources in parallel
+      const [caseStudyRecs, clientRecs] = await Promise.all([
+        // Case study recordings (where user is subject)
+        (async () => {
+          const { data: caseStudies } = await supabase
+            .from("case_studies")
+            .select("id, title")
+            .eq("subject_user_id", user!.id);
 
-      if (!caseStudies || caseStudies.length === 0) {
-        setLoading(false);
-        return;
-      }
+          if (!caseStudies || caseStudies.length === 0) return [];
 
-      const csIds = caseStudies.map(cs => cs.id);
-      const titleMap: Record<string, string> = {};
-      caseStudies.forEach(cs => { titleMap[cs.id] = cs.title; });
+          const csIds = caseStudies.map(cs => cs.id);
+          const titleMap: Record<string, string> = {};
+          caseStudies.forEach(cs => { titleMap[cs.id] = cs.title; });
 
-      const { data: recs } = await supabase
-        .from("zoom_recordings")
-        .select("id, url, label, expires_at, case_study_id")
-        .in("case_study_id", csIds)
-        .order("created_at", { ascending: false });
+          const { data: recs } = await supabase
+            .from("zoom_recordings")
+            .select("id, url, label, expires_at, case_study_id")
+            .in("case_study_id", csIds)
+            .order("created_at", { ascending: false });
 
-      const active = (recs || [])
-        .filter(r => !isPast(parseISO(r.expires_at)))
-        .map(r => ({
-          id: r.id,
-          url: r.url,
-          label: r.label,
-          expires_at: r.expires_at,
-          case_study_title: titleMap[r.case_study_id] || "Session",
-        }));
+          return (recs || [])
+            .filter(r => !isPast(parseISO(r.expires_at)))
+            .map(r => ({
+              id: r.id,
+              url: r.url,
+              label: r.label || titleMap[r.case_study_id] || "Session Recording",
+              expires_at: r.expires_at,
+              source: "case_study",
+            }));
+        })(),
+        // Direct client recordings
+        (async () => {
+          const { data: recs } = await supabase
+            .from("client_recordings")
+            .select("id, url, label, expires_at")
+            .eq("client_id", user!.id)
+            .order("created_at", { ascending: false });
 
-      setRecordings(active);
+          return (recs || [])
+            .filter(r => !isPast(parseISO(r.expires_at)))
+            .map(r => ({
+              id: r.id,
+              url: r.url,
+              label: r.label || "Session Recording",
+              expires_at: r.expires_at,
+              source: "client",
+            }));
+        })(),
+      ]);
+
+      setRecordings([...clientRecs, ...caseStudyRecs]);
       setLoading(false);
     }
     fetch();
@@ -86,7 +106,7 @@ export default function ZoomRecordingsCard() {
                   rel="noopener noreferrer"
                   className="text-sm font-medium text-primary hover:underline truncate block"
                 >
-                  {r.label || r.case_study_title}
+                  {r.label}
                 </a>
               </div>
               <span className={`flex items-center gap-1 text-xs flex-shrink-0 ${isExpiringSoon ? "text-destructive" : "text-muted-foreground"}`}>
