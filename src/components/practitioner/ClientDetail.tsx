@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import CompositePhotoLayout from "@/components/profiling/CompositePhotoLayout";
 import CreatorTypeAssignmentForm from "@/components/practitioner/CreatorTypeAssignmentForm";
 import ClientSubscriptionCard from "@/components/practitioner/ClientSubscriptionCard";
+import ClientRecordingLinks from "@/components/practitioner/ClientRecordingLinks";
 import { User, Calendar, Sparkles, Video, Pencil, Check, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -220,6 +221,11 @@ export default function ClientDetail({ clientId, onClientNameLoaded }: ClientDet
           </div>
         </div>
       )}
+
+      {/* Session Recordings */}
+      <div className="rounded-2xl border border-border bg-card p-4">
+        <ClientRecordingLinks clientId={clientId} />
+      </div>
 
       {/* Subscription info */}
       <ClientSubscriptionCard clientId={clientId} />
