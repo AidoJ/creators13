@@ -13,6 +13,7 @@ import CreatorProfileCard from "@/components/dashboard/CreatorProfileCard";
 import UpsellBanner from "@/components/dashboard/UpsellBanner";
 import ClientFAQSection from "@/components/dashboard/ClientFAQSection";
 import SubscriptionCard from "@/components/dashboard/SubscriptionCard";
+import ZoomRecordingsCard from "@/components/dashboard/ZoomRecordingsCard";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface ProfileData {
@@ -155,6 +156,9 @@ export default function Dashboard() {
             )}
           </div>
         </div>
+
+        {/* Zoom session recordings */}
+        <ZoomRecordingsCard />
 
         {/* Subscription details — full width */}
         <SubscriptionCard />
