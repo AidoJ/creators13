@@ -35,8 +35,8 @@ export default function SessionCard({ scheduledAt, status, zoomLink, photosUploa
             {new Date(scheduledAt).toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" })}
           </p>
           <p className="text-xs text-muted-foreground capitalize">Status: {status || "scheduled"}</p>
-          <div className="flex items-center gap-2 pt-1">
-            {zoomLink && (
+          <div className="flex flex-col gap-2 pt-1">
+            {zoomLink ? (
               <a
                 href={zoomLink}
                 target="_blank"
@@ -45,6 +45,10 @@ export default function SessionCard({ scheduledAt, status, zoomLink, photosUploa
               >
                 <Video className="h-3.5 w-3.5" /> Join Meeting →
               </a>
+            ) : (
+              <p className="text-xs text-muted-foreground italic">
+                Check your email for the Zoom link from your Calendly confirmation.
+              </p>
             )}
             <Button
               variant="outline"

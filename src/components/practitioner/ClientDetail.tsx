@@ -3,8 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 import CompositePhotoLayout from "@/components/profiling/CompositePhotoLayout";
 import CreatorTypeAssignmentForm from "@/components/practitioner/CreatorTypeAssignmentForm";
 import ClientSubscriptionCard from "@/components/practitioner/ClientSubscriptionCard";
-import { User, Calendar, Sparkles } from "lucide-react";
+import { User, Calendar, Sparkles, Video, Pencil, Check, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
 import { getCreatorTypeColor, sortCreatorTypes } from "@/lib/creatorTypes";
 
 interface ProfileData {
@@ -23,6 +26,7 @@ interface ProfileData {
 }
 
 interface BookingData {
+  id: string;
   scheduled_at: string | null;
   status: string | null;
   zoom_link: string | null;
@@ -46,13 +50,17 @@ export default function ClientDetail({ clientId, onClientNameLoaded }: ClientDet
   const [booking, setBooking] = useState<BookingData | null>(null);
   const [creatorType, setCreatorType] = useState<CreatorTypeData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [editingZoom, setEditingZoom] = useState(false);
+  const [zoomInput, setZoomInput] = useState("");
+  const [savingZoom, setSavingZoom] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     async function fetchClientData() {
       setLoading(true);
       const [profileRes, bookingRes, ctRes] = await Promise.all([
         supabase.from("profiles").select("first_name, last_name, email, enrollment_step, date_of_birth, gender, height_cm, shoe_size, city, state, country, case_study_consent_at").eq("user_id", clientId).maybeSingle(),
-        supabase.from("bookings").select("scheduled_at, status, zoom_link").eq("client_id", clientId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+        supabase.from("bookings").select("id, scheduled_at, status, zoom_link").eq("client_id", clientId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("creator_type_profiles").select("primary_type, secondary_type, type_3, type_4, profiled_at").eq("user_id", clientId).maybeSingle(),
       ]);
       if (profileRes.data) {
@@ -152,19 +160,64 @@ export default function ClientDetail({ clientId, onClientNameLoaded }: ClientDet
 
       {/* Booking info */}
       {booking?.scheduled_at && (
-        <div className="rounded-2xl border border-border bg-card p-4 flex items-center gap-3">
-          <Calendar className="h-5 w-5 text-primary" />
-          <div>
-            <p className="text-sm font-medium text-foreground">
-              Session: {new Date(booking.scheduled_at).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}
-            </p>
-            <p className="text-xs text-muted-foreground capitalize">Status: {booking.status || "scheduled"}</p>
+        <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
+          <div className="flex items-center gap-3">
+            <Calendar className="h-5 w-5 text-primary" />
+            <div>
+              <p className="text-sm font-medium text-foreground">
+                Session: {new Date(booking.scheduled_at).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}
+              </p>
+              <p className="text-xs text-muted-foreground capitalize">Status: {booking.status || "scheduled"}</p>
+            </div>
           </div>
-          {booking.zoom_link && (
-            <a href={booking.zoom_link} target="_blank" rel="noopener noreferrer" className="ml-auto text-xs text-primary hover:underline">
-              Join Zoom
-            </a>
-          )}
+          <div className="flex items-center gap-2">
+            <Video className="h-4 w-4 text-muted-foreground" />
+            {editingZoom ? (
+              <>
+                <Input
+                  value={zoomInput}
+                  onChange={(e) => setZoomInput(e.target.value)}
+                  placeholder="Paste Zoom link here…"
+                  className="h-7 text-xs flex-1"
+                />
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 w-7 p-0"
+                  disabled={savingZoom}
+                  onClick={async () => {
+                    setSavingZoom(true);
+                    await supabase.from("bookings").update({ zoom_link: zoomInput || null }).eq("id", booking.id);
+                    setBooking({ ...booking, zoom_link: zoomInput || null });
+                    setEditingZoom(false);
+                    setSavingZoom(false);
+                    toast({ title: "Zoom link updated" });
+                  }}
+                >
+                  <Check className="h-3.5 w-3.5 text-green-600" />
+                </Button>
+                <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setEditingZoom(false)}>
+                  <X className="h-3.5 w-3.5 text-muted-foreground" />
+                </Button>
+              </>
+            ) : booking.zoom_link ? (
+              <>
+                <a href={booking.zoom_link} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline truncate flex-1">
+                  {booking.zoom_link}
+                </a>
+                <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => { setZoomInput(booking.zoom_link || ""); setEditingZoom(true); }}>
+                  <Pencil className="h-3 w-3 text-muted-foreground" />
+                </Button>
+              </>
+            ) : (
+              <>
+                <span className="text-xs text-muted-foreground italic flex-1">No Zoom link set</span>
+                <Button size="sm" variant="outline" className="h-7 text-xs rounded-full" onClick={() => { setZoomInput(""); setEditingZoom(true); }}>
+                  Add Zoom Link
+                </Button>
+              </>
+            )}
+          </div>
         </div>
       )}
 
