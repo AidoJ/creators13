@@ -1073,6 +1073,44 @@ export type Database = {
         }
         Relationships: []
       }
+      zoom_recordings: {
+        Row: {
+          case_study_id: string
+          created_at: string
+          expires_at: string
+          id: string
+          label: string | null
+          practitioner_id: string
+          url: string
+        }
+        Insert: {
+          case_study_id: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          label?: string | null
+          practitioner_id: string
+          url: string
+        }
+        Update: {
+          case_study_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          label?: string | null
+          practitioner_id?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "zoom_recordings_case_study_id_fkey"
+            columns: ["case_study_id"]
+            isOneToOne: false
+            referencedRelation: "case_studies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

@@ -6,6 +6,7 @@ import { FileText, Sparkles, Clock, CheckCircle, AlertCircle, Eye, EyeOff, Messa
 import CompositePhotoLayout from "@/components/profiling/CompositePhotoLayout";
 import AttachmentGallery from "./AttachmentGallery";
 import CaseStudyFormDataView from "@/components/admin/CaseStudyFormDataView";
+import ZoomRecordingLinks from "./ZoomRecordingLinks";
 import { getCreatorTypeColor, sortCreatorTypes } from "@/lib/creatorTypes";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -212,6 +213,9 @@ export default function CaseStudyList({ practitionerId, onEditCaseStudy, filterC
                     subjectName={`${cs.subject_name}'s Profiling Photos`}
                   />
                 )}
+
+                {/* Zoom recording links with expiry */}
+                <ZoomRecordingLinks caseStudyId={cs.id} />
               </div>
             )}
           </div>
