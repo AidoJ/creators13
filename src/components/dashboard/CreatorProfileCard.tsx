@@ -236,13 +236,13 @@ function TypePanel({ info, glyphUrl }: { info: CreatorTypeInfo; glyphUrl?: strin
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {content.magical_qualities && content.magical_qualities.length > 0 && (
             <div className="rounded-xl p-3 space-y-2" style={{ backgroundColor: `${color}08` }}>
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
-                <Zap className="h-3.5 w-3.5" style={{ color }} />
+              <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <Zap className="h-4 w-4" style={{ color }} />
                 Magical Qualities
               </div>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-2">
                 {content.magical_qualities.map(q => (
-                  <span key={q} className="text-[11px] font-medium px-2 py-0.5 rounded-full border" style={{ borderColor: `${color}40`, color }}>
+                  <span key={q} className="text-sm font-medium px-3 py-1 rounded-full border" style={{ borderColor: `${color}40`, color }}>
                     {q}
                   </span>
                 ))}
@@ -251,13 +251,13 @@ function TypePanel({ info, glyphUrl }: { info: CreatorTypeInfo; glyphUrl?: strin
           )}
           {content.challenges && content.challenges.length > 0 && (
             <div className="rounded-xl bg-muted/40 p-3 space-y-2">
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
-                <AlertTriangle className="h-3.5 w-3.5 text-muted-foreground" />
+              <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <AlertTriangle className="h-4 w-4 text-muted-foreground" />
                 Challenges
               </div>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-2">
                 {content.challenges.map(c => (
-                  <span key={c} className="text-[11px] font-medium px-2 py-0.5 rounded-full border border-border text-muted-foreground">
+                  <span key={c} className="text-sm font-medium px-3 py-1 rounded-full border border-border text-muted-foreground">
                     {c}
                   </span>
                 ))}
