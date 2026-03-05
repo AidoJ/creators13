@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { TIERS, type TierKey } from "@/lib/tiers";
 import { Sparkles } from "lucide-react";
+import welcomeBg from "@/assets/welcome-bg.png";
 
 import wrenImg from "@/assets/bird-wren.png";
 import robinImg from "@/assets/bird-robin.png";
@@ -27,7 +28,11 @@ export default function WelcomeHero({ firstName, tier, subscriptionStatus, statu
   const birdSrc = tier ? TIER_BIRDS[tier] : null;
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-card to-secondary/10 p-6 sm:p-8 shadow-lg shadow-primary/5">
+    <div className="relative overflow-hidden rounded-2xl border border-primary/20 p-6 sm:p-8 shadow-lg shadow-primary/5">
+      {/* Background image */}
+      <img src={welcomeBg} alt="" className="absolute inset-0 w-full h-full object-cover" loading="lazy" decoding="async" />
+      <div className="absolute inset-0 bg-card/60" />
+
       {/* Decorative background elements */}
       <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-primary/10 blur-2xl" />
       <div className="absolute -bottom-12 -left-12 w-36 h-36 rounded-full bg-secondary/15 blur-2xl" />
