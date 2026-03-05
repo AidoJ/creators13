@@ -1,6 +1,9 @@
+import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { TIERS, type TierKey } from "@/lib/tiers";
 import { Sparkles } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { sortCreatorTypes } from "@/lib/creatorTypes";
 import welcomeBg from "@/assets/welcome-bg.png";
 
 import wrenImg from "@/assets/bird-wren.png";
@@ -15,17 +18,68 @@ const TIER_BIRDS: Record<string, string> = {
   owl: owlImg,
 };
 
+const GLYPH_IMPORTS: Record<string, () => Promise<{ default: string }>> = {
+  lava: () => import("@/assets/glyph-lava.png"),
+  fire: () => import("@/assets/glyph-fire.png"),
+  whirlwind: () => import("@/assets/glyph-whirlwind.png"),
+  sun: () => import("@/assets/glyph-sun.png"),
+  lightning: () => import("@/assets/glyph-lightning.png"),
+  sky: () => import("@/assets/glyph-sky.png"),
+  mountain: () => import("@/assets/glyph-mountain.png"),
+  tree: () => import("@/assets/glyph-tree.png"),
+  soil: () => import("@/assets/glyph-soil.png"),
+  river: () => import("@/assets/glyph-river.png"),
+  ocean: () => import("@/assets/glyph-ocean.png"),
+  lake: () => import("@/assets/glyph-lake.png"),
+  snow: () => import("@/assets/glyph-snow.png"),
+};
+
 interface WelcomeHeroProps {
   firstName?: string | null;
   tier?: TierKey | null;
   subscriptionStatus?: string | null;
   statusLabel: string;
   statusColor: string;
+  creatorTypes?: string[];
 }
 
-export default function WelcomeHero({ firstName, tier, subscriptionStatus, statusLabel, statusColor }: WelcomeHeroProps) {
+export default function WelcomeHero({ firstName, tier, subscriptionStatus, statusLabel, statusColor, creatorTypes = [] }: WelcomeHeroProps) {
   const tierData = tier ? TIERS[tier] : null;
   const birdSrc = tier ? TIER_BIRDS[tier] : null;
+
+  const [glyphs, setGlyphs] = useState<{ name: string; url: string; color: string }[]>([]);
+
+  useEffect(() => {
+    if (creatorTypes.length === 0) return;
+
+    async function loadGlyphs() {
+      const sorted = sortCreatorTypes(creatorTypes);
+
+      // Fetch color_hex for each type
+      const { data: typesData } = await supabase
+        .from("creator_types")
+        .select("name, color_hex")
+        .in("name", sorted);
+
+      const colorMap: Record<string, string> = {};
+      typesData?.forEach(t => {
+        colorMap[t.name.toLowerCase()] = t.color_hex || "hsl(var(--primary))";
+      });
+
+      const results: { name: string; url: string; color: string }[] = [];
+      for (const name of sorted) {
+        const key = name.toLowerCase();
+        if (GLYPH_IMPORTS[key]) {
+          try {
+            const mod = await GLYPH_IMPORTS[key]();
+            results.push({ name, url: mod.default, color: colorMap[key] || "hsl(var(--primary))" });
+          } catch { /* skip */ }
+        }
+      }
+      setGlyphs(results);
+    }
+    loadGlyphs();
+  }, [creatorTypes]);
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-primary/20 p-6 sm:p-8 shadow-lg shadow-primary/5">
@@ -44,6 +98,16 @@ export default function WelcomeHero({ firstName, tier, subscriptionStatus, statu
             <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground">
               Welcome{firstName ? `, ${firstName}` : ""}!
             </h1>
+            {glyphs.map(g => (
+              <div
+                key={g.name}
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center p-1"
+                style={{ backgroundColor: `${g.color}20` }}
+                title={g.name}
+              >
+                <img src={g.url} alt={g.name} className="w-full h-full object-contain" />
+              </div>
+            ))}
             <Badge className={statusColor}>{statusLabel}</Badge>
           </div>
           <p className="text-sm text-muted-foreground max-w-md">

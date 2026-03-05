@@ -49,17 +49,28 @@ export default function Dashboard() {
   const [subscription, setSubscription] = useState<SubData | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const [creatorTypes, setCreatorTypes] = useState<string[]>([]);
+
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
-      const [profileRes, bookingRes, subRes] = await Promise.all([
+      const [profileRes, bookingRes, subRes, ctpRes] = await Promise.all([
         supabase.from("profiles").select("first_name, last_name, enrollment_step, date_of_birth, gender, pronouns, height_cm, shoe_size, city, state, country, case_study_consent_at").eq("user_id", user.id).maybeSingle(),
         supabase.from("bookings").select("scheduled_at, status, zoom_link").eq("client_id", user.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("subscriptions").select("tier, status").eq("user_id", user.id).maybeSingle(),
+        supabase.from("creator_type_profiles").select("primary_type, secondary_type, type_3, type_4").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
       ]);
       if (profileRes.data) setProfile(profileRes.data);
       if (bookingRes.data) setBooking(bookingRes.data);
       if (subRes.data) setSubscription(subRes.data as SubData);
+      if (ctpRes.data) {
+        const types: string[] = [];
+        if (ctpRes.data.primary_type) types.push(ctpRes.data.primary_type);
+        if (ctpRes.data.secondary_type) types.push(ctpRes.data.secondary_type);
+        if (ctpRes.data.type_3) types.push(ctpRes.data.type_3);
+        if (ctpRes.data.type_4) types.push(ctpRes.data.type_4);
+        setCreatorTypes(types);
+      }
       setLoading(false);
     };
     fetchData();
@@ -105,6 +116,7 @@ export default function Dashboard() {
           subscriptionStatus={subscription?.status}
           statusLabel={statusLabel}
           statusColor={statusColor}
+          creatorTypes={creatorTypes}
         />
 
         {/* Upsell for lower tiers */}
