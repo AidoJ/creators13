@@ -270,11 +270,11 @@ function TypePanel({ info, glyphUrl }: { info: CreatorTypeInfo; glyphUrl?: strin
       {/* Physical Features */}
       {content?.physical_features && content.physical_features.length > 0 && (
         <div className="rounded-xl border border-border p-3 space-y-2">
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
-            <Eye className="h-3.5 w-3.5 text-secondary" />
+          <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <Eye className="h-4 w-4 text-secondary" />
             Key Physical Features
           </div>
-          <ul className="list-disc list-inside text-xs text-muted-foreground space-y-0.5 pl-1">
+          <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1 pl-1">
             {content.physical_features.map(f => (
               <li key={f}>{f}</li>
             ))}
@@ -297,10 +297,10 @@ function TypePanel({ info, glyphUrl }: { info: CreatorTypeInfo; glyphUrl?: strin
             When you embody <span className="capitalize" style={{ color }}>{info.name}</span> in its Natural State…
           </p>
           {content.natural_state.traits && (
-            <ul className="space-y-1.5">
+            <ul className="space-y-2">
               {content.natural_state.traits.map((t, i) => (
-                <li key={i} className="flex items-start gap-2 text-xs text-foreground/85">
-                  <span className="mt-1 flex-shrink-0 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
+                <li key={i} className="flex items-start gap-2 text-sm text-foreground/85">
+                  <span className="mt-1.5 flex-shrink-0 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
                   {t}
                 </li>
               ))}
