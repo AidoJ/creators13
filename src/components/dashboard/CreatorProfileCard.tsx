@@ -87,10 +87,14 @@ export default function CreatorProfileCard({ userId }: CreatorProfileCardProps) 
       if (profile!.type_3) names.push(profile!.type_3);
       if (profile!.type_4) names.push(profile!.type_4);
 
+      // Names may be stored lowercase; creator_types uses Title Case — match both
+      const capitalised = names.map(n => n.charAt(0).toUpperCase() + n.slice(1).toLowerCase());
+      const matchSet = [...new Set([...names, ...capitalised])];
+
       const { data: typesData } = await supabase
         .from("creator_types")
         .select("name, family, element, team_role, creative_power, natural_power, disaster_state, energy_pattern, color_hex, profile_content")
-        .in("name", names);
+        .in("name", matchSet);
 
       if (typesData) {
         const sortedNames = sortCreatorTypes(names);
