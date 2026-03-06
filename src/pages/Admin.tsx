@@ -17,6 +17,7 @@ import PractitionersTab from "@/components/admin/PractitionersTab";
 import SubscribersTab from "@/components/admin/SubscribersTab";
 import EmailTemplateEditor from "@/components/admin/EmailTemplateEditor";
 import InvitationsManager from "@/components/admin/InvitationsManager";
+import { capitaliseTypeName } from "@/lib/creatorTypes";
 
 
 type AppRole = Database["public"]["Enums"]["app_role"];
