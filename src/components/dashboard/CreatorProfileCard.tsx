@@ -231,7 +231,6 @@ export default function CreatorProfileCard({ userId }: CreatorProfileCardProps) 
           </Tabs>
         );
       })()}
-      )}
     </div>
   );
 }
