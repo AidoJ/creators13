@@ -234,7 +234,7 @@ export default function ClientDetail({ clientId, onClientNameLoaded }: ClientDet
       <CreatorTypeAssignmentForm clientId={clientId} clientName={fullName} />
 
       {/* Photo composite */}
-      <CompositePhotoLayout userId={clientId} subjectName={`${fullName}'s Profiling Photos`} />
+      <CompositePhotoLayout userId={clientId} subjectName={`${fullName}'s Profiling Photos`} showReclassify />
     </div>
   );
 }
