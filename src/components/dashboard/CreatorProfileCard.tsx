@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Sparkles, Lock, Zap, AlertTriangle, Eye } from "lucide-react";
+import { Sparkles, Lock, Zap, AlertTriangle, Eye, HelpCircle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { sortCreatorTypes } from "@/lib/creatorTypes";
 const GLYPH_IMPORTS: Record<string, () => Promise<{ default: string }>> = {
@@ -163,42 +163,74 @@ export default function CreatorProfileCard({ userId }: CreatorProfileCardProps) 
         )}
       </div>
 
-      {typeInfos.length === 1 ? (
-        <TypePanel info={primaryInfo} glyphUrl={glyphUrls[primaryInfo.name.toLowerCase()]} />
-      ) : (
-        <Tabs defaultValue={primaryInfo.name.toLowerCase()} className="w-full">
-          <TabsList className="w-full flex gap-1 bg-transparent p-1">
-            {typeInfos.map((info) => {
-              const glyph = glyphUrls[info.name.toLowerCase()];
-              const tabColor = info.color_hex || "hsl(var(--primary))";
-              return (
-                <TabsTrigger
-                  key={info.name}
-                  value={info.name.toLowerCase()}
-                  className="flex-1 flex items-center gap-2 rounded-lg text-white/90 font-semibold transition-all data-[state=active]:shadow-lg data-[state=active]:scale-[1.02] data-[state=active]:text-white data-[state=inactive]:opacity-75"
-                  style={{
-                    backgroundColor: tabColor,
-                  }}
-                >
-                  {glyph && (
-                    <img src={glyph} alt="" className="w-5 h-5 object-contain brightness-0 invert" />
-                  )}
-                  <span className="capitalize">{info.name}</span>
-                </TabsTrigger>
-              );
-            })}
-          </TabsList>
+      {(() => {
+        const MAX_SLOTS = 4;
+        const revealedCount = typeInfos.length;
+        const placeholderCount = MAX_SLOTS - revealedCount;
+        const placeholders = Array.from({ length: placeholderCount }, (_, i) => ({
+          label: `Creator Type ${revealedCount + i + 1}`,
+          key: `placeholder-${i}`,
+        }));
 
-          {typeInfos.map((info) => (
+        if (revealedCount === 1 && placeholderCount === 0) {
+          return <TypePanel info={primaryInfo} glyphUrl={glyphUrls[primaryInfo.name.toLowerCase()]} />;
+        }
+
+        return (
+          <Tabs defaultValue={primaryInfo.name.toLowerCase()} className="w-full">
+            <TabsList className="w-full flex gap-1 bg-transparent p-1 flex-wrap h-auto">
+              {typeInfos.map((info) => {
+                const glyph = glyphUrls[info.name.toLowerCase()];
+                const tabColor = info.color_hex || "hsl(var(--primary))";
+                return (
+                  <TabsTrigger
+                    key={info.name}
+                    value={info.name.toLowerCase()}
+                    className="flex-1 min-w-[120px] flex items-center justify-center gap-2 rounded-lg text-white/90 font-semibold transition-all data-[state=active]:shadow-lg data-[state=active]:scale-[1.02] data-[state=active]:text-white data-[state=inactive]:opacity-75"
+                    style={{ backgroundColor: tabColor }}
+                  >
+                    {glyph && (
+                      <img src={glyph} alt="" className="w-5 h-5 object-contain brightness-0 invert" />
+                    )}
+                    <span className="capitalize">{info.name}</span>
+                  </TabsTrigger>
+                );
+              })}
+              {placeholders.map((ph) => (
+                <TabsTrigger
+                  key={ph.key}
+                  value={ph.key}
+                  className="flex-1 min-w-[120px] flex items-center justify-center gap-2 rounded-lg font-semibold transition-all bg-muted/60 text-muted-foreground/60 border border-dashed border-border cursor-default data-[state=active]:shadow-md"
+                  disabled={false}
+                >
+                  <HelpCircle className="h-4 w-4" />
+                  <span className="text-sm">{ph.label}</span>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+
+            {typeInfos.map((info) => (
               <TabsContent key={info.name} value={info.name.toLowerCase()} className="mt-4">
-                <TypePanel
-                  info={info}
-                  glyphUrl={glyphUrls[info.name.toLowerCase()]}
-                />
+                <TypePanel info={info} glyphUrl={glyphUrls[info.name.toLowerCase()]} />
               </TabsContent>
             ))}
-        </Tabs>
-      )}
+
+            {placeholders.map((ph) => (
+              <TabsContent key={ph.key} value={ph.key} className="mt-4">
+                <div className="text-center py-8 space-y-3">
+                  <div className="mx-auto w-14 h-14 rounded-full bg-muted/40 flex items-center justify-center">
+                    <HelpCircle className="h-7 w-7 text-muted-foreground/40" />
+                  </div>
+                  <p className="text-sm font-display font-bold text-muted-foreground">{ph.label}</p>
+                  <p className="text-xs text-muted-foreground/70 max-w-xs mx-auto">
+                    This Creator Type will be revealed as your profiling journey continues. Upgrade your tier to unlock more types!
+                  </p>
+                </div>
+              </TabsContent>
+            ))}
+          </Tabs>
+        );
+      })()}
     </div>
   );
 }
