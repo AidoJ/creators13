@@ -278,6 +278,24 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
         onSaved?.();
       }
     } else {
+      // Safeguard: check for existing case study for this subject from this practitioner
+      const { data: existingStudies } = await supabase
+        .from("case_studies")
+        .select("id, title")
+        .eq("practitioner_id", user.id)
+        .eq("subject_user_id", clientId)
+        .limit(1);
+
+      if (existingStudies && existingStudies.length > 0) {
+        toast({
+          title: "Case study already exists",
+          description: `"${existingStudies[0].title}" already exists for this client. Please edit the existing study instead.`,
+          variant: "destructive",
+        });
+        setSaving(false);
+        return;
+      }
+
       const insertPayload: Record<string, unknown> = {
         practitioner_id: user.id,
         subject_user_id: clientId,
