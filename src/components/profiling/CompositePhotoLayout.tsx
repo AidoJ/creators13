@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, User, X, ZoomIn } from "lucide-react";
+import { Loader2, User, X, ZoomIn, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 const PHOTO_ORDER = [
   { key: "face_front_closed", label: "Face Front" },
@@ -31,12 +33,15 @@ interface CompositePhotoLayoutProps {
   userId: string;
   subjectName?: string;
   className?: string;
+  showReclassify?: boolean;
 }
 
-export default function CompositePhotoLayout({ userId, subjectName, className }: CompositePhotoLayoutProps) {
+export default function CompositePhotoLayout({ userId, subjectName, className, showReclassify = false }: CompositePhotoLayoutProps) {
   const [photos, setPhotos] = useState<Record<string, string | null>>({});
   const [loading, setLoading] = useState(true);
+  const [reclassifying, setReclassifying] = useState(false);
   const [zoomedPhoto, setZoomedPhoto] = useState<{ url: string; label: string } | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     async function fetchPhotos() {
