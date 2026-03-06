@@ -31,6 +31,7 @@ export default function PractitionerDashboard() {
   const [activeTab, setActiveTab] = useState("pipeline");
   const [searchFilterCaseStudyId, setSearchFilterCaseStudyId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
+  const [clientHasCaseStudy, setClientHasCaseStudy] = useState(false);
 
   useEffect(() => {
     if (!user) return;
