@@ -43,31 +43,51 @@ export default function CompositePhotoLayout({ userId, subjectName, className, s
   const [zoomedPhoto, setZoomedPhoto] = useState<{ url: string; label: string } | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    async function fetchPhotos() {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("profiling_photos")
-        .select("photo_type, storage_path")
-        .eq("user_id", userId);
+  const fetchPhotos = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("profiling_photos")
+      .select("photo_type, storage_path")
+      .eq("user_id", userId);
 
-      if (error || !data) {
-        setLoading(false);
-        return;
-      }
-
-      const photoMap: Record<string, string | null> = {};
-      for (const row of data) {
-        const { data: urlData } = supabase.storage
-          .from("profiling-photos")
-          .getPublicUrl(row.storage_path);
-        photoMap[row.photo_type] = urlData?.publicUrl || null;
-      }
-      setPhotos(photoMap);
+    if (error || !data) {
       setLoading(false);
+      return;
     }
-    fetchPhotos();
-  }, [userId]);
+
+    const photoMap: Record<string, string | null> = {};
+    for (const row of data) {
+      const { data: urlData } = supabase.storage
+        .from("profiling-photos")
+        .getPublicUrl(row.storage_path);
+      photoMap[row.photo_type] = urlData?.publicUrl || null;
+    }
+    setPhotos(photoMap);
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchPhotos(); }, [userId]);
+
+  const handleReclassify = async () => {
+    setReclassifying(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("classify-photos", {
+        body: { user_id: userId },
+      });
+      if (error) throw error;
+      const count = data?.reclassified?.length || 0;
+      if (count > 0) {
+        toast({ title: `Reclassified ${count} photo${count > 1 ? "s" : ""}`, description: "Photos have been re-matched to their correct types." });
+        await fetchPhotos(); // Reload
+      } else {
+        toast({ title: "All photos correctly matched", description: "No reclassification needed." });
+      }
+    } catch (e: any) {
+      toast({ title: "Reclassification failed", description: e.message, variant: "destructive" });
+    } finally {
+      setReclassifying(false);
+    }
+  };
 
   if (loading) {
     return (
