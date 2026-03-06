@@ -78,6 +78,19 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
 
   // Page 1: Body Assessment
   const [bodyDrawing, setBodyDrawing] = useState<string | null>(null);
+  const [existingDrawingLoaded, setExistingDrawingLoaded] = useState(false);
+
+  // Load existing body drawing from storage when editing
+  useEffect(() => {
+    if (!existingCaseStudy?.body_drawing_path || existingDrawingLoaded) return;
+    const { data } = supabase.storage
+      .from("profiling-photos")
+      .getPublicUrl(existingCaseStudy.body_drawing_path);
+    if (data?.publicUrl) {
+      setBodyDrawing(data.publicUrl);
+      setExistingDrawingLoaded(true);
+    }
+  }, [existingCaseStudy?.body_drawing_path, existingDrawingLoaded]);
   const [headNeck, setHeadNeck] = useState(p1.head_neck || "");
   const [chestArms, setChestArms] = useState(p1.chest_arms || "");
   const [bellyWaist, setBellyWaist] = useState(p1.belly_waist || "");
