@@ -211,6 +211,7 @@ export default function CaseStudyList({ practitionerId, onEditCaseStudy, filterC
                   <CompositePhotoLayout
                     userId={cs.subject_user_id}
                     subjectName={`${cs.subject_name}'s Profiling Photos`}
+                    showReclassify
                   />
                 )}
 
