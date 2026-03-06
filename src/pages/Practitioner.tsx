@@ -169,10 +169,12 @@ export default function PractitionerDashboard() {
                     {!showCaseStudy ? (
                       <>
                         <ClientDetail clientId={selectedClientId} onClientNameLoaded={setSelectedClientName} />
-                        <Button variant="outline" onClick={() => setShowCaseStudy(true)} className="w-full">
-                          <FileText className="h-4 w-4 mr-2" />
-                          Create Case Study for {selectedClientName || "this client"}
-                        </Button>
+                        {!clientHasCaseStudy && (
+                          <Button variant="outline" onClick={() => setShowCaseStudy(true)} className="w-full">
+                            <FileText className="h-4 w-4 mr-2" />
+                            Create Case Study for {selectedClientName || "this client"}
+                          </Button>
+                        )}
                       </>
                     ) : (
                       <>
