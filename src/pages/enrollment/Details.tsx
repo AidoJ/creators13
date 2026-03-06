@@ -128,6 +128,7 @@ export default function Details() {
     }
 
     const nextParams = new URLSearchParams({ tier, billing });
+    if (params.get("case_study") === "true") nextParams.set("case_study", "true");
 
     // Check if this is a case study signup — route to consent first
     const isCaseStudy = params.get("case_study") === "true" || false;

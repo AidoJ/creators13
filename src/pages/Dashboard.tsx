@@ -48,21 +48,23 @@ export default function Dashboard() {
   const [booking, setBooking] = useState<BookingData | null>(null);
   const [subscription, setSubscription] = useState<SubData | null>(null);
   const [loading, setLoading] = useState(true);
-
+  const [isCaseStudySubject, setIsCaseStudySubject] = useState(false);
   const [creatorTypes, setCreatorTypes] = useState<string[]>([]);
 
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
-      const [profileRes, bookingRes, subRes, ctpRes] = await Promise.all([
+      const [profileRes, bookingRes, subRes, ctpRes, csRes] = await Promise.all([
         supabase.from("profiles").select("first_name, last_name, enrollment_step, date_of_birth, gender, pronouns, height_cm, shoe_size, city, state, country, case_study_consent_at").eq("user_id", user.id).maybeSingle(),
         supabase.from("bookings").select("scheduled_at, status, zoom_link").eq("client_id", user.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("subscriptions").select("tier, status").eq("user_id", user.id).maybeSingle(),
         supabase.from("creator_type_profiles").select("primary_type, secondary_type, type_3, type_4").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
+        supabase.from("case_studies").select("id").eq("subject_user_id", user.id).limit(1),
       ]);
       if (profileRes.data) setProfile(profileRes.data);
       if (bookingRes.data) setBooking(bookingRes.data);
       if (subRes.data) setSubscription(subRes.data as SubData);
+      setIsCaseStudySubject(!!(csRes.data && csRes.data.length > 0));
       if (ctpRes.data) {
         const types: string[] = [];
         if (ctpRes.data.primary_type) types.push(ctpRes.data.primary_type);
@@ -134,16 +136,19 @@ export default function Dashboard() {
               hasDetails={hasDetails}
               bookingDate={booking?.scheduled_at}
               tier={subscription?.tier}
+              isCaseStudy={isCaseStudySubject}
             />
-            <SessionCard
-              scheduledAt={booking?.scheduled_at || null}
-              status={booking?.status || null}
-              zoomLink={booking?.zoom_link || null}
-              photosUploaded={photosUploaded}
-              bookingMade={bookingMade}
-              hasBookingRecord={!!booking}
-              tier={subscription?.tier}
-            />
+            {!isCaseStudySubject && (
+              <SessionCard
+                scheduledAt={booking?.scheduled_at || null}
+                status={booking?.status || null}
+                zoomLink={booking?.zoom_link || null}
+                photosUploaded={photosUploaded}
+                bookingMade={bookingMade}
+                hasBookingRecord={!!booking}
+                tier={subscription?.tier}
+              />
+            )}
           </div>
 
           {/* Right column */}

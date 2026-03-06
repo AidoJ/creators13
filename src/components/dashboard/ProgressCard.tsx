@@ -11,9 +11,10 @@ interface ProgressCardProps {
   hasDetails: boolean;
   bookingDate?: string | null;
   tier?: string | null;
+  isCaseStudy?: boolean;
 }
 
-const STEPS = [
+const ALL_STEPS = [
   { key: "account", label: "Account created" },
   { key: "details", label: "Personal details" },
   { key: "photos", label: "Photos uploaded" },
@@ -21,8 +22,10 @@ const STEPS = [
   { key: "complete", label: "Profiling complete" },
 ];
 
-export default function ProgressCard({ step, isComplete, photosUploaded, bookingMade, hasDetails, bookingDate, tier }: ProgressCardProps) {
+export default function ProgressCard({ step, isComplete, photosUploaded, bookingMade, hasDetails, bookingDate, tier, isCaseStudy }: ProgressCardProps) {
   const navigate = useNavigate();
+
+  const STEPS = isCaseStudy ? ALL_STEPS.filter(s => s.key !== "booking") : ALL_STEPS;
 
   const doneMap: Record<string, boolean> = {
     account: true,
