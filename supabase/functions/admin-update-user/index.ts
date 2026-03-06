@@ -38,13 +38,18 @@ serve(async (req) => {
 
     const result: Record<string, any> = {};
 
-    // Password reset
-    if (new_password) {
-      const { error } = await supabaseAdmin.auth.admin.updateUserById(target_user_id, {
-        password: new_password,
-      });
-      if (error) throw new Error(`Password update failed: ${error.message}`);
-      result.password_updated = true;
+    // Build auth update payload (password and/or email)
+    const authUpdate: Record<string, any> = {};
+    if (new_password) authUpdate.password = new_password;
+    if (updates?.email) authUpdate.email = updates.email;
+
+    // Apply auth-level changes (password, email) and auto-confirm
+    if (Object.keys(authUpdate).length > 0) {
+      authUpdate.email_confirm = true;
+      const { error } = await supabaseAdmin.auth.admin.updateUserById(target_user_id, authUpdate);
+      if (error) throw new Error(`Auth update failed: ${error.message}`);
+      if (new_password) result.password_updated = true;
+      if (updates?.email) result.email_updated = true;
     }
 
     // Profile updates
