@@ -31,6 +31,7 @@ export default function PractitionerDashboard() {
   const [activeTab, setActiveTab] = useState("pipeline");
   const [searchFilterCaseStudyId, setSearchFilterCaseStudyId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
+  const [clientHasCaseStudy, setClientHasCaseStudy] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -43,6 +44,18 @@ export default function PractitionerDashboard() {
         if (data?.practitioner_code) setPractitionerCode(data.practitioner_code);
       });
   }, [user]);
+
+  // Check if selected client already has a case study from this practitioner
+  useEffect(() => {
+    if (!selectedClientId || !user) { setClientHasCaseStudy(false); return; }
+    supabase
+      .from("case_studies")
+      .select("id")
+      .eq("practitioner_id", user.id)
+      .eq("subject_user_id", selectedClientId)
+      .limit(1)
+      .then(({ data }) => setClientHasCaseStudy(!!(data && data.length > 0)));
+  }, [selectedClientId, user]);
 
   function handleSelectClient(clientId: string) {
     setSelectedClientId(clientId);
@@ -156,10 +169,12 @@ export default function PractitionerDashboard() {
                     {!showCaseStudy ? (
                       <>
                         <ClientDetail clientId={selectedClientId} onClientNameLoaded={setSelectedClientName} />
-                        <Button variant="outline" onClick={() => setShowCaseStudy(true)} className="w-full">
-                          <FileText className="h-4 w-4 mr-2" />
-                          Create Case Study for {selectedClientName || "this client"}
-                        </Button>
+                        {!clientHasCaseStudy && (
+                          <Button variant="outline" onClick={() => setShowCaseStudy(true)} className="w-full">
+                            <FileText className="h-4 w-4 mr-2" />
+                            Create Case Study for {selectedClientName || "this client"}
+                          </Button>
+                        )}
                       </>
                     ) : (
                       <>
