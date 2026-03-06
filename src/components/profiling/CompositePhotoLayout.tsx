@@ -127,9 +127,23 @@ export default function CompositePhotoLayout({ userId, subjectName, className, s
 
   return (
     <div className={cn("bg-card border border-border rounded-2xl p-4", className)}>
-      {subjectName && (
-        <h3 className="text-lg font-display font-bold text-foreground mb-3">{subjectName}</h3>
-      )}
+      <div className="flex items-center justify-between mb-3">
+        {subjectName && (
+          <h3 className="text-lg font-display font-bold text-foreground">{subjectName}</h3>
+        )}
+        {showReclassify && Object.keys(photos).length > 0 && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-xs h-7 gap-1.5"
+            onClick={handleReclassify}
+            disabled={reclassifying}
+          >
+            {reclassifying ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+            {reclassifying ? "Classifying…" : "AI Re-classify"}
+          </Button>
+        )}
+      </div>
 
       {/* Composite grid matching reference layout:
           Row 1: face_front_closed | face_front_smiling | face_side | body_front | body_back | body_side
