@@ -64,7 +64,12 @@ export default function Dashboard() {
       if (profileRes.data) setProfile(profileRes.data);
       if (bookingRes.data) setBooking(bookingRes.data);
       if (subRes.data) setSubscription(subRes.data as SubData);
-      setIsCaseStudySubject(!!(csRes.data && csRes.data.length > 0));
+      // A user is a case study subject if they have a case_studies record,
+      // OR if they gave case study consent, OR their subscription has a referral_code (practitioner invite)
+      const hasCsRecord = !!(csRes.data && csRes.data.length > 0);
+      const hasConsent = !!profileRes.data?.case_study_consent_at;
+      const hasReferral = !!(subRes.data && (subRes.data as any).referral_code);
+      setIsCaseStudySubject(hasCsRecord || hasConsent || hasReferral);
       if (ctpRes.data) {
         const types: string[] = [];
         if (ctpRes.data.primary_type) types.push(ctpRes.data.primary_type);
