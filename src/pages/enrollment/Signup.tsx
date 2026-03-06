@@ -29,8 +29,20 @@ export default function Signup() {
   const [showVerification, setShowVerification] = useState(false);
   const [createdUserId, setCreatedUserId] = useState("");
 
+  const [signingOut, setSigningOut] = useState(false);
+
+  // If a practitioner (or any logged-in user) clicks a case-study invite link,
+  // sign them out so the new client can create a fresh account with blank details.
+  useEffect(() => {
+    if (!user || signingOut || showVerification || loading) return;
+    if (caseStudy) {
+      setSigningOut(true);
+      supabase.auth.signOut().then(() => setSigningOut(false));
+    }
+  }, [user, caseStudy, signingOut, showVerification, loading]);
+
   // If user arrives already authenticated (e.g. after email verification redirect), show "I'm Verified"
-  const arrivedVerified = !!user && !showVerification && !loading;
+  const arrivedVerified = !!user && !showVerification && !loading && !caseStudy;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
