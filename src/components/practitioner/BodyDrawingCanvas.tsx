@@ -32,28 +32,35 @@ export default function BodyDrawingCanvas({
   const [lineWidth, setLineWidth] = useState(3);
   const [history, setHistory] = useState<ImageData[]>([]);
 
-  // Initialize canvas + restore drawing
+  // Initialize canvas
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-
     canvas.width = width;
     canvas.height = height;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-
-    if (initialDrawing) {
-      const img = new Image();
-      img.onload = () => {
-        ctx.drawImage(img, 0, 0);
-        saveToHistory();
-      };
-      img.src = initialDrawing;
-    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Restore drawing when initialDrawing changes
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !initialDrawing) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      saveToHistory();
+    };
+    img.src = initialDrawing;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialDrawing]);
 
   function saveToHistory() {
     const canvas = canvasRef.current;

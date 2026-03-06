@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -78,6 +78,19 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
 
   // Page 1: Body Assessment
   const [bodyDrawing, setBodyDrawing] = useState<string | null>(null);
+  const [existingDrawingLoaded, setExistingDrawingLoaded] = useState(false);
+
+  // Load existing body drawing from storage when editing
+  useEffect(() => {
+    if (!existingCaseStudy?.body_drawing_path || existingDrawingLoaded) return;
+    const { data } = supabase.storage
+      .from("profiling-photos")
+      .getPublicUrl(existingCaseStudy.body_drawing_path);
+    if (data?.publicUrl) {
+      setBodyDrawing(data.publicUrl);
+      setExistingDrawingLoaded(true);
+    }
+  }, [existingCaseStudy?.body_drawing_path, existingDrawingLoaded]);
   const [headNeck, setHeadNeck] = useState(p1.head_neck || "");
   const [chestArms, setChestArms] = useState(p1.chest_arms || "");
   const [bellyWaist, setBellyWaist] = useState(p1.belly_waist || "");
@@ -213,10 +226,11 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
       return;
     }
 
-    // Online form mode (original logic)
-    let drawingPath: string | null = null;
-    if (bodyDrawing) {
-      drawingPath = await uploadBodyDrawing();
+    // Only upload if bodyDrawing is a new data URL (not a public URL from storage)
+    let drawingPath: string | null = existingCaseStudy?.body_drawing_path || null;
+    if (bodyDrawing && bodyDrawing.startsWith("data:")) {
+      const uploadedPath = await uploadBodyDrawing();
+      if (uploadedPath) drawingPath = uploadedPath;
     }
 
     const formData = {
