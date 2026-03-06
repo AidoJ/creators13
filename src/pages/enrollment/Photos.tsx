@@ -247,8 +247,13 @@ export default function Photos() {
     setSubmitting(false);
 
     const returnTo = params.get("returnTo");
+    const isCaseStudy = params.get("case_study") === "true";
+
     if (returnTo) {
       navigate(returnTo);
+    } else if (isCaseStudy) {
+      // Case study subjects skip booking — go straight to dashboard
+      navigate("/dashboard");
     } else {
       const nextParams = new URLSearchParams({ tier, billing });
       navigate(`/enroll/booking?${nextParams.toString()}`);
