@@ -45,6 +45,18 @@ export default function PractitionerDashboard() {
       });
   }, [user]);
 
+  // Check if selected client already has a case study from this practitioner
+  useEffect(() => {
+    if (!selectedClientId || !user) { setClientHasCaseStudy(false); return; }
+    supabase
+      .from("case_studies")
+      .select("id")
+      .eq("practitioner_id", user.id)
+      .eq("subject_user_id", selectedClientId)
+      .limit(1)
+      .then(({ data }) => setClientHasCaseStudy(!!(data && data.length > 0)));
+  }, [selectedClientId, user]);
+
   function handleSelectClient(clientId: string) {
     setSelectedClientId(clientId);
     setShowCaseStudy(false);
