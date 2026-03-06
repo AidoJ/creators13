@@ -26,7 +26,6 @@ export default function ProgressCard({ step, isComplete, photosUploaded, booking
   const navigate = useNavigate();
 
   const STEPS = isCaseStudy ? ALL_STEPS.filter(s => s.key !== "booking") : ALL_STEPS;
-  const navigate = useNavigate();
 
   const doneMap: Record<string, boolean> = {
     account: true,
