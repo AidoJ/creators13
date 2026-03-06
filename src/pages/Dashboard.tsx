@@ -136,6 +136,7 @@ export default function Dashboard() {
               hasDetails={hasDetails}
               bookingDate={booking?.scheduled_at}
               tier={subscription?.tier}
+              isCaseStudy={isCaseStudySubject}
             />
             {!isCaseStudySubject && (
               <SessionCard
