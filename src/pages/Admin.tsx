@@ -218,6 +218,24 @@ export default function AdminDashboard() {
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
+      // Auto-sync creator types to client profile on approval
+      if (action === "approved") {
+        const { data: cs } = await supabase.from("case_studies").select("subject_user_id, creator_types_identified").eq("id", id).maybeSingle();
+        if (cs?.subject_user_id && cs.creator_types_identified && cs.creator_types_identified.length > 0) {
+          const types = cs.creator_types_identified;
+          await supabase.from("creator_type_profiles").upsert({
+            user_id: cs.subject_user_id,
+            primary_type: types[0] || null,
+            secondary_type: types[1] || null,
+            type_3: types[2] || null,
+            type_4: types[3] || null,
+            profiled_by: user?.id ?? null,
+            profiled_at: new Date().toISOString(),
+          }, { onConflict: "user_id" });
+          // Mark enrollment as complete
+          await supabase.from("profiles").update({ enrollment_step: "complete" }).eq("user_id", cs.subject_user_id);
+        }
+      }
       toast({ title: action === "approved" ? "Case study approved" : "Revision requested with notes" });
       setRevisionNotes(prev => { const n = { ...prev }; delete n[id]; return n; });
       await fetchCaseStudies();
