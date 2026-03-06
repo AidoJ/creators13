@@ -54,6 +54,7 @@ export default function Consent() {
 
     toast({ title: "Consent recorded" });
     const nextParams = new URLSearchParams({ tier, billing });
+    if (params.get("case_study") === "true") nextParams.set("case_study", "true");
     navigate(`/enroll/photos?${nextParams.toString()}`);
   };
 
