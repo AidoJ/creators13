@@ -166,7 +166,7 @@ export default function PractitionerDashboard() {
                         <Button variant="ghost" size="sm" onClick={() => { setShowCaseStudy(false); setEditingCaseStudy(null); }} className="text-xs">
                           <ArrowLeft className="h-3 w-3 mr-1" /> Back to Client Detail
                         </Button>
-                        <CompositePhotoLayout userId={selectedClientId} subjectName={`${selectedClientName}'s Profiling Photos`} />
+                        <CompositePhotoLayout userId={selectedClientId} subjectName={`${selectedClientName}'s Profiling Photos`} showReclassify />
                         <CaseStudyForm
                           clientId={selectedClientId}
                           clientName={selectedClientName}
@@ -205,7 +205,7 @@ export default function PractitionerDashboard() {
                 <Button variant="ghost" size="sm" onClick={() => { setShowCaseStudy(false); setEditingCaseStudy(null); }} className="text-xs">
                   <ArrowLeft className="h-3 w-3 mr-1" /> Back to Case Study List
                 </Button>
-                <CompositePhotoLayout userId={selectedClientId} subjectName={`${selectedClientName}'s Profiling Photos`} />
+                <CompositePhotoLayout userId={selectedClientId} subjectName={`${selectedClientName}'s Profiling Photos`} showReclassify />
                 <CaseStudyForm
                   clientId={selectedClientId}
                   clientName={selectedClientName}

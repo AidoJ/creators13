@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, User, X, ZoomIn } from "lucide-react";
+import { Loader2, User, X, ZoomIn, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 const PHOTO_ORDER = [
   { key: "face_front_closed", label: "Face Front" },
@@ -31,38 +33,61 @@ interface CompositePhotoLayoutProps {
   userId: string;
   subjectName?: string;
   className?: string;
+  showReclassify?: boolean;
 }
 
-export default function CompositePhotoLayout({ userId, subjectName, className }: CompositePhotoLayoutProps) {
+export default function CompositePhotoLayout({ userId, subjectName, className, showReclassify = false }: CompositePhotoLayoutProps) {
   const [photos, setPhotos] = useState<Record<string, string | null>>({});
   const [loading, setLoading] = useState(true);
+  const [reclassifying, setReclassifying] = useState(false);
   const [zoomedPhoto, setZoomedPhoto] = useState<{ url: string; label: string } | null>(null);
+  const { toast } = useToast();
 
-  useEffect(() => {
-    async function fetchPhotos() {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("profiling_photos")
-        .select("photo_type, storage_path")
-        .eq("user_id", userId);
+  const fetchPhotos = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("profiling_photos")
+      .select("photo_type, storage_path")
+      .eq("user_id", userId);
 
-      if (error || !data) {
-        setLoading(false);
-        return;
-      }
-
-      const photoMap: Record<string, string | null> = {};
-      for (const row of data) {
-        const { data: urlData } = supabase.storage
-          .from("profiling-photos")
-          .getPublicUrl(row.storage_path);
-        photoMap[row.photo_type] = urlData?.publicUrl || null;
-      }
-      setPhotos(photoMap);
+    if (error || !data) {
       setLoading(false);
+      return;
     }
-    fetchPhotos();
-  }, [userId]);
+
+    const photoMap: Record<string, string | null> = {};
+    for (const row of data) {
+      const { data: urlData } = supabase.storage
+        .from("profiling-photos")
+        .getPublicUrl(row.storage_path);
+      photoMap[row.photo_type] = urlData?.publicUrl || null;
+    }
+    setPhotos(photoMap);
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchPhotos(); }, [userId]);
+
+  const handleReclassify = async () => {
+    setReclassifying(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("classify-photos", {
+        body: { user_id: userId },
+      });
+      if (error) throw error;
+      const count = data?.reclassified?.length || 0;
+      if (count > 0) {
+        toast({ title: `Reclassified ${count} photo${count > 1 ? "s" : ""}`, description: "Photos have been re-matched to their correct types." });
+        await fetchPhotos(); // Reload
+      } else {
+        toast({ title: "All photos correctly matched", description: "No reclassification needed." });
+      }
+    } catch (e: any) {
+      toast({ title: "Reclassification failed", description: e.message, variant: "destructive" });
+    } finally {
+      setReclassifying(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -102,9 +127,23 @@ export default function CompositePhotoLayout({ userId, subjectName, className }:
 
   return (
     <div className={cn("bg-card border border-border rounded-2xl p-4", className)}>
-      {subjectName && (
-        <h3 className="text-lg font-display font-bold text-foreground mb-3">{subjectName}</h3>
-      )}
+      <div className="flex items-center justify-between mb-3">
+        {subjectName && (
+          <h3 className="text-lg font-display font-bold text-foreground">{subjectName}</h3>
+        )}
+        {showReclassify && Object.keys(photos).length > 0 && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-xs h-7 gap-1.5"
+            onClick={handleReclassify}
+            disabled={reclassifying}
+          >
+            {reclassifying ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+            {reclassifying ? "Classifying…" : "AI Re-classify"}
+          </Button>
+        )}
+      </div>
 
       {/* Composite grid matching reference layout:
           Row 1: face_front_closed | face_front_smiling | face_side | body_front | body_back | body_side

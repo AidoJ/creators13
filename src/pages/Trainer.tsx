@@ -384,7 +384,7 @@ function CaseStudyList({ caseStudies, emptyMessage, expandedCaseStudy, setExpand
             {isExpanded && (
               <div className="border-t border-border bg-muted/20 p-4 space-y-4">
                 <CreatorTypeEditor caseStudyId={cs.id} currentTypes={cs.creator_types_identified} onUpdated={(newTypes) => { setCaseStudies(prev => prev.map(c => c.id === cs.id ? { ...c, creator_types_identified: newTypes } : c)); }} />
-                {cs.subject_user_id && <CompositePhotoLayout userId={cs.subject_user_id} subjectName={`${cs.subject_name}'s Profiling Photos`} />}
+                {cs.subject_user_id && <CompositePhotoLayout userId={cs.subject_user_id} subjectName={`${cs.subject_name}'s Profiling Photos`} showReclassify />}
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Body Drawing</p>
                   <div className="relative max-w-[400px] bg-white rounded-lg border border-border overflow-hidden" style={{ aspectRatio: "400/800" }}>
