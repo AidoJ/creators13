@@ -41,9 +41,10 @@ interface WelcomeHeroProps {
   statusLabel: string;
   statusColor: string;
   creatorTypes?: string[];
+  showStatusBadge?: boolean;
 }
 
-export default function WelcomeHero({ firstName, tier, subscriptionStatus, statusLabel, statusColor, creatorTypes = [] }: WelcomeHeroProps) {
+export default function WelcomeHero({ firstName, tier, subscriptionStatus, statusLabel, statusColor, creatorTypes = [], showStatusBadge = true }: WelcomeHeroProps) {
   const tierData = tier ? TIERS[tier] : null;
   const birdSrc = tier ? TIER_BIRDS[tier] : null;
 
@@ -110,7 +111,7 @@ export default function WelcomeHero({ firstName, tier, subscriptionStatus, statu
                 <img src={g.url} alt={g.name} className="w-full h-full object-contain" />
               </div>
             ))}
-            <Badge className={statusColor}>{statusLabel}</Badge>
+            {showStatusBadge && <Badge className={statusColor}>{statusLabel}</Badge>}
           </div>
           <p className="text-sm text-muted-foreground max-w-md">
             Your Creator Type profiling journey — track your progress, view your photos, and discover your unique profile.
