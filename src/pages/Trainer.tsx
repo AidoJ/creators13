@@ -13,7 +13,7 @@ import CompositePhotoLayout from "@/components/profiling/CompositePhotoLayout";
 import CaseStudyFormDataView from "@/components/admin/CaseStudyFormDataView";
 import BodyOutlineSVG from "@/components/practitioner/BodyOutlineSVG";
 import CreatorTypeEditor from "@/components/admin/CreatorTypeEditor";
-import { getCreatorTypeColor, sortCreatorTypes } from "@/lib/creatorTypes";
+import { getCreatorTypeColor, sortCreatorTypes, capitaliseTypeName } from "@/lib/creatorTypes";
 import TrainingCallManager from "@/components/trainer/TrainingCallManager";
 import TrainingCalendar from "@/components/practitioner/TrainingCalendar";
 import CaseStudySearch from "@/components/shared/CaseStudySearch";
