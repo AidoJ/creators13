@@ -226,10 +226,11 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
       return;
     }
 
-    // Online form mode (original logic)
-    let drawingPath: string | null = null;
-    if (bodyDrawing) {
-      drawingPath = await uploadBodyDrawing();
+    // Only upload if bodyDrawing is a new data URL (not a public URL from storage)
+    let drawingPath: string | null = existingCaseStudy?.body_drawing_path || null;
+    if (bodyDrawing && bodyDrawing.startsWith("data:")) {
+      const uploadedPath = await uploadBodyDrawing();
+      if (uploadedPath) drawingPath = uploadedPath;
     }
 
     const formData = {
