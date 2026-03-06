@@ -37,7 +37,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/enroll" element={<PlanSelection />} />
             <Route path="/enroll/signup" element={<Signup />} />
-            <Route path="/enroll/payment" element={<Payment />} />
+            <Route path="/enroll/payment" element={<Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading…</div>}><Payment /></Suspense>} />
             <Route path="/enroll/practitioner" element={<ProtectedRoute><PractitionerSelection /></ProtectedRoute>} />
             <Route path="/enroll/details" element={<Details />} />
             <Route path="/enroll/consent" element={<ProtectedRoute><Consent /></ProtectedRoute>} />
