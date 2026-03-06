@@ -17,6 +17,7 @@ import PractitionersTab from "@/components/admin/PractitionersTab";
 import SubscribersTab from "@/components/admin/SubscribersTab";
 import EmailTemplateEditor from "@/components/admin/EmailTemplateEditor";
 import InvitationsManager from "@/components/admin/InvitationsManager";
+import { capitaliseTypeName } from "@/lib/creatorTypes";
 
 
 type AppRole = Database["public"]["Enums"]["app_role"];
@@ -222,7 +223,7 @@ export default function AdminDashboard() {
       if (action === "approved") {
         const { data: cs } = await supabase.from("case_studies").select("subject_user_id, creator_types_identified").eq("id", id).maybeSingle();
         if (cs?.subject_user_id && cs.creator_types_identified && cs.creator_types_identified.length > 0) {
-          const types = cs.creator_types_identified;
+          const types = cs.creator_types_identified.map(capitaliseTypeName);
           await supabase.from("creator_type_profiles").upsert({
             user_id: cs.subject_user_id,
             primary_type: types[0] || null,

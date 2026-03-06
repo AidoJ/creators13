@@ -42,3 +42,8 @@ export function sortCreatorTypes(types: string[]): string[] {
 export function getCreatorTypeColor(name: string): string {
   return CREATOR_TYPE_COLORS[name.toLowerCase()] ?? "#888888";
 }
+
+/** Capitalise a creator type name to match the canonical Title Case in the DB (e.g. "lava" → "Lava"). */
+export function capitaliseTypeName(name: string): string {
+  return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+}

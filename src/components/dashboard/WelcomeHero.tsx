@@ -55,11 +55,13 @@ export default function WelcomeHero({ firstName, tier, subscriptionStatus, statu
     async function loadGlyphs() {
       const sorted = sortCreatorTypes(creatorTypes);
 
-      // Fetch color_hex for each type
+      // Fetch color_hex for each type — match both cases in case stored lowercase
+      const capitalised = sorted.map(n => n.charAt(0).toUpperCase() + n.slice(1).toLowerCase());
+      const matchSet = [...new Set([...sorted, ...capitalised])];
       const { data: typesData } = await supabase
         .from("creator_types")
         .select("name, color_hex")
-        .in("name", sorted);
+        .in("name", matchSet);
 
       const colorMap: Record<string, string> = {};
       typesData?.forEach(t => {

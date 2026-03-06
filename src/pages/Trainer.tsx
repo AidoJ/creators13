@@ -13,7 +13,7 @@ import CompositePhotoLayout from "@/components/profiling/CompositePhotoLayout";
 import CaseStudyFormDataView from "@/components/admin/CaseStudyFormDataView";
 import BodyOutlineSVG from "@/components/practitioner/BodyOutlineSVG";
 import CreatorTypeEditor from "@/components/admin/CreatorTypeEditor";
-import { getCreatorTypeColor, sortCreatorTypes } from "@/lib/creatorTypes";
+import { getCreatorTypeColor, sortCreatorTypes, capitaliseTypeName } from "@/lib/creatorTypes";
 import TrainingCallManager from "@/components/trainer/TrainingCallManager";
 import TrainingCalendar from "@/components/practitioner/TrainingCalendar";
 import CaseStudySearch from "@/components/shared/CaseStudySearch";
@@ -132,7 +132,7 @@ export default function TrainerDashboard() {
       if (action === "approved") {
         const { data: cs } = await supabase.from("case_studies").select("subject_user_id, creator_types_identified").eq("id", id).maybeSingle();
         if (cs?.subject_user_id && cs.creator_types_identified && cs.creator_types_identified.length > 0) {
-          const types = cs.creator_types_identified;
+          const types = cs.creator_types_identified.map(capitaliseTypeName);
           await supabase.from("creator_type_profiles").upsert({
             user_id: cs.subject_user_id,
             primary_type: types[0] || null,
