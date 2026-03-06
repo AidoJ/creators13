@@ -121,6 +121,7 @@ export default function Dashboard() {
           statusLabel={statusLabel}
           statusColor={statusColor}
           creatorTypes={creatorTypes}
+          showStatusBadge={showStatusBadge}
         />
 
         {/* Upsell for lower tiers */}
