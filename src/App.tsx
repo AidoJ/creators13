@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,7 +11,7 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import PlanSelection from "./pages/enrollment/PlanSelection";
 import Signup from "./pages/enrollment/Signup";
-import Payment from "./pages/enrollment/Payment";
+const Payment = lazy(() => import("./pages/enrollment/Payment"));
 import PractitionerSelection from "./pages/enrollment/PractitionerSelection";
 import Details from "./pages/enrollment/Details";
 import Consent from "./pages/enrollment/Consent";
