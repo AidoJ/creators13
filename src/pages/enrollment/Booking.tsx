@@ -184,7 +184,7 @@ export default function Booking() {
           </div>
         </div>
 
-        <div className="mt-8 text-center space-y-3 sm:space-y-0 sm:space-x-4">
+        <div className="mt-8 flex flex-col sm:flex-row sm:justify-center gap-3 sm:gap-4">
           <Button
             disabled={!manualDate || !manualTime}
             onClick={async () => {
@@ -194,7 +194,7 @@ export default function Booking() {
                 if (!scheduledAt && manualDate && manualTime) {
                   scheduledAt = new Date(`${manualDate}T${manualTime}`).toISOString();
                 }
-                
+
                 await supabase.from("bookings").insert({
                   client_id: user.id,
                   status: "scheduled",
@@ -207,10 +207,10 @@ export default function Booking() {
               navigate(returnTo || "/dashboard");
             }}
             size="lg"
-            className="rounded-full px-10 text-base font-semibold"
+            className="w-full sm:w-auto rounded-full px-6 sm:px-10 py-3 h-auto min-h-11 text-base font-semibold whitespace-normal flex-wrap text-center"
           >
             I've Booked — Go to Dashboard
-            <ArrowRight className="ml-2 h-4 w-4" />
+            <ArrowRight className="h-4 w-4 sm:ml-1" />
           </Button>
           <Button
             onClick={async () => {
@@ -221,7 +221,7 @@ export default function Booking() {
             }}
             variant="outline"
             size="lg"
-            className="rounded-full px-10 text-base font-semibold"
+            className="w-full sm:w-auto rounded-full px-6 sm:px-10 py-3 h-auto min-h-11 text-base font-semibold whitespace-normal"
           >
             Skip for Now
           </Button>
