@@ -38,6 +38,11 @@ function formatDateForTimezone(isoDate: string, timezone: string): string {
   }
 }
 
+function formatICSDate(d: Date): string {
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}Z`;
+}
+
 function generateICS(
   title: string,
   description: string,
@@ -48,10 +53,6 @@ function generateICS(
   const start = new Date(scheduledAt);
   const end = new Date(start.getTime() + durationMinutes * 60000);
 
-  const pad = (n: number) => n.toString().padStart(2, "0");
-  const formatDT = (d: Date) =>
-    `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}Z`;
-
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
@@ -59,8 +60,8 @@ function generateICS(
     "CALSCALE:GREGORIAN",
     "METHOD:REQUEST",
     "BEGIN:VEVENT",
-    `DTSTART:${formatDT(start)}`,
-    `DTEND:${formatDT(end)}`,
+    `DTSTART:${formatICSDate(start)}`,
+    `DTEND:${formatICSDate(end)}`,
     `SUMMARY:${title}`,
     `DESCRIPTION:${(description || "").replace(/\n/g, "\\n")}${zoomLink ? "\\n\\nZoom: " + zoomLink : ""}`,
     zoomLink ? `URL:${zoomLink}` : "",
@@ -73,6 +74,50 @@ function generateICS(
     .join("\r\n");
 
   return lines;
+}
+
+function buildCalendarButtons(
+  title: string,
+  scheduledAt: string,
+  durationMinutes: number,
+  description?: string,
+  zoomLink?: string
+): string {
+  const start = new Date(scheduledAt);
+  const end = new Date(start.getTime() + durationMinutes * 60000);
+  const startStr = formatICSDate(start);
+  const endStr = formatICSDate(end);
+
+  const details = (description || "") + (zoomLink ? `\n\nZoom: ${zoomLink}` : "");
+
+  // Google Calendar
+  const gcalParams = new URLSearchParams({
+    action: "TEMPLATE",
+    text: title,
+    dates: `${startStr}/${endStr}`,
+    details,
+  });
+  if (zoomLink) gcalParams.set("location", zoomLink);
+  const gcalUrl = `https://calendar.google.com/calendar/render?${gcalParams.toString()}`;
+
+  // Outlook Web
+  const outlookParams = new URLSearchParams({
+    subject: title,
+    startdt: start.toISOString(),
+    enddt: end.toISOString(),
+    body: details,
+  });
+  if (zoomLink) outlookParams.set("location", zoomLink);
+  const outlookUrl = `https://outlook.live.com/calendar/0/action/compose?${outlookParams.toString()}`;
+
+  return `<div style="text-align:center;margin:20px 0 0 0;">
+    <p style="color:#999;font-size:12px;margin:0 0 10px 0;">Add to your calendar:</p>
+    <div>
+      <a href="${gcalUrl}" target="_blank" style="display:inline-block;background:#4285F4;color:#ffffff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600;font-size:13px;margin:0 6px 8px 6px;">Google Calendar</a>
+      <a href="${outlookUrl}" target="_blank" style="display:inline-block;background:#0078D4;color:#ffffff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600;font-size:13px;margin:0 6px 8px 6px;">Outlook</a>
+    </div>
+    <p style="color:#999;font-size:11px;margin:8px 0 0 0;">Apple Calendar: Open the attached .ics file</p>
+  </div>`;
 }
 
 function replaceTemplateVars(
@@ -249,6 +294,8 @@ serve(async (req) => {
       const recipient = recipients[i];
       const localTime = formatDateForTimezone(scheduledAt, recipient.timezone);
 
+      const calendarButtons = buildCalendarButtons(title, scheduledAt, durationMinutes, description, zoomLink);
+
       const vars: Record<string, string> = {
         firstName: recipient.firstName,
         title,
@@ -258,6 +305,7 @@ serve(async (req) => {
         timezone: recipient.timezone,
         recurrenceText,
         zoomButton,
+        calendarButtons,
         email: recipient.email,
       };
 
