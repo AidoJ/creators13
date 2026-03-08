@@ -40,6 +40,42 @@ function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
+function formatICSDate(d: Date): string {
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}Z`;
+}
+
+function buildCalendarButtons(
+  title: string,
+  scheduledAt: string,
+  durationMinutes: number,
+  description?: string,
+  zoomLink?: string
+): string {
+  const start = new Date(scheduledAt);
+  const end = new Date(start.getTime() + durationMinutes * 60000);
+  const startStr = formatICSDate(start);
+  const endStr = formatICSDate(end);
+  const details = (description || "") + (zoomLink ? `\n\nZoom: ${zoomLink}` : "");
+
+  const gcalParams = new URLSearchParams({ action: "TEMPLATE", text: title, dates: `${startStr}/${endStr}`, details });
+  if (zoomLink) gcalParams.set("location", zoomLink);
+  const gcalUrl = `https://calendar.google.com/calendar/render?${gcalParams.toString()}`;
+
+  const outlookParams = new URLSearchParams({ subject: title, startdt: start.toISOString(), enddt: end.toISOString(), body: details });
+  if (zoomLink) outlookParams.set("location", zoomLink);
+  const outlookUrl = `https://outlook.live.com/calendar/0/action/compose?${outlookParams.toString()}`;
+
+  return `<div style="text-align:center;margin:20px 0 0 0;">
+    <p style="color:#999;font-size:12px;margin:0 0 10px 0;">Add to your calendar:</p>
+    <div>
+      <a href="${gcalUrl}" target="_blank" style="display:inline-block;background:#4285F4;color:#ffffff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600;font-size:13px;margin:0 6px 8px 6px;">Google Calendar</a>
+      <a href="${outlookUrl}" target="_blank" style="display:inline-block;background:#0078D4;color:#ffffff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600;font-size:13px;margin:0 6px 8px 6px;">Outlook</a>
+    </div>
+    <p style="color:#999;font-size:11px;margin:8px 0 0 0;">Apple Calendar: Open the attached .ics file</p>
+  </div>`;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -174,10 +210,12 @@ serve(async (req) => {
         const timezone = profile?.timezone || "UTC";
         const localTime = formatDateForTimezone(call.scheduled_at, timezone);
 
+        const calendarButtons = buildCalendarButtons(call.title, call.scheduled_at, call.duration_minutes, call.description, call.zoom_link);
+
         const vars: Record<string, string> = {
           firstName, title: call.title, description: descriptionHtml,
           localTime, durationMinutes: String(call.duration_minutes),
-          timezone, recurrenceText, zoomButton, email: inv.email,
+          timezone, recurrenceText, zoomButton, calendarButtons, email: inv.email,
         };
 
         const html = replaceTemplateVars(template.html_body, vars);
