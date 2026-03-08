@@ -495,7 +495,7 @@ export default function AdminDashboard() {
 }
 
 
-function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, addingRole, stepLabel, onStatusChange, onRefresh, assignedPractitioner, assignedPracCode }: {
+function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, addingRole, stepLabel, onStatusChange, onRefresh, assignedPractitioner, assignedPracCode, practitioners, currentPracId, onAssignPractitioner }: {
   user: UserRow; isExpanded: boolean; onToggle: () => void;
   onAddRole: (userId: string, role: AppRole) => void;
   onRemoveRole: (userId: string, role: AppRole) => void;
@@ -505,6 +505,9 @@ function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, 
   onRefresh: () => void;
   assignedPractitioner: string | null;
   assignedPracCode: string | null;
+  practitioners: UserRow[];
+  currentPracId: string | null;
+  onAssignPractitioner: (clientId: string, pracId: string) => Promise<void>;
 }) {
   const [selectedRole, setSelectedRole] = useState<AppRole | "">("");
   const [trainingDate, setTrainingDate] = useState(u.training_started_at || "");
@@ -516,6 +519,8 @@ function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, 
   const [editLast, setEditLast] = useState(u.last_name || "");
   const [editEmail, setEditEmail] = useState(u.email || "");
   const [newPassword, setNewPassword] = useState("");
+  const [assignPracId, setAssignPracId] = useState(currentPracId || "");
+  const [assigning, setAssigning] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
