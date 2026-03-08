@@ -122,6 +122,8 @@ export default function Dashboard() {
           statusColor={statusColor}
           creatorTypes={creatorTypes}
           showStatusBadge={showStatusBadge}
+          enrollmentStep={profile?.enrollment_step}
+          country={profile?.country}
         />
 
         {/* Upsell for lower tiers */}

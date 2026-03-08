@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { TIERS, type TierKey } from "@/lib/tiers";
-import { Sparkles } from "lucide-react";
+import { Sparkles, ArrowRight, BookOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { sortCreatorTypes } from "@/lib/creatorTypes";
 import welcomeBg from "@/assets/welcome-bg.png";
@@ -42,9 +43,11 @@ interface WelcomeHeroProps {
   statusColor: string;
   creatorTypes?: string[];
   showStatusBadge?: boolean;
+  enrollmentStep?: string | null;
+  country?: string | null;
 }
 
-export default function WelcomeHero({ firstName, tier, subscriptionStatus, statusLabel, statusColor, creatorTypes = [], showStatusBadge = true }: WelcomeHeroProps) {
+export default function WelcomeHero({ firstName, tier, subscriptionStatus, statusLabel, statusColor, creatorTypes = [], showStatusBadge = true, enrollmentStep, country }: WelcomeHeroProps) {
   const tierData = tier ? TIERS[tier] : null;
   const birdSrc = tier ? TIER_BIRDS[tier] : null;
 
@@ -55,8 +58,6 @@ export default function WelcomeHero({ firstName, tier, subscriptionStatus, statu
 
     async function loadGlyphs() {
       const sorted = sortCreatorTypes(creatorTypes);
-
-      // Fetch color_hex for each type — match both cases in case stored lowercase
       const capitalised = sorted.map(n => n.charAt(0).toUpperCase() + n.slice(1).toLowerCase());
       const matchSet = [...new Set([...sorted, ...capitalised])];
       const { data: typesData } = await supabase
@@ -84,6 +85,22 @@ export default function WelcomeHero({ firstName, tier, subscriptionStatus, statu
     loadGlyphs();
   }, [creatorTypes]);
 
+  // Determine "What's Next?" prompt
+  const getNextStep = () => {
+    if (!enrollmentStep || enrollmentStep === "plan_selected" || enrollmentStep === "signed_up")
+      return { label: "Complete your personal details", link: "/enroll/details" };
+    if (enrollmentStep === "payment_complete")
+      return { label: "Upload your profiling photos", link: "/enroll/photos" };
+    if (enrollmentStep === "photos_uploaded")
+      return { label: "Book your profiling session", link: "/enroll/booking" };
+    if (enrollmentStep === "booking_made" || enrollmentStep === "awaiting_profiling")
+      return { label: "Your profile is being reviewed", link: null };
+    return null; // complete
+  };
+  const nextStep = getNextStep();
+
+  const isAustralia = country?.toLowerCase().includes("australia") || country?.toLowerCase() === "au";
+
   return (
     <div className="relative overflow-hidden rounded-2xl border border-primary/20 p-6 sm:p-8 shadow-lg shadow-primary/5">
       {/* Background image */}
@@ -95,8 +112,9 @@ export default function WelcomeHero({ firstName, tier, subscriptionStatus, statu
       <div className="absolute -bottom-12 -left-12 w-36 h-36 rounded-full bg-secondary/15 blur-2xl" />
       <div className="absolute top-1/2 right-1/4 w-24 h-24 rounded-full bg-accent/10 blur-xl" />
 
-      <div className="relative flex items-start justify-between gap-4">
-        <div className="space-y-2">
+      <div className="relative flex flex-col sm:flex-row items-start justify-between gap-4">
+        {/* Left: Name, glyphs, tier */}
+        <div className="space-y-2 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground">
               Welcome{firstName ? `, ${firstName}` : ""}!
@@ -118,6 +136,15 @@ export default function WelcomeHero({ firstName, tier, subscriptionStatus, statu
           </p>
           {tierData && (
             <div className="flex items-center gap-2 pt-1">
+              {birdSrc && (
+                <img
+                  src={birdSrc}
+                  alt={tierData.name || "Tier"}
+                  className="w-8 h-8 object-contain"
+                  loading="lazy"
+                  decoding="async"
+                />
+              )}
               <Sparkles className="h-4 w-4 text-secondary" />
               <span className="text-sm font-semibold text-foreground">
                 {tierData.name} <span className="text-muted-foreground font-normal">· {tierData.subtitle}</span>
@@ -128,15 +155,36 @@ export default function WelcomeHero({ firstName, tier, subscriptionStatus, statu
             </div>
           )}
         </div>
-        {birdSrc && (
-          <img
-            src={birdSrc}
-            alt={tierData?.name || "Tier"}
-            className="w-16 h-16 sm:w-20 sm:h-20 object-contain opacity-80 shrink-0"
-            loading="lazy"
-            decoding="async"
-          />
-        )}
+
+        {/* Right: What's Next? */}
+        <div className="flex flex-col items-center gap-2 shrink-0 min-w-[140px]">
+          {nextStep ? (
+            <>
+              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                <ArrowRight className="h-6 w-6 text-primary" />
+              </div>
+              <span className="text-xs font-semibold text-foreground text-center">What's Next?</span>
+              <p className="text-xs text-muted-foreground text-center max-w-[160px]">{nextStep.label}</p>
+              {nextStep.link && (
+                <Button size="sm" className="mt-1" asChild>
+                  <a href={nextStep.link}>Continue <ArrowRight className="h-3 w-3 ml-1" /></a>
+                </Button>
+              )}
+            </>
+          ) : (
+            <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center">
+              <Sparkles className="h-6 w-6 text-green-600" />
+            </div>
+          )}
+          {isAustralia && (
+            <Button variant="outline" size="sm" className="mt-2 gap-1.5" asChild>
+              <a href="https://www.paypal.com/ncp/payment/Q5UNQG7THTWQW" target="_blank" rel="noopener noreferrer">
+                <BookOpen className="h-3.5 w-3.5" />
+                Buy the 13Creators Book
+              </a>
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
