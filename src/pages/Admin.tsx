@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Users, Shield, ChevronDown, ChevronUp, FileText, CheckCircle, Clock, BarChart3, Eye, EyeOff, FolderOpen, Save, HelpCircle, Briefcase, CreditCard, Mail, Send } from "lucide-react";
+import { Search, Users, Shield, ChevronDown, ChevronUp, FileText, CheckCircle, Clock, BarChart3, Eye, EyeOff, FolderOpen, Save, HelpCircle, Briefcase, CreditCard, Mail, Send, UserPlus } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
 import CreateUserForm from "@/components/admin/CreateUserForm";
@@ -443,6 +443,23 @@ export default function AdminDashboard() {
                         onStatusChange={handlePractitionerStatus} onRefresh={fetchUsers}
                         assignedPractitioner={assignedPracMap[u.user_id] || null}
                         assignedPracCode={assignedPracCodeMap[u.user_id] || null}
+                        practitioners={practitioners}
+                        currentPracId={assignments.find(a => a.client_id === u.user_id && a.active)?.practitioner_id || null}
+                        onAssignPractitioner={async (clientId, pracId) => {
+                          // Deactivate existing active assignments
+                          const existing = assignments.filter(a => a.client_id === clientId && a.active);
+                          for (const a of existing) {
+                            await supabase.from("client_practitioner").update({ active: false }).eq("id", a.id);
+                          }
+                          // Insert new assignment
+                          const { error } = await supabase.from("client_practitioner").insert({ client_id: clientId, practitioner_id: pracId });
+                          if (error) {
+                            toast({ title: "Error", description: error.message, variant: "destructive" });
+                          } else {
+                            toast({ title: "Practitioner assigned" });
+                            await Promise.all([fetchAssignments(), fetchUsers()]);
+                          }
+                        }}
                       />
                     ))}
                   </tbody>
@@ -478,7 +495,7 @@ export default function AdminDashboard() {
 }
 
 
-function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, addingRole, stepLabel, onStatusChange, onRefresh, assignedPractitioner, assignedPracCode }: {
+function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, addingRole, stepLabel, onStatusChange, onRefresh, assignedPractitioner, assignedPracCode, practitioners, currentPracId, onAssignPractitioner }: {
   user: UserRow; isExpanded: boolean; onToggle: () => void;
   onAddRole: (userId: string, role: AppRole) => void;
   onRemoveRole: (userId: string, role: AppRole) => void;
@@ -488,6 +505,9 @@ function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, 
   onRefresh: () => void;
   assignedPractitioner: string | null;
   assignedPracCode: string | null;
+  practitioners: UserRow[];
+  currentPracId: string | null;
+  onAssignPractitioner: (clientId: string, pracId: string) => Promise<void>;
 }) {
   const [selectedRole, setSelectedRole] = useState<AppRole | "">("");
   const [trainingDate, setTrainingDate] = useState(u.training_started_at || "");
@@ -499,6 +519,8 @@ function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, 
   const [editLast, setEditLast] = useState(u.last_name || "");
   const [editEmail, setEditEmail] = useState(u.email || "");
   const [newPassword, setNewPassword] = useState("");
+  const [assignPracId, setAssignPracId] = useState(currentPracId || "");
+  const [assigning, setAssigning] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
@@ -726,6 +748,46 @@ function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, 
                   </div>
                 </div>
               )}
+
+              {/* Assign Practitioner */}
+              <div className="pt-2 border-t border-border space-y-2">
+                <p className="text-xs font-medium text-foreground flex items-center gap-1"><UserPlus className="h-3 w-3" />Assign Practitioner</p>
+                <div className="flex items-center gap-2">
+                  {assignedPractitioner && (
+                    <span className="text-xs text-muted-foreground">Currently: <strong>{assignedPractitioner}</strong>{assignedPracCode ? ` (${assignedPracCode})` : ""}</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Select value={assignPracId} onValueChange={v => setAssignPracId(v)}>
+                    <SelectTrigger className="w-64 h-8 text-xs" onClick={e => e.stopPropagation()}>
+                      <SelectValue placeholder="Select practitioner…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {practitioners
+                        .filter(p => p.user_id !== u.user_id)
+                        .sort((a, b) => `${a.first_name || ""} ${a.last_name || ""}`.localeCompare(`${b.first_name || ""} ${b.last_name || ""}`))
+                        .map(p => (
+                          <SelectItem key={p.user_id} value={p.user_id} className="text-xs">
+                            {`${p.first_name || ""} ${p.last_name || ""}`.trim() || "Unknown"}{p.practitioner_code ? ` (${p.practitioner_code})` : ""}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    size="sm"
+                    className="h-8 text-xs"
+                    disabled={!assignPracId || assignPracId === currentPracId || assigning}
+                    onClick={async e => {
+                      e.stopPropagation();
+                      setAssigning(true);
+                      await onAssignPractitioner(u.user_id, assignPracId);
+                      setAssigning(false);
+                    }}
+                  >
+                    {assigning ? "Assigning…" : currentPracId ? "Reassign" : "Assign"}
+                  </Button>
+                </div>
+              </div>
             </div>
           </td>
         </tr>
