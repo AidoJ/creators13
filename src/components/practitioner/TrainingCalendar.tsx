@@ -169,7 +169,7 @@ export default function TrainingCalendar({ compact = false, refreshKey = 0 }: Tr
               return (
                 <div key={call.id} className="flex items-center gap-3 p-2 rounded-lg bg-muted/30">
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{call.title}</p>
+                    <p className="text-sm font-medium truncate rounded px-1.5 py-0.5 inline-block" style={getCallColorStyle(call.title)}>{call.title}</p>
                     <p className="text-xs text-muted-foreground">{date} · {time} · {call.duration_minutes}min</p>
                   </div>
                   {call.zoom_link && (
@@ -257,7 +257,7 @@ export default function TrainingCalendar({ compact = false, refreshKey = 0 }: Tr
                     {dayCalls.slice(0, 2).map(call => {
                       const { time } = formatInTimezone(call.scheduled_at);
                       return (
-                        <div key={call.id} className="rounded bg-primary/10 px-1 py-0.5 text-[9px] text-primary truncate" title={`${call.title} — ${time}`}>
+                        <div key={call.id} className="rounded px-1 py-0.5 text-[9px] truncate" style={getCallColorStyle(call.title)} title={`${call.title} — ${time}`}>
                           {time} {call.title}
                         </div>
                       );
@@ -284,7 +284,7 @@ export default function TrainingCalendar({ compact = false, refreshKey = 0 }: Tr
                     <div key={call.id} className="rounded-xl border border-primary/15 bg-card p-4 flex flex-col sm:flex-row sm:items-center gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h4 className="font-medium text-foreground text-sm">{call.title}</h4>
+                          <h4 className="font-medium text-sm rounded px-1.5 py-0.5 inline-block" style={getCallColorStyle(call.title)}>{call.title}</h4>
                           {call.recurrence_rule !== "none" && (
                             <Badge variant="outline" className="text-[10px]">
                               <Repeat className="h-2.5 w-2.5 mr-0.5" />
