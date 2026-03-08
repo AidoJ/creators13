@@ -748,6 +748,46 @@ function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, 
                   </div>
                 </div>
               )}
+
+              {/* Assign Practitioner */}
+              <div className="pt-2 border-t border-border space-y-2">
+                <p className="text-xs font-medium text-foreground flex items-center gap-1"><UserPlus className="h-3 w-3" />Assign Practitioner</p>
+                <div className="flex items-center gap-2">
+                  {assignedPractitioner && (
+                    <span className="text-xs text-muted-foreground">Currently: <strong>{assignedPractitioner}</strong>{assignedPracCode ? ` (${assignedPracCode})` : ""}</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Select value={assignPracId} onValueChange={v => setAssignPracId(v)}>
+                    <SelectTrigger className="w-64 h-8 text-xs" onClick={e => e.stopPropagation()}>
+                      <SelectValue placeholder="Select practitioner…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {practitioners
+                        .filter(p => p.user_id !== u.user_id)
+                        .sort((a, b) => `${a.first_name || ""} ${a.last_name || ""}`.localeCompare(`${b.first_name || ""} ${b.last_name || ""}`))
+                        .map(p => (
+                          <SelectItem key={p.user_id} value={p.user_id} className="text-xs">
+                            {`${p.first_name || ""} ${p.last_name || ""}`.trim() || "Unknown"}{p.practitioner_code ? ` (${p.practitioner_code})` : ""}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    size="sm"
+                    className="h-8 text-xs"
+                    disabled={!assignPracId || assignPracId === currentPracId || assigning}
+                    onClick={async e => {
+                      e.stopPropagation();
+                      setAssigning(true);
+                      await onAssignPractitioner(u.user_id, assignPracId);
+                      setAssigning(false);
+                    }}
+                  >
+                    {assigning ? "Assigning…" : currentPracId ? "Reassign" : "Assign"}
+                  </Button>
+                </div>
+              </div>
             </div>
           </td>
         </tr>
