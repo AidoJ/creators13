@@ -35,6 +35,14 @@ export default function PlanSelection() {
   const [annual, setAnnual] = useState(searchParams.get("billing") === "annual");
   const [isCaseStudy, setIsCaseStudy] = useState(urlCaseStudy);
   const [practitionerCode, setPractitionerCode] = useState(urlPractitionerCode);
+  const [signingOut, setSigningOut] = useState(false);
+
+  // Force sign-out when arriving via case study invite link to avoid pre-filling another user's data
+  useEffect(() => {
+    if (!user || signingOut || !urlCaseStudy) return;
+    setSigningOut(true);
+    supabase.auth.signOut().then(() => setSigningOut(false));
+  }, [user, urlCaseStudy, signingOut]);
 
   const handleContinue = async () => {
     if (!selectedTier) return;
