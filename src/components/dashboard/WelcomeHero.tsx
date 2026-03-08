@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { TIERS, type TierKey } from "@/lib/tiers";
-import { Sparkles } from "lucide-react";
+import { Sparkles, ArrowRight, BookOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { sortCreatorTypes } from "@/lib/creatorTypes";
 import welcomeBg from "@/assets/welcome-bg.png";
