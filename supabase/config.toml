@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.send-training-update]
 verify_jwt = false
+
+[functions.notify-practitioner-photos]
+verify_jwt = false

@@ -244,6 +244,12 @@ export default function Photos() {
       await supabase.from("profiles").update({ enrollment_step: "photos_uploaded" }).eq("user_id", user.id);
     }
     toast({ title: "All photos uploaded successfully!" });
+
+    // Notify assigned practitioner(s) in the background
+    supabase.functions.invoke("notify-practitioner-photos", {
+      body: { client_user_id: user.id },
+    }).catch((err) => console.warn("Practitioner notification failed:", err));
+
     setSubmitting(false);
 
     const returnTo = params.get("returnTo");
