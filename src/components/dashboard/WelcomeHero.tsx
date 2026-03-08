@@ -159,21 +159,21 @@ export default function WelcomeHero({ firstName, tier, subscriptionStatus, statu
 
       {/* What's Next? — separate box */}
       {nextStep && (
-        <div className="rounded-2xl border border-border bg-card p-4 flex items-center gap-4">
-          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-            <CircleHelp className="h-5 w-5 text-primary" />
+        <div className="rounded-2xl border border-orange-300/30 bg-card p-4 flex items-center gap-4">
+          <div className="w-10 h-10 rounded-full bg-orange-500/15 flex items-center justify-center shrink-0">
+            <CircleHelp className="h-5 w-5 text-orange-500" />
           </div>
           <div className="flex-1 min-w-0">
             <span className="text-sm font-semibold text-foreground">What's Next?</span>
             <p className="text-xs text-muted-foreground">{nextStep.label}</p>
           </div>
           {nextStep.link && (
-            <Button size="sm" asChild>
+            <Button size="sm" className="bg-orange-500 hover:bg-orange-600 text-white" asChild>
               <a href={nextStep.link}>Continue <ArrowRight className="h-3 w-3 ml-1" /></a>
             </Button>
           )}
           {isAustralia && (
-            <Button variant="outline" size="sm" className="gap-1.5 shrink-0" asChild>
+            <Button variant="outline" size="sm" className="gap-1.5 shrink-0 border-orange-400/40 text-orange-600 hover:bg-orange-500/10" asChild>
               <a href="https://www.paypal.com/ncp/payment/Q5UNQG7THTWQW" target="_blank" rel="noopener noreferrer">
                 <BookOpen className="h-3.5 w-3.5" />
                 Buy the Book
@@ -185,15 +185,15 @@ export default function WelcomeHero({ firstName, tier, subscriptionStatus, statu
 
       {/* Book button when enrollment is complete but user is in Australia */}
       {!nextStep && isAustralia && (
-        <div className="rounded-2xl border border-border bg-card p-4 flex items-center gap-4">
-          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-            <BookOpen className="h-5 w-5 text-primary" />
+        <div className="rounded-2xl border border-orange-300/30 bg-card p-4 flex items-center gap-4">
+          <div className="w-10 h-10 rounded-full bg-orange-500/15 flex items-center justify-center shrink-0">
+            <BookOpen className="h-5 w-5 text-orange-500" />
           </div>
           <div className="flex-1 min-w-0">
             <span className="text-sm font-semibold text-foreground">13Creators Book</span>
             <p className="text-xs text-muted-foreground">Get your copy of the 13Creators book</p>
           </div>
-          <Button variant="outline" size="sm" className="gap-1.5 shrink-0" asChild>
+          <Button variant="outline" size="sm" className="gap-1.5 shrink-0 border-orange-400/40 text-orange-600 hover:bg-orange-500/10" asChild>
             <a href="https://www.paypal.com/ncp/payment/Q5UNQG7THTWQW" target="_blank" rel="noopener noreferrer">
               <BookOpen className="h-3.5 w-3.5" />
               Buy Now
