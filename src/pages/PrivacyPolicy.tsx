@@ -190,7 +190,7 @@ export default function PrivacyPolicy() {
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-30">
         <div className="container mx-auto px-4 py-3 flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+          <Button variant="ghost" size="icon" onClick={() => { if (window.history.length > 1) { navigate(-1); } else { navigate("/"); } }}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <h1 className="text-lg font-display font-bold text-foreground">Privacy Policy</h1>
