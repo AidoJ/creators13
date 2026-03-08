@@ -356,10 +356,20 @@ export default function Photos() {
             </p>
           </div>
 
-          <div className="text-center">
+          <div className="text-center space-y-3">
             <Button onClick={() => setViewMode("wizard")} size="lg" className="rounded-full px-10 text-base font-semibold">
               I Understand — Start Photos <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
+            <div>
+              <a
+                href="/privacy-policy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-muted-foreground underline underline-offset-2 hover:text-primary transition-colors"
+              >
+                View our Privacy Policy
+              </a>
+            </div>
           </div>
         </main>
       </div>

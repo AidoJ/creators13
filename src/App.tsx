@@ -22,6 +22,7 @@ import AdminDashboard from "./pages/Admin";
 import TrainerDashboard from "./pages/Trainer";
 import RoleGuard from "@/components/RoleGuard";
 import NotFound from "./pages/NotFound";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 
 const queryClient = new QueryClient();
 
@@ -47,6 +48,7 @@ const App = () => (
             <Route path="/practitioner" element={<ProtectedRoute><RoleGuard allowedRoles={["practitioner", "trainee", "trainer"]}><PractitionerDashboard /></RoleGuard></ProtectedRoute>} />
             <Route path="/trainer" element={<ProtectedRoute><RoleGuard allowedRoles={["trainer"]}><TrainerDashboard /></RoleGuard></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute><RoleGuard allowedRoles={["trainer", "admin"]}><AdminDashboard /></RoleGuard></ProtectedRoute>} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
