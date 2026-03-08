@@ -34,25 +34,29 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/enroll" element={<PlanSelection />} />
-            <Route path="/enroll/signup" element={<Signup />} />
-            <Route path="/enroll/payment" element={<Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading…</div>}><Payment /></Suspense>} />
-            <Route path="/enroll/practitioner" element={<ProtectedRoute><PractitionerSelection /></ProtectedRoute>} />
-            <Route path="/enroll/details" element={<Details />} />
-            <Route path="/enroll/consent" element={<ProtectedRoute><Consent /></ProtectedRoute>} />
-            <Route path="/enroll/photos" element={<ProtectedRoute><Photos /></ProtectedRoute>} />
-            <Route path="/enroll/booking" element={<ProtectedRoute><Booking /></ProtectedRoute>} />
-            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/practitioner" element={<ProtectedRoute><RoleGuard allowedRoles={["practitioner", "trainee", "trainer"]}><PractitionerDashboard /></RoleGuard></ProtectedRoute>} />
-            <Route path="/trainer" element={<ProtectedRoute><RoleGuard allowedRoles={["trainer"]}><TrainerDashboard /></RoleGuard></ProtectedRoute>} />
-            <Route path="/admin" element={<ProtectedRoute><RoleGuard allowedRoles={["trainer", "admin"]}><AdminDashboard /></RoleGuard></ProtectedRoute>} />
-            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <div className="flex flex-col min-h-screen">
+            <div className="flex-1">
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/enroll" element={<PlanSelection />} />
+                <Route path="/enroll/signup" element={<Signup />} />
+                <Route path="/enroll/payment" element={<Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading…</div>}><Payment /></Suspense>} />
+                <Route path="/enroll/practitioner" element={<ProtectedRoute><PractitionerSelection /></ProtectedRoute>} />
+                <Route path="/enroll/details" element={<Details />} />
+                <Route path="/enroll/consent" element={<ProtectedRoute><Consent /></ProtectedRoute>} />
+                <Route path="/enroll/photos" element={<ProtectedRoute><Photos /></ProtectedRoute>} />
+                <Route path="/enroll/booking" element={<ProtectedRoute><Booking /></ProtectedRoute>} />
+                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                <Route path="/practitioner" element={<ProtectedRoute><RoleGuard allowedRoles={["practitioner", "trainee", "trainer"]}><PractitionerDashboard /></RoleGuard></ProtectedRoute>} />
+                <Route path="/trainer" element={<ProtectedRoute><RoleGuard allowedRoles={["trainer"]}><TrainerDashboard /></RoleGuard></ProtectedRoute>} />
+                <Route path="/admin" element={<ProtectedRoute><RoleGuard allowedRoles={["trainer", "admin"]}><AdminDashboard /></RoleGuard></ProtectedRoute>} />
+                <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </div>
+            <GlobalFooter />
+          </div>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
