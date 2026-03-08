@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowRight, Loader2, MailCheck } from "lucide-react";
 import { TIERS, TierKey } from "@/lib/tiers";
+import { getAppOrigin } from "@/lib/appOrigin";
 import EnrollmentHeader from "@/components/enrollment/EnrollmentHeader";
 
 export default function Signup() {
@@ -58,6 +59,8 @@ export default function Signup() {
 
     setLoading(true);
 
+    const appOrigin = getAppOrigin();
+
     // 1. Create auth account
     // Build redirect URL back to this signup page so verification lands on "I'm Verified"
     const verifyParams = new URLSearchParams({ tier, billing });
@@ -65,7 +68,7 @@ export default function Signup() {
       verifyParams.set("case_study", "true");
       verifyParams.set("practitioner_code", practitionerCode);
     }
-    const redirectUrl = `${window.location.origin}/enroll/signup?${verifyParams.toString()}`;
+    const redirectUrl = `${appOrigin}/enroll/signup?${verifyParams.toString()}`;
 
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
@@ -98,8 +101,8 @@ export default function Signup() {
         user_id: userId,
         tier,
         billing,
-        successUrl: `${window.location.origin}/enroll/practitioner?tier=${tier}&billing=${billing}&payment=skipped`,
-        cancelUrl: `${window.location.origin}/enroll/payment?tier=${tier}&billing=${billing}&canceled=true`,
+        successUrl: `${appOrigin}/enroll/practitioner?tier=${tier}&billing=${billing}&payment=skipped`,
+        cancelUrl: `${appOrigin}/enroll/payment?tier=${tier}&billing=${billing}&canceled=true`,
       },
     });
 

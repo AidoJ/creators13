@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { UserPlus, Copy, CheckCircle, Send, Loader2, Mail, ExternalLink } from "lucide-react";
+import { getAppOrigin } from "@/lib/appOrigin";
 
 interface Invitation {
   id: string;
@@ -46,7 +47,7 @@ export default function InviteClientForm({ practitionerCode }: InviteClientFormP
   }
 
   function getInviteLink(token: string) {
-    const base = window.location.origin;
+    const base = getAppOrigin();
     const params = new URLSearchParams({
       tier: "wren",
       billing: "monthly",
