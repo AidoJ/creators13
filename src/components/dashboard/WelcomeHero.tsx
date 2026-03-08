@@ -169,14 +169,14 @@ export default function WelcomeHero({ firstName, tier, subscriptionStatus, statu
               <p className="text-xs text-muted-foreground">{nextStep.label}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 pl-[52px] sm:pl-0">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
             {nextStep.link && (
-              <Button size="sm" className="bg-orange-500 hover:bg-orange-600 text-white" asChild>
+              <Button size="sm" className="w-full sm:w-auto justify-center bg-orange-500 hover:bg-orange-600 text-white" asChild>
                 <a href={nextStep.link}>Continue <ArrowRight className="h-3 w-3 ml-1" /></a>
               </Button>
             )}
             {isAustralia && (
-              <Button variant="outline" size="sm" className="gap-1.5 shrink-0 border-orange-400/40 text-orange-600 hover:bg-orange-500/10" asChild>
+              <Button variant="outline" size="sm" className="w-full sm:w-auto justify-center gap-1.5 shrink-0 border-orange-400/40 text-orange-600 hover:bg-orange-500/10" asChild>
                 <a href="https://www.paypal.com/ncp/payment/Q5UNQG7THTWQW" target="_blank" rel="noopener noreferrer">
                   <BookOpen className="h-3.5 w-3.5" />
                   Buy the Book
@@ -199,7 +199,7 @@ export default function WelcomeHero({ firstName, tier, subscriptionStatus, statu
               <p className="text-xs text-muted-foreground">Get your copy of the 13Creators book</p>
             </div>
           </div>
-          <div className="pl-[52px] sm:pl-0">
+          <div className="w-full sm:w-auto">
             <Button variant="outline" size="sm" className="gap-1.5 shrink-0 border-orange-400/40 text-orange-600 hover:bg-orange-500/10" asChild>
               <a href="https://www.paypal.com/ncp/payment/Q5UNQG7THTWQW" target="_blank" rel="noopener noreferrer">
                 <BookOpen className="h-3.5 w-3.5" />
