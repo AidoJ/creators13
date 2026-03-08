@@ -36,6 +36,7 @@ export default function Details() {
   const [phone, setPhone] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [gender, setGender] = useState("");
+  const [genderOther, setGenderOther] = useState("");
   const [pronouns, setPronouns] = useState("");
   const [heightCm, setHeightCm] = useState("");
   const [shoeSize, setShoeSize] = useState("");
@@ -61,7 +62,13 @@ export default function Details() {
         setLastName(data.last_name || "");
         setPhone(data.phone || "");
         setDateOfBirth(data.date_of_birth || "");
-        setGender(data.gender || "");
+        const g = data.gender || "";
+        if (["female", "male", "gender-diverse", "prefer-not-to-say"].includes(g)) {
+          setGender(g);
+        } else if (g) {
+          setGender("other");
+          setGenderOther(g);
+        }
         setPronouns(data.pronouns || "");
         setHeightCm(data.height_cm != null ? String(data.height_cm) : "");
         setShoeSize(data.shoe_size || "");
@@ -94,7 +101,7 @@ export default function Details() {
       display_name: `${firstName} ${lastName}`.trim() || null,
       phone: phone || null,
       date_of_birth: dateOfBirth || null,
-      gender: gender || null,
+      gender: gender === "other" ? genderOther : (gender || null),
       pronouns: pronouns || null,
       height_cm: heightCm ? Number(heightCm) : null,
       shoe_size: shoeSize || null,
@@ -234,18 +241,25 @@ export default function Details() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="gender">Gender *</Label>
-              <Select value={gender} onValueChange={setGender} required>
+              <Select value={gender} onValueChange={(v) => { setGender(v); if (v !== "other") setGenderOther(""); }} required>
                 <SelectTrigger>
                   <SelectValue placeholder="Select gender" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="female">Female</SelectItem>
                   <SelectItem value="male">Male</SelectItem>
-                  <SelectItem value="non-binary">Non-binary</SelectItem>
+                  <SelectItem value="gender-diverse">Gender Diverse</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
                   <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+            {gender === "other" && (
+              <div className="space-y-1.5">
+                <Label htmlFor="genderOther">Please describe your gender *</Label>
+                <Input id="genderOther" required value={genderOther} onChange={(e) => setGenderOther(e.target.value)} placeholder="How do you describe your gender?" />
+              </div>
+            )}
             <div className="space-y-1.5">
               <Label htmlFor="pronouns">Pronouns</Label>
               <Input id="pronouns" value={pronouns} onChange={(e) => setPronouns(e.target.value)} placeholder="e.g. she/her, he/him, they/them" />
