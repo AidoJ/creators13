@@ -116,18 +116,22 @@ export default function WelcomeHero({ firstName, tier, subscriptionStatus, statu
             <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground">
               Welcome{firstName ? `, ${firstName}` : ""}!
             </h1>
-            {glyphs.map(g => (
-              <div
-                key={g.name}
-                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center p-1"
-                style={{ backgroundColor: `${g.color}20` }}
-                title={g.name}
-              >
-                <img src={g.url} alt={g.name} className="w-full h-full object-contain" />
-              </div>
-            ))}
             {showStatusBadge && <Badge className={statusColor}>{statusLabel}</Badge>}
           </div>
+          {glyphs.length > 0 && (
+            <div className="flex items-center gap-2 flex-wrap">
+              {glyphs.map(g => (
+                <div
+                  key={g.name}
+                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center p-1"
+                  style={{ backgroundColor: `${g.color}20` }}
+                  title={g.name}
+                >
+                  <img src={g.url} alt={g.name} className="w-full h-full object-contain" />
+                </div>
+              ))}
+            </div>
+          )}
           <p className="text-sm text-muted-foreground max-w-md">
             Your Creator Type profiling journey — track your progress, view your photos, and discover your unique profile.
           </p>
