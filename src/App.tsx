@@ -23,6 +23,7 @@ import TrainerDashboard from "./pages/Trainer";
 import RoleGuard from "@/components/RoleGuard";
 import NotFound from "./pages/NotFound";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import GlobalFooter from "@/components/shared/GlobalFooter";
 
 const queryClient = new QueryClient();
 
