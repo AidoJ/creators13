@@ -42,9 +42,11 @@ interface WelcomeHeroProps {
   statusColor: string;
   creatorTypes?: string[];
   showStatusBadge?: boolean;
+  enrollmentStep?: string | null;
+  country?: string | null;
 }
 
-export default function WelcomeHero({ firstName, tier, subscriptionStatus, statusLabel, statusColor, creatorTypes = [], showStatusBadge = true }: WelcomeHeroProps) {
+export default function WelcomeHero({ firstName, tier, subscriptionStatus, statusLabel, statusColor, creatorTypes = [], showStatusBadge = true, enrollmentStep, country }: WelcomeHeroProps) {
   const tierData = tier ? TIERS[tier] : null;
   const birdSrc = tier ? TIER_BIRDS[tier] : null;
 
