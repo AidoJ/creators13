@@ -7,6 +7,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Calendar, Video, Clock, Repeat, Globe, ChevronLeft, ChevronRight, List, CalendarDays } from "lucide-react";
+import { CREATOR_TYPE_NAMES, getCreatorTypeColor } from "@/lib/creatorTypes";
+
+/** Returns {bg, text} style for a call title based on naming conventions. */
+function getCallColorStyle(title: string): { backgroundColor: string; color: string } {
+  const lower = title.toLowerCase();
+  if (lower.includes("case study")) {
+    return { backgroundColor: "#F5A300", color: "#000" };
+  }
+  for (const name of CREATOR_TYPE_NAMES) {
+    if (lower.includes(name.toLowerCase())) {
+      return { backgroundColor: getCreatorTypeColor(name), color: "#fff" };
+    }
+  }
+  return { backgroundColor: "hsl(270, 60%, 50%)", color: "#fff" };
+}
 
 interface TrainingCall {
   id: string;
