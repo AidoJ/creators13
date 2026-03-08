@@ -443,6 +443,23 @@ export default function AdminDashboard() {
                         onStatusChange={handlePractitionerStatus} onRefresh={fetchUsers}
                         assignedPractitioner={assignedPracMap[u.user_id] || null}
                         assignedPracCode={assignedPracCodeMap[u.user_id] || null}
+                        practitioners={practitioners}
+                        currentPracId={assignments.find(a => a.client_id === u.user_id && a.active)?.practitioner_id || null}
+                        onAssignPractitioner={async (clientId, pracId) => {
+                          // Deactivate existing active assignments
+                          const existing = assignments.filter(a => a.client_id === clientId && a.active);
+                          for (const a of existing) {
+                            await supabase.from("client_practitioner").update({ active: false }).eq("id", a.id);
+                          }
+                          // Insert new assignment
+                          const { error } = await supabase.from("client_practitioner").insert({ client_id: clientId, practitioner_id: pracId });
+                          if (error) {
+                            toast({ title: "Error", description: error.message, variant: "destructive" });
+                          } else {
+                            toast({ title: "Practitioner assigned" });
+                            await Promise.all([fetchAssignments(), fetchUsers()]);
+                          }
+                        }}
                       />
                     ))}
                   </tbody>
