@@ -261,8 +261,31 @@ export default function Photos() {
       // Case study subjects skip booking — go straight to dashboard
       navigate("/dashboard");
     } else {
-      const nextParams = new URLSearchParams({ tier, billing });
-      navigate(`/enroll/booking?${nextParams.toString()}`);
+      // Only show booking page if client is linked to A'Hara (trainer)
+      const { data: trainerLink } = await supabase
+        .from("client_practitioner")
+        .select("practitioner_id")
+        .eq("client_id", user.id)
+        .eq("active", true)
+        .maybeSingle();
+
+      // Check if assigned practitioner has the 'trainer' role (i.e. A'Hara)
+      let isLinkedToTrainer = false;
+      if (trainerLink?.practitioner_id) {
+        const { data: roles } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", trainerLink.practitioner_id)
+          .eq("role", "trainer");
+        isLinkedToTrainer = !!(roles && roles.length > 0);
+      }
+
+      if (isLinkedToTrainer) {
+        const nextParams = new URLSearchParams({ tier, billing });
+        navigate(`/enroll/booking?${nextParams.toString()}`);
+      } else {
+        navigate("/dashboard");
+      }
     }
   };
 
