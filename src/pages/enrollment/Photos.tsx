@@ -259,8 +259,10 @@ export default function Photos() {
     if (returnTo) {
       navigate(returnTo);
     } else if (isCaseStudy) {
-      // Case study subjects skip booking — go straight to dashboard
-      navigate("/dashboard");
+      // Case study subjects see a confirmation screen
+      setCaseStudyComplete(true);
+      setSubmitting(false);
+      return;
     } else {
       // Only show booking page if client is linked to A'Hara (trainer)
       const { data: trainerLink } = await supabase
