@@ -82,6 +82,7 @@ export default function Photos() {
     Object.fromEntries(PHOTO_SLOTS.map((s) => [s.key, { ...initialPhotoState }])) as Record<PhotoKey, PhotoState>
   );
   const [submitting, setSubmitting] = useState(false);
+  const [caseStudyComplete, setCaseStudyComplete] = useState(false);
   const [loadingExisting, setLoadingExisting] = useState(true);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
