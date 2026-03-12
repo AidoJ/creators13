@@ -834,7 +834,7 @@ function CallCard({ call, onCancel, onDelete, onDuplicate, onReschedule, onResen
             </div>
           )}
         </div>
-        <div className="flex items-center gap-1.5 flex-shrink-0">
+        <div className="flex items-center gap-1.5 flex-wrap">
           {call.zoom_link && (
             <a href={call.zoom_link} target="_blank" rel="noopener noreferrer">
               <Button size="sm" className="h-7 text-xs bg-[hsl(var(--zoom-blue))] text-primary-foreground hover:bg-[hsl(var(--zoom-blue))]/90"><Video className="h-3 w-3 mr-1" />Zoom</Button>
