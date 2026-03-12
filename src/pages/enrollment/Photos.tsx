@@ -383,8 +383,16 @@ export default function Photos() {
         <EnrollmentHeader currentStep={6} />
         <main className="container mx-auto px-4 py-10 max-w-lg">
           <div className="text-center mb-6">
-            <h1 className="text-3xl font-display font-bold text-foreground mb-3">How To Take Your Photos</h1>
+           <h1 className="text-3xl font-display font-bold text-foreground mb-3">How To Take Your Photos</h1>
             <p className="text-muted-foreground">We need 8 clear photos. Please read the guidelines below before you begin.</p>
+            <a
+              href="/docs/13CREATORS_Sample_Body_Photos_PDF.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-sm text-primary underline underline-offset-2 hover:text-primary/80 mt-2"
+            >
+              Download Body Photo Examples
+            </a>
           </div>
 
           <div className="bg-card border border-border rounded-2xl p-6 mb-6">
