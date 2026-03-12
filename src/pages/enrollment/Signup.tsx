@@ -111,9 +111,22 @@ export default function Signup() {
       // Non-blocking — user is created, DB records may still need fixing
     }
 
-    // 3. If case study, log the practitioner code
-    if (caseStudy && practitionerCode) {
-      console.log("Case study enrollment with practitioner code:", practitionerCode);
+    // 3. If case study, send welcome email with login details and photo upload prompt
+    if (caseStudy) {
+      const appOrigin = getAppOrigin();
+      const loginUrl = `${appOrigin}/auth`;
+      const photosUrl = `${appOrigin}/enroll/photos?tier=${tier}&billing=${billing}&case_study=true&practitioner_code=${practitionerCode}`;
+      supabase.functions.invoke("send-case-study-welcome", {
+        body: {
+          to: email,
+          clientName: email.split("@")[0],
+          loginLink: loginUrl,
+          photosLink: photosUrl,
+        },
+      }).then(({ error: emailErr }) => {
+        if (emailErr) console.error("Welcome email error:", emailErr);
+        else console.log("✓ Case study welcome email queued");
+      });
     }
 
     setLoading(false);
