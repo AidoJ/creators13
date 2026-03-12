@@ -86,7 +86,6 @@ export default function EmailTemplateEditor() {
     viewLink: "https://creators13.lovable.app/trainer",
     photosLink: "https://creators13.lovable.app/enroll/photos",
     loginLink: "https://creators13.lovable.app/auth",
-    practitionerName2: "Sarah Johnson",
   };
   let previewHtml = htmlBody;
   for (const [key, value] of Object.entries(previewReplacements)) {
