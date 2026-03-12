@@ -180,6 +180,21 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
     return path;
   }
 
+  async function notifyTrainerSubmission() {
+    if (!user) return;
+    try {
+      await supabase.functions.invoke("notify-trainer-submission", {
+        body: {
+          practitioner_id: user.id,
+          client_name: clientName,
+          case_study_title: title,
+        },
+      });
+    } catch (e) {
+      console.error("Failed to notify trainer:", e);
+    }
+  }
+
   async function handleSave(status: CaseStudyStatus = "draft") {
     if (!user) return;
     setSaving(true);
