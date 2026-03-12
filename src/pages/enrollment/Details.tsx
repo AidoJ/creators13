@@ -249,7 +249,7 @@ export default function Details() {
                   <SelectItem value="female">Female</SelectItem>
                   <SelectItem value="male">Male</SelectItem>
                   <SelectItem value="gender-diverse">Gender Diverse</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
+                  <SelectItem value="other">Self-describe</SelectItem>
                   <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
                 </SelectContent>
               </Select>
