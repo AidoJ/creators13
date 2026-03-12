@@ -221,7 +221,7 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
           status,
         } as any).eq("id", existingCaseStudy.id);
         if (error) toast({ title: "Error saving", description: error.message, variant: "destructive" });
-        else { toast({ title: "Case study updated" }); onSaved?.(); }
+        else { toast({ title: "Case study updated" }); if (status === "submitted") notifyTrainerSubmission(); onSaved?.(); }
       } else {
         const { error } = await supabase.from("case_studies").insert({
           id: caseStudyId,
