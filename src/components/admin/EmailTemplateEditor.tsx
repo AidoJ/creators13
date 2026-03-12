@@ -81,6 +81,12 @@ export default function EmailTemplateEditor() {
     recurrenceText: '<p style="color:#666;font-size:13px;margin:0 0 16px 0;">🔁 This is a <strong>weekly</strong> recurring call.</p>',
     zoomButton: '<div style="text-align:center;margin:24px 0 0 0;"><a href="#" style="display:inline-block;background:#BB1B56;color:#ffffff;padding:14px 36px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;">Join Zoom Meeting →</a></div>',
     email: "sarah@example.com",
+    practitionerName: "Sarah Johnson",
+    clientName: "Jane Doe",
+    caseStudyTitle: "Assessment for Jane Doe on 2026-03-12",
+    viewLink: "https://creators13.lovable.app/trainer",
+    photosLink: "https://creators13.lovable.app/enroll/photos",
+    loginLink: "https://creators13.lovable.app/auth",
   };
   let previewHtml = htmlBody;
   for (const [key, value] of Object.entries(previewReplacements)) {
