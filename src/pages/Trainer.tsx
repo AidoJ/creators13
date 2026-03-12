@@ -144,6 +144,18 @@ export default function TrainerDashboard() {
           }, { onConflict: "user_id" });
           // Mark enrollment as complete
           await supabase.from("profiles").update({ enrollment_step: "complete" }).eq("user_id", cs.subject_user_id);
+          // Notify client of their approved creator types
+          try {
+            await supabase.functions.invoke("notify-client-approved", {
+              body: {
+                client_user_id: cs.subject_user_id,
+                primary_type: types[0] || "",
+                secondary_type: types[1] || "",
+              },
+            });
+          } catch (e) {
+            console.error("Failed to notify client of approval:", e);
+          }
         }
       }
       toast({ title: action === "approved" ? "Case study approved" : "Revision requested with notes" });
