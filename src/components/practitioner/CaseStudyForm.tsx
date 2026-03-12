@@ -329,6 +329,7 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
         toast({ title: "Error saving", description: error.message, variant: "destructive" });
       } else {
         toast({ title: "Case study saved", description: status === "submitted" ? "Submitted for review." : "Saved as draft." });
+        if (status === "submitted") notifyTrainerSubmission();
         onSaved?.();
       }
     }
