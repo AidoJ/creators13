@@ -35,3 +35,9 @@ verify_jwt = false
 
 [functions.notify-practitioner-photos]
 verify_jwt = false
+
+[functions.notify-trainer-submission]
+verify_jwt = false
+
+[functions.send-case-study-welcome]
+verify_jwt = false
