@@ -180,6 +180,21 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
     return path;
   }
 
+  async function notifyTrainerSubmission() {
+    if (!user) return;
+    try {
+      await supabase.functions.invoke("notify-trainer-submission", {
+        body: {
+          practitioner_id: user.id,
+          client_name: clientName,
+          case_study_title: title,
+        },
+      });
+    } catch (e) {
+      console.error("Failed to notify trainer:", e);
+    }
+  }
+
   async function handleSave(status: CaseStudyStatus = "draft") {
     if (!user) return;
     setSaving(true);
@@ -206,7 +221,7 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
           status,
         } as any).eq("id", existingCaseStudy.id);
         if (error) toast({ title: "Error saving", description: error.message, variant: "destructive" });
-        else { toast({ title: "Case study updated" }); onSaved?.(); }
+        else { toast({ title: "Case study updated" }); if (status === "submitted") notifyTrainerSubmission(); onSaved?.(); }
       } else {
         const { error } = await supabase.from("case_studies").insert({
           id: caseStudyId,
@@ -220,7 +235,7 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
           status,
         } as any);
         if (error) toast({ title: "Error saving", description: error.message, variant: "destructive" });
-        else { toast({ title: "Case study saved", description: status === "submitted" ? "Submitted for review." : "Saved as draft." }); onSaved?.(); }
+        else { toast({ title: "Case study saved", description: status === "submitted" ? "Submitted for review." : "Saved as draft." }); if (status === "submitted") notifyTrainerSubmission(); onSaved?.(); }
       }
       setSaving(false);
       return;
@@ -275,6 +290,7 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
         toast({ title: "Error saving", description: error.message, variant: "destructive" });
       } else {
         toast({ title: "Case study updated", description: status === "submitted" ? "Re-submitted for review." : "Saved as draft." });
+        if (status === "submitted") notifyTrainerSubmission();
         onSaved?.();
       }
     } else {
@@ -313,6 +329,7 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
         toast({ title: "Error saving", description: error.message, variant: "destructive" });
       } else {
         toast({ title: "Case study saved", description: status === "submitted" ? "Submitted for review." : "Saved as draft." });
+        if (status === "submitted") notifyTrainerSubmission();
         onSaved?.();
       }
     }
