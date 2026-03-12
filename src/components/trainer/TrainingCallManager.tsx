@@ -796,8 +796,8 @@ function CallCard({ call, onCancel, onDelete, onDuplicate, onReschedule, onResen
 
   return (
     <div className={`rounded-xl border bg-card p-4 space-y-3 ${cancelled ? "opacity-50 border-border" : past ? "border-border" : "border-primary/20"}`}>
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-        <div className="flex-1 min-w-0">
+      <div className="space-y-3">
+        <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <h4 className="font-medium text-foreground text-sm">
               {call.title.replace(/^\[DUPLICATE\]\s*/, '')}
