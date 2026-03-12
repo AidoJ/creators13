@@ -97,6 +97,24 @@ export default function Photos() {
   const allReviewsPassed = PHOTO_SLOTS.every((s) => photos[s.key].review?.pass === true);
   const uploadedCount = PHOTO_SLOTS.filter((s) => photos[s.key].uploaded || photos[s.key].existingPath !== null).length;
 
+  // Guard: redirect case study subjects who haven't given consent
+  useEffect(() => {
+    if (!user) return;
+    const checkConsent = async () => {
+      // Check if user is a case study subject (has referral_code or case_study param)
+      const [{ data: sub }, { data: profile }] = await Promise.all([
+        supabase.from("subscriptions").select("referral_code").eq("user_id", user.id).maybeSingle(),
+        supabase.from("profiles").select("case_study_consent_at").eq("user_id", user.id).maybeSingle(),
+      ]);
+      const isCaseStudy = params.get("case_study") === "true" || !!sub?.referral_code;
+      if (isCaseStudy && !profile?.case_study_consent_at) {
+        const nextParams = new URLSearchParams({ tier, billing, case_study: "true" });
+        navigate(`/enroll/consent?${nextParams.toString()}`, { replace: true });
+      }
+    };
+    checkConsent();
+  }, [user, navigate, params, tier, billing]);
+
   // Load existing photos from storage on mount
   useEffect(() => {
     if (!user) { setLoadingExisting(false); return; }
