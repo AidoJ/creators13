@@ -133,7 +133,7 @@ export default function TrainerDashboard() {
         const { data: cs } = await supabase.from("case_studies").select("subject_user_id, creator_types_identified").eq("id", id).maybeSingle();
         if (cs?.subject_user_id && cs.creator_types_identified && cs.creator_types_identified.length > 0) {
           const types = cs.creator_types_identified.map(capitaliseTypeName);
-          await supabase.from("creator_type_profiles").upsert({
+          const { error: upsertErr } = await supabase.from("creator_type_profiles").upsert({
             user_id: cs.subject_user_id,
             primary_type: types[0] || null,
             secondary_type: types[1] || null,
@@ -142,8 +142,13 @@ export default function TrainerDashboard() {
             profiled_by: user?.id ?? null,
             profiled_at: new Date().toISOString(),
           }, { onConflict: "user_id" });
+          if (upsertErr) {
+            console.error("Failed to sync creator types:", upsertErr);
+            toast({ title: "Warning", description: "Case study approved but creator types failed to sync: " + upsertErr.message, variant: "destructive" });
+          }
           // Mark enrollment as complete
-          await supabase.from("profiles").update({ enrollment_step: "complete" }).eq("user_id", cs.subject_user_id);
+          const { error: stepErr } = await supabase.from("profiles").update({ enrollment_step: "complete" }).eq("user_id", cs.subject_user_id);
+          if (stepErr) console.error("Failed to update enrollment step:", stepErr);
           // Notify client of their approved creator types
           try {
             await supabase.functions.invoke("notify-client-approved", {
