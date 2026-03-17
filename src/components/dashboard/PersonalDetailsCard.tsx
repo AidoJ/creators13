@@ -49,7 +49,7 @@ export default function PersonalDetailsCard({ profile, hasDetails }: PersonalDet
         </Button>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
-        <DetailItem icon={<CalIcon className="h-3.5 w-3.5" />} label="Age" value={age ? `${age} years` : "—"} />
+        <DetailItem icon={<CalIcon className="h-3.5 w-3.5" />} label="DOB" value={profile?.date_of_birth ? new Date(profile.date_of_birth).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" }) : "—"} />
         <DetailItem label="Gender" value={profile?.gender || "—"} />
         <DetailItem label="Pronouns" value={profile?.pronouns || "—"} />
         <DetailItem icon={<Ruler className="h-3.5 w-3.5" />} label="Height" value={profile?.height_cm ? `${profile.height_cm} cm` : "—"} />
