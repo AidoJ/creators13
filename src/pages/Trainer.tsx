@@ -293,11 +293,12 @@ export default function TrainerDashboard() {
           </TabsContent>
 
           <TabsContent value="cases-filtered" className="space-y-4">
-            <Button variant="ghost" size="sm" className="text-xs mb-2" onClick={() => { setPipelineStatusFilter(null); setPipelinePractitionerFilter(null); setActiveTab("pipeline"); }}>
+            <Button variant="ghost" size="sm" className="text-xs mb-2" onClick={() => { setPipelineStatusFilter(null); setPipelinePractitionerFilter(null); setSearchFilterId(null); setExpandedCaseStudy(null); setActiveTab("pipeline"); }}>
               <ArrowLeft className="h-3 w-3 mr-1" /> Back to Pipeline
             </Button>
             <CaseStudyList
               caseStudies={caseStudies.filter(c => {
+                if (searchFilterId && c.id !== searchFilterId) return false;
                 if (pipelineStatusFilter && c.status !== pipelineStatusFilter) return false;
                 if (pipelinePractitionerFilter && c.practitioner_id !== pipelinePractitionerFilter) return false;
                 return true;
