@@ -31,11 +31,29 @@ export default function InviteClientForm({ practitionerCode }: InviteClientFormP
   const [loading, setLoading] = useState(false);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [templateHtml, setTemplateHtml] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
     fetchInvitations();
+    fetchTemplate();
   }, [user]);
+
+  async function fetchTemplate() {
+    const { data } = await supabase
+      .from("email_templates")
+      .select("html_body")
+      .eq("template_key", "case_study_invite")
+      .single();
+    if (data) setTemplateHtml(data.html_body);
+  }
+
+  const previewHtml = useMemo(() => {
+    if (!templateHtml) return null;
+    return templateHtml
+      .replace(/\{\{clientName\}\}/g, "there")
+      .replace(/\{\{inviteLink\}\}/g, "#");
+  }, [templateHtml]);
 
   async function fetchInvitations() {
     const { data } = await supabase
