@@ -117,35 +117,6 @@ export default function InviteClientForm({ practitionerCode }: InviteClientFormP
     fetchInvitations();
   }
 
-  function openInvitationEmail(inv: Invitation) {
-    const link = getInviteLink(inv.invite_token);
-    const subject = encodeURIComponent("You're Invited to Join 13 Creators as a Case Study");
-    const body = encodeURIComponent(
-`Greetings Beautiful Body!
-
-Thank you for your interest in volunteering as a case study for the 13CREATORS Practitioner Training.
-
-To become a case study, you'll be invited to share 8 photos of your full body wearing swimwear or yoga gear.
-(Photo instructions: https://sacredbusiness.com.au/creator-constitution-instructions/)
-
-In exchange, you will learn about two of your Creator Types, according to your body shape, facial features, hands and feet. Your Creator Types blueprint will give you a deeper awareness of your natural abilities, challenges and the purpose of your particular physical constitution, both individually and in groups. In other words, what purpose are you naturally built for?
-
-Your photos will only be shared within class for teaching purposes and viewed only by students and the teacher and inventor of the Creator Types, A'Hara.
-
-To get started, click your personal invitation link below:
-${link}
-
-For more information:
-- Not All Creators Were Made Equal: https://sacredbusiness.com.au/not-creators-made-equal/
-- FAQs: https://sacredbusiness.com.au/wp-content/uploads/2025/03/Creator-Types-FAQs-2025.pdf
-- 13CREATORS Training Prospectus: http://sacredbusiness.com.au/wp-content/uploads/2026/02/2026-13CREATORS-Training-Prospectus.pdf
-
-Be Curious & Have Fun Learning About Your Body!
-
-www.creatortypes.com`
-    );
-    window.open(`mailto:${inv.email}?subject=${subject}&body=${body}`, "_blank");
-  }
 
   function handleCopyLink(inv: Invitation) {
     const link = getInviteLink(inv.invite_token);
