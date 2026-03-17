@@ -133,7 +133,7 @@ export default function ClientDetail({ clientId, onClientNameLoaded }: ClientDet
           {profile.date_of_birth && (
             <div>
               <span className="text-muted-foreground text-xs">DOB</span>
-              <p className="font-medium text-foreground">{new Date(profile.date_of_birth).toLocaleDateString("en-AU")}</p>
+              <p className="font-medium text-foreground">{new Date(profile.date_of_birth).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })}</p>
             </div>
           )}
           {profile.height_cm && (
