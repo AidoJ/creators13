@@ -181,17 +181,18 @@ export default function TrainerDashboard() {
             onSelectCaseStudy={(id) => {
               setSearchFilterId(id);
               setExpandedCaseStudy(id);
-              const cs = caseStudies.find(c => c.id === id);
-              if (cs?.status === "submitted") setActiveTab("cases-pr");
-              else setActiveTab("cases-dt");
+              setPipelineStatusFilter(null);
+              setPipelinePractitionerFilter(null);
+              setActiveTab("cases-filtered");
             }}
             onSelectClient={(clientId) => {
               const cs = caseStudies.find(c => c.subject_user_id === clientId);
               if (cs) {
                 setSearchFilterId(cs.id);
                 setExpandedCaseStudy(cs.id);
-                if (cs.status === "submitted") setActiveTab("cases-pr");
-                else setActiveTab("cases-dt");
+                setPipelineStatusFilter(null);
+                setPipelinePractitionerFilter(null);
+                setActiveTab("cases-filtered");
               }
             }}
           />
