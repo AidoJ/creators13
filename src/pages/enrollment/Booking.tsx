@@ -124,7 +124,7 @@ export default function Booking() {
           <div className="flex items-start gap-3">
             <AlertCircle className="h-5 w-5 text-primary mt-0.5 shrink-0" />
             <div className="space-y-2">
-              <h3 className="font-semibold text-foreground">After You Book</h3>
+              <h3 className="font-semibold text-foreground">What Happens Next</h3>
               <ul className="text-sm text-muted-foreground space-y-1.5">
                 <li className="flex items-start gap-2">
                   <span className="text-primary font-bold mt-0.5">•</span>
@@ -132,11 +132,11 @@ export default function Booking() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-primary font-bold mt-0.5">•</span>
-                  <span>Join 5-10 minutes early to test audio and video</span>
+                  <span>Join 5-10 minutes before the call to test audio and video (you can join by computer, tablet or smart phone)</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-primary font-bold mt-0.5">•</span>
-                  <span>Have your {tierInfo.name} membership details ready</span>
+                  <span>After the call you'll receive your Creator profile and a link to download the call recording (link expires after 7 days)</span>
                 </li>
               </ul>
             </div>
