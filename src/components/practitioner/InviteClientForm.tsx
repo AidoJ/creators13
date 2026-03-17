@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { UserPlus, Copy, CheckCircle, Send, Loader2, Mail, ExternalLink } from "lucide-react";
+import { UserPlus, Copy, CheckCircle, Send, Loader2, Mail } from "lucide-react";
 import { getAppOrigin } from "@/lib/appOrigin";
 
 interface Invitation {
