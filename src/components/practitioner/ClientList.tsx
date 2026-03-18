@@ -13,6 +13,7 @@ interface ClientRow {
     last_name: string | null;
     email: string | null;
     enrollment_step: string | null;
+    case_study_consent_at: string | null;
   } | null;
   creatorTypes: string[];
 }
