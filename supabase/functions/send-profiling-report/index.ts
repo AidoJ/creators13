@@ -196,9 +196,13 @@ function buildDefaultHtml(data: ReportData): string {
           <h2 style="font-size:18px;color:#5a3a28;font-family:'Cormorant Garamond',Georgia,serif;margin:28px 0 16px;border-bottom:2px solid #e8ddd4;padding-bottom:8px;">
             Body Annotation
           </h2>
-          <div style="text-align:center;">
-            <img src="${image_urls.bodyAnnotated}" alt="Body Annotation" style="max-width:400px;border-radius:12px;border:2px solid #e8ddd4;" />
-          </div>
+          <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+            <tr>
+              <td style="text-align:center;padding:8px;">
+                <img src="${image_urls.bodyAnnotated}" alt="Body Annotation" width="400" style="max-width:400px;width:100%;height:auto;border-radius:12px;border:2px solid #e8ddd4;display:block;margin:0 auto;" />
+              </td>
+            </tr>
+          </table>
           ` : ""}
 
           ${notesSection("Body Annotation Notes", body_annotation_notes)}
