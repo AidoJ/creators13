@@ -112,16 +112,19 @@ export default function CompositePhotoLayout({ userId, subjectName, className, s
     </div>
   );
 
+  const BODY_KEYS = ["body_front", "body_back", "body_side"];
+
   const PhotoCell = ({ photoKey, label, className: cellClass }: { photoKey: string; label: string; className?: string }) => {
     const entry = photos[photoKey] || photos[GENERIC_FALLBACK[photoKey]] || null;
     const thumbUrl = entry?.thumb || null;
+    const isBody = BODY_KEYS.includes(photoKey);
     return (
       <div className={cn("overflow-hidden rounded-lg group relative cursor-pointer", cellClass)}
         onClick={() => entry && setZoomedPhoto({ url: entry.full, label })}
       >
         {thumbUrl ? (
           <>
-            <img src={thumbUrl} alt={label} className="w-full h-full object-contain bg-muted/30" loading="lazy" decoding="async" />
+            <img src={thumbUrl} alt={label} className={cn("w-full h-full bg-muted/30", isBody ? "object-cover" : "object-contain")} loading="lazy" decoding="async" />
             <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/10 transition-colors flex items-center justify-center">
               <ZoomIn className="h-5 w-5 text-primary-foreground opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
             </div>
