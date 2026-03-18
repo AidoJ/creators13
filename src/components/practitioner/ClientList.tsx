@@ -76,6 +76,7 @@ export default function ClientList({ onSelectClient, selectedClientId }: ClientL
             last_name: prof.last_name,
             email: prof.email,
             enrollment_step: prof.enrollment_step,
+            case_study_consent_at: prof.case_study_consent_at,
           } : null,
           creatorTypes: types,
         };
