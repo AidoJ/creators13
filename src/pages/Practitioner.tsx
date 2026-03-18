@@ -100,9 +100,28 @@ export default function PractitionerDashboard() {
           </div>
 
           <CaseStudySearch
-            onSelectCaseStudy={(id) => {
+            onSelectCaseStudy={async (id) => {
+              // Always try to open the client file when selecting a case study search hit
+              const { data } = await supabase
+                .from("case_studies")
+                .select("subject_user_id")
+                .eq("id", id)
+                .maybeSingle();
+
+              if (data?.subject_user_id) {
+                setSearchFilterCaseStudyId(null);
+                handleSelectClient(data.subject_user_id);
+                setActiveTab("clients");
+                return;
+              }
+
+              // Fallback if legacy case study has no linked subject
               setSearchFilterCaseStudyId(id);
               setActiveTab("cases");
+              toast({
+                title: "Client file unavailable",
+                description: "This case study is not linked to a client profile yet, so we opened the case study record instead.",
+              });
             }}
             onSelectClient={(clientId) => {
               setSearchFilterCaseStudyId(null);
