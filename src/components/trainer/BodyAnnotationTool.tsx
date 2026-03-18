@@ -2,8 +2,9 @@ import { useRef, useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Upload, RotateCcw, Download, Pencil, Type, Undo2 } from "lucide-react";
+import { Upload, RotateCcw, Download, Pencil, Type, Undo2, ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useProfilingPhotos } from "@/hooks/useProfilingPhotos";
 
 interface Point { x: number; y: number }
 interface DrawAction {
@@ -34,7 +35,11 @@ const COLORS = [
 
 const LINE_WIDTHS = [2, 3, 5, 8];
 
-export default function BodyAnnotationTool() {
+interface BodyAnnotationToolProps {
+  userId?: string;
+}
+
+export default function BodyAnnotationTool({ userId }: BodyAnnotationToolProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
@@ -46,6 +51,18 @@ export default function BodyAnnotationTool() {
   const [currentPoints, setCurrentPoints] = useState<Point[]>([]);
   const [notes, setNotes] = useState("");
   const [canvasSize, setCanvasSize] = useState({ w: 0, h: 0 });
+
+  const { bodyPhotos, loading: photosLoading } = useProfilingPhotos(userId);
+
+  const loadImageFromUrl = useCallback((url: string) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      setImage(img);
+      setActions([]);
+    };
+    img.src = url;
+  }, []);
 
   const handleFile = useCallback((file: File) => {
     const img = new Image();
@@ -181,28 +198,69 @@ export default function BodyAnnotationTool() {
     setIsDrawing(false);
   };
 
+  const formatPhotoType = (type: string) =>
+    type.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+
   return (
     <div className="space-y-6">
       <div className="rounded-xl border border-border bg-card p-5">
         <h3 className="text-lg font-display font-bold text-foreground mb-1">Body Annotation</h3>
         <p className="text-sm text-muted-foreground mb-4">
-          Upload a front body image, draw coloured lines and add text labels to annotate features.
+          Select from the client's body photos or upload an image, then draw coloured lines and add text labels to annotate features.
         </p>
 
         {!image ? (
-          <div
-            className="border-2 border-dashed border-border rounded-xl p-12 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors"
-            onClick={() => fileRef.current?.click()}
-          >
-            <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-            <span className="text-sm text-muted-foreground">Click to upload a body photo</span>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
-            />
+          <div className="space-y-4">
+            {/* Profiling photos picker */}
+            {userId && bodyPhotos.length > 0 && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-2">
+                  <ImageIcon className="h-3.5 w-3.5 inline mr-1" />
+                  Select from client's profiling photos:
+                </p>
+                <div className="grid grid-cols-3 gap-3">
+                  {bodyPhotos.map((photo) => (
+                    <button
+                      key={photo.photo_type}
+                      className="group relative rounded-lg border-2 border-border hover:border-primary/50 overflow-hidden transition-colors"
+                      onClick={() => loadImageFromUrl(photo.url)}
+                    >
+                      <img
+                        src={photo.url}
+                        alt={formatPhotoType(photo.photo_type)}
+                        className="w-full aspect-[3/4] object-cover"
+                      />
+                      <span className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[10px] py-1 text-center">
+                        {formatPhotoType(photo.photo_type)}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-3 my-3">
+                  <div className="flex-1 h-px bg-border" />
+                  <span className="text-xs text-muted-foreground">or</span>
+                  <div className="flex-1 h-px bg-border" />
+                </div>
+              </div>
+            )}
+            {photosLoading && userId && (
+              <p className="text-xs text-muted-foreground text-center py-2">Loading client photos…</p>
+            )}
+
+            <div
+              className="border-2 border-dashed border-border rounded-xl p-12 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors"
+              onClick={() => fileRef.current?.click()}
+            >
+              <Upload className="h-8 w-8 text-muted-foreground mb-2" />
+              <span className="text-sm text-muted-foreground">Click to upload a body photo</span>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+              />
+            </div>
           </div>
         ) : (
           <div className="space-y-4">

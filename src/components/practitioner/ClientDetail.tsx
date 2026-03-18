@@ -275,8 +275,8 @@ export default function ClientDetail({ clientId, onClientNameLoaded }: ClientDet
       {/* Face Split & Body Annotation — certified practitioners only, paying subscribers only */}
       {isCertified && clientIsPaidSubscriber && !isCaseStudySubject && (
         <>
-          <FaceSplitMirror />
-          <BodyAnnotationTool />
+          <FaceSplitMirror userId={clientId} />
+          <BodyAnnotationTool userId={clientId} />
         </>
       )}
     </div>
