@@ -611,11 +611,13 @@ export default function Photos() {
             </Button>
             <Button
               onClick={handleSubmitAll}
-              disabled={submitting}
+              disabled={submitting || hasBlockingFailures}
               className="rounded-full px-8"
             >
               {submitting ? (
                 <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Uploading {uploadedCount}/{PHOTO_SLOTS.length}...</>
+              ) : hasBlockingFailures ? (
+                <>Fix Flagged Photos First</>
               ) : (
                 <>Submit All Photos <ArrowRight className="ml-2 h-4 w-4" /></>
               )}
