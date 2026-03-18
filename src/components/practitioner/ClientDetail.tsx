@@ -1,15 +1,19 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import CompositePhotoLayout from "@/components/profiling/CompositePhotoLayout";
 import CreatorTypeAssignmentForm from "@/components/practitioner/CreatorTypeAssignmentForm";
 import ClientSubscriptionCard from "@/components/practitioner/ClientSubscriptionCard";
 import ClientRecordingLinks from "@/components/practitioner/ClientRecordingLinks";
+import FaceSplitMirror from "@/components/trainer/FaceSplitMirror";
+import BodyAnnotationTool from "@/components/trainer/BodyAnnotationTool";
 import { User, Calendar, Sparkles, Video, Pencil, Check, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { getCreatorTypeColor, sortCreatorTypes } from "@/lib/creatorTypes";
+import { isPaidTier } from "@/lib/clientClassification";
 
 interface ProfileData {
   first_name: string | null;
@@ -54,15 +58,29 @@ export default function ClientDetail({ clientId, onClientNameLoaded }: ClientDet
   const [editingZoom, setEditingZoom] = useState(false);
   const [zoomInput, setZoomInput] = useState("");
   const [savingZoom, setSavingZoom] = useState(false);
+  const { user } = useAuth();
+  const [isCertified, setIsCertified] = useState(false);
+  const [clientIsPaidSubscriber, setClientIsPaidSubscriber] = useState(false);
+  const [isCaseStudySubject, setIsCaseStudySubject] = useState(false);
   const { toast } = useToast();
 
+  // Fetch practitioner certification status
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("profiles").select("practitioner_status").eq("user_id", user.id).maybeSingle()
+      .then(({ data }) => setIsCertified(data?.practitioner_status === "certified"));
+  }, [user]);
+
+  // Fetch client data + subscription
   useEffect(() => {
     async function fetchClientData() {
       setLoading(true);
-      const [profileRes, bookingRes, ctRes] = await Promise.all([
+      const [profileRes, bookingRes, ctRes, subRes, csRes] = await Promise.all([
         supabase.from("profiles").select("first_name, last_name, email, enrollment_step, date_of_birth, gender, height_cm, shoe_size, city, state, country, case_study_consent_at").eq("user_id", clientId).maybeSingle(),
         supabase.from("bookings").select("id, scheduled_at, status, zoom_link").eq("client_id", clientId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("creator_type_profiles").select("primary_type, secondary_type, type_3, type_4, profiled_at").eq("user_id", clientId).maybeSingle(),
+        supabase.from("subscriptions").select("tier").eq("user_id", clientId).maybeSingle(),
+        supabase.from("case_studies").select("id").eq("subject_user_id", clientId).limit(1),
       ]);
       if (profileRes.data) {
         setProfile(profileRes.data);
@@ -71,6 +89,8 @@ export default function ClientDetail({ clientId, onClientNameLoaded }: ClientDet
       }
       if (bookingRes.data) setBooking(bookingRes.data);
       if (ctRes.data) setCreatorType(ctRes.data);
+      setClientIsPaidSubscriber(isPaidTier(subRes.data?.tier));
+      setIsCaseStudySubject(!!(csRes.data && csRes.data.length > 0));
       setLoading(false);
     }
     fetchClientData();
@@ -251,6 +271,14 @@ export default function ClientDetail({ clientId, onClientNameLoaded }: ClientDet
 
       {/* Photo composite */}
       <CompositePhotoLayout userId={clientId} subjectName={`${fullName}'s Profiling Photos`} showReclassify />
+
+      {/* Face Split & Body Annotation — certified practitioners only, paying subscribers only */}
+      {isCertified && clientIsPaidSubscriber && !isCaseStudySubject && (
+        <>
+          <FaceSplitMirror />
+          <BodyAnnotationTool />
+        </>
+      )}
     </div>
   );
 }
