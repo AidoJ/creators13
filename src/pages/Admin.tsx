@@ -658,9 +658,14 @@ function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, 
                     <Input value={editEmail} onChange={e => setEditEmail(e.target.value)} className="h-8 text-xs" onClick={e => e.stopPropagation()} />
                   </div>
                 </div>
-                <Button size="sm" className="h-7 text-xs" disabled={savingProfile} onClick={e => { e.stopPropagation(); handleSaveProfile(); }}>
-                  <Save className="h-3 w-3 mr-1" />{savingProfile ? "Saving…" : "Save Profile"}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button size="sm" className="h-7 text-xs" disabled={savingProfile} onClick={e => { e.stopPropagation(); handleSaveProfile(); }}>
+                    <Save className="h-3 w-3 mr-1" />{savingProfile ? "Saving…" : "Save Profile"}
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-7 text-xs" onClick={e => { e.stopPropagation(); onViewFile(u.user_id); }}>
+                    <ExternalLink className="h-3 w-3 mr-1" />View File
+                  </Button>
+                </div>
               </div>
 
               {/* Password Reset */}
