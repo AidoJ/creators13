@@ -88,14 +88,33 @@ export default function ProfilingReportButton({
         );
         if (url) imageUrls.rightMirrored = url;
       }
-      if (faceSplitData?.originalImageUrl && faceSplitData.originalImageUrl.startsWith("data:")) {
-        const url = await uploadDataUrlToStorage(
-          faceSplitData.originalImageUrl,
-          `reports/${clientId}/face-original-${ts}.png`
-        );
-        if (url) imageUrls.original = url;
-      } else if (faceSplitData?.originalImageUrl) {
-        imageUrls.original = faceSplitData.originalImageUrl;
+      if (faceSplitData?.originalImageUrl) {
+        if (faceSplitData.originalImageUrl.startsWith("data:")) {
+          const url = await uploadDataUrlToStorage(
+            faceSplitData.originalImageUrl,
+            `reports/${clientId}/face-original-${ts}.png`
+          );
+          if (url) imageUrls.original = url;
+        } else {
+          // Re-upload the public URL as a copy into reports/ so it's always accessible
+          try {
+            const resp = await fetch(faceSplitData.originalImageUrl);
+            const blob = await resp.blob();
+            const { error } = await supabase.storage
+              .from("profiling-photos")
+              .upload(`reports/${clientId}/face-original-${ts}.png`, blob, { upsert: true, contentType: blob.type || "image/png" });
+            if (!error) {
+              const { data: urlData } = supabase.storage
+                .from("profiling-photos")
+                .getPublicUrl(`reports/${clientId}/face-original-${ts}.png`);
+              imageUrls.original = urlData.publicUrl;
+            } else {
+              imageUrls.original = faceSplitData.originalImageUrl;
+            }
+          } catch {
+            imageUrls.original = faceSplitData.originalImageUrl;
+          }
+        }
       }
 
       // Upload body annotation image
