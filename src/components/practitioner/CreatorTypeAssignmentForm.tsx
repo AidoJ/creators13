@@ -89,6 +89,17 @@ export default function CreatorTypeAssignmentForm({ clientId, clientName }: Crea
     if (!types[0] || !user) return;
     setSaving(true);
 
+    const { data: latestProfileData } = await supabase
+      .from("creator_type_profiles")
+      .select("profiling_data")
+      .eq("user_id", clientId)
+      .maybeSingle();
+
+    const existingProfilingData =
+      latestProfileData?.profiling_data && typeof latestProfileData.profiling_data === "object" && !Array.isArray(latestProfileData.profiling_data)
+        ? (latestProfileData.profiling_data as Record<string, unknown>)
+        : {};
+
     const payload = {
       user_id: clientId,
       primary_type: types[0],
@@ -98,6 +109,7 @@ export default function CreatorTypeAssignmentForm({ clientId, clientName }: Crea
       profiled_by: user.id,
       profiled_at: new Date().toISOString(),
       profiling_data: {
+        ...existingProfilingData,
         notes,
         type_3: types[2] || null,
         type_4: types[3] || null,

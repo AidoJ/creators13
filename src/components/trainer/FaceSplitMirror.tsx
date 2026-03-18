@@ -8,8 +8,16 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useProfilingPhotos } from "@/hooks/useProfilingPhotos";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import {
+  getStoragePathFromPublicUrl,
+  loadCreatorProfilingData,
+  mergeCreatorProfilingData,
+} from "@/lib/creatorTypeProfilingData";
 
-interface Point { x: number; y: number }
+interface Point {
+  x: number;
+  y: number;
+}
 
 export interface FaceSplitData {
   originalImageUrl?: string;
@@ -44,6 +52,24 @@ async function uploadDataUrl(dataUrl: string, path: string): Promise<string | nu
   }
 }
 
+function normalizeSavedFaceSplitData(raw?: SavedFaceSplitData): SavedFaceSplitData | null {
+  if (!raw) return null;
+
+  const normalized: SavedFaceSplitData = {
+    original_path: getStoragePathFromPublicUrl(raw.original_path),
+    left_path: getStoragePathFromPublicUrl(raw.left_path),
+    right_path: getStoragePathFromPublicUrl(raw.right_path),
+    notes: raw.notes,
+    saved_at: raw.saved_at,
+  };
+
+  if (!normalized.left_path && !normalized.right_path && !normalized.original_path && !normalized.notes) {
+    return null;
+  }
+
+  return normalized;
+}
+
 export default function FaceSplitMirror({ userId, onDataChange }: FaceSplitMirrorProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -65,68 +91,101 @@ export default function FaceSplitMirror({ userId, onDataChange }: FaceSplitMirro
   // Load saved data on mount
   useEffect(() => {
     if (!userId) return;
-    setLoadingSaved(true);
-    supabase.from("creator_type_profiles").select("profiling_data").eq("user_id", userId).maybeSingle()
-      .then(({ data }) => {
-        const pd = data?.profiling_data as Record<string, unknown> | null;
-        const fs = pd?.face_split as SavedFaceSplitData | undefined;
-        if (fs?.left_path) {
-          setSavedData(fs);
-          setNotes(fs.notes || "");
+
+    const loadSaved = async () => {
+      setLoadingSaved(true);
+      try {
+        const profilingData = await loadCreatorProfilingData(userId);
+        const faceSplitRaw = (profilingData.face_split ?? profilingData.faceSplit) as SavedFaceSplitData | undefined;
+        const normalized = normalizeSavedFaceSplitData(faceSplitRaw);
+
+        if (normalized) {
+          setSavedData(normalized);
+          setNotes(normalized.notes || "");
+        } else {
+          setSavedData(null);
         }
+      } catch (error) {
+        console.error("Failed to load saved face split data:", error);
+      } finally {
         setLoadingSaved(false);
-      });
+      }
+    };
+
+    loadSaved();
   }, [userId]);
 
   // Report data changes to parent
   useEffect(() => {
     onDataChange?.({
-      originalImageUrl: image?.src || (savedData?.original_path ? supabase.storage.from("profiling-photos").getPublicUrl(savedData.original_path).data.publicUrl : undefined),
-      leftMirroredDataUrl: results?.left || (savedData?.left_path ? supabase.storage.from("profiling-photos").getPublicUrl(savedData.left_path).data.publicUrl : undefined),
-      rightMirroredDataUrl: results?.right || (savedData?.right_path ? supabase.storage.from("profiling-photos").getPublicUrl(savedData.right_path).data.publicUrl : undefined),
+      originalImageUrl:
+        image?.src ||
+        (savedData?.original_path
+          ? supabase.storage.from("profiling-photos").getPublicUrl(savedData.original_path).data.publicUrl
+          : undefined),
+      leftMirroredDataUrl:
+        results?.left ||
+        (savedData?.left_path
+          ? supabase.storage.from("profiling-photos").getPublicUrl(savedData.left_path).data.publicUrl
+          : undefined),
+      rightMirroredDataUrl:
+        results?.right ||
+        (savedData?.right_path
+          ? supabase.storage.from("profiling-photos").getPublicUrl(savedData.right_path).data.publicUrl
+          : undefined),
       notes,
     });
   }, [image, results, notes, onDataChange, savedData]);
 
   const handleSave = async () => {
     if (!userId || !results) return;
+
     setSaving(true);
     try {
       const ts = Date.now();
+      const leftPath = `reports/${userId}/face-split-left-${ts}.png`;
+      const rightPath = `reports/${userId}/face-split-right-${ts}.png`;
+      const originalPath = `reports/${userId}/face-split-original-${ts}.png`;
+
       const [leftUrl, rightUrl, origUrl] = await Promise.all([
-        uploadDataUrl(results.left, `reports/${userId}/face-split-left-${ts}.png`),
-        uploadDataUrl(results.right, `reports/${userId}/face-split-right-${ts}.png`),
-        image?.src ? uploadDataUrl(image.src.startsWith("data:") ? image.src : await fetch(image.src).then(r => r.blob()).then(b => {
-          return new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result as string);
-            reader.readAsDataURL(b);
-          });
-        }), `reports/${userId}/face-split-original-${ts}.png`) : Promise.resolve(null),
+        uploadDataUrl(results.left, leftPath),
+        uploadDataUrl(results.right, rightPath),
+        image?.src
+          ? uploadDataUrl(
+              image.src.startsWith("data:")
+                ? image.src
+                : await fetch(image.src)
+                    .then((response) => response.blob())
+                    .then(
+                      (blob) =>
+                        new Promise<string>((resolve) => {
+                          const reader = new FileReader();
+                          reader.onload = () => resolve(reader.result as string);
+                          reader.readAsDataURL(blob);
+                        })
+                    ),
+              originalPath
+            )
+          : Promise.resolve(null),
       ]);
 
+      if (!leftUrl || !rightUrl) {
+        throw new Error("Could not upload mirrored images. Please try again.");
+      }
+
       const faceSplitData: SavedFaceSplitData = {
-        left_path: `reports/${userId}/face-split-left-${ts}.png`,
-        right_path: `reports/${userId}/face-split-right-${ts}.png`,
-        original_path: origUrl ? `reports/${userId}/face-split-original-${ts}.png` : undefined,
+        left_path: leftPath,
+        right_path: rightPath,
+        original_path: origUrl ? originalPath : undefined,
         notes,
         saved_at: new Date().toISOString(),
       };
 
-      // Get existing profiling_data
-      const { data: existing } = await supabase.from("creator_type_profiles").select("profiling_data").eq("user_id", userId).maybeSingle();
-      const existingData = (existing?.profiling_data as Record<string, unknown>) || {};
-      const newData = { ...existingData, face_split: faceSplitData };
-
-      const { error } = await supabase.from("creator_type_profiles")
-        .update({ profiling_data: newData as any, updated_at: new Date().toISOString() })
-        .eq("user_id", userId);
-      
-      if (error) throw error;
+      await mergeCreatorProfilingData(userId, { face_split: faceSplitData });
       setSavedData(faceSplitData);
       toast({ title: "Face split saved" });
     } catch (err: any) {
-      toast({ title: "Save failed", description: err.message, variant: "destructive" });
+      toast({ title: "Save failed", description: err?.message || "Please try again.", variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -134,17 +193,20 @@ export default function FaceSplitMirror({ userId, onDataChange }: FaceSplitMirro
 
   const handleSaveNotes = async () => {
     if (!userId || !savedData) return;
+
     setSaving(true);
     try {
-      const { data: existing } = await supabase.from("creator_type_profiles").select("profiling_data").eq("user_id", userId).maybeSingle();
-      const existingData = (existing?.profiling_data as Record<string, unknown>) || {};
-      const updatedFaceSplit = { ...savedData, notes };
-      const newData = { ...existingData, face_split: updatedFaceSplit };
-      await supabase.from("creator_type_profiles").update({ profiling_data: newData as any, updated_at: new Date().toISOString() }).eq("user_id", userId);
+      const updatedFaceSplit: SavedFaceSplitData = {
+        ...savedData,
+        notes,
+        saved_at: savedData.saved_at ?? new Date().toISOString(),
+      };
+
+      await mergeCreatorProfilingData(userId, { face_split: updatedFaceSplit });
       setSavedData(updatedFaceSplit);
       toast({ title: "Notes saved" });
-    } catch {
-      toast({ title: "Save failed", variant: "destructive" });
+    } catch (err: any) {
+      toast({ title: "Save failed", description: err?.message || "Please try again.", variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -426,7 +488,7 @@ export default function FaceSplitMirror({ userId, onDataChange }: FaceSplitMirro
     supabase.storage.from("profiling-photos").getPublicUrl(path).data.publicUrl;
 
   // Show saved results if no active editing session
-  const showSavedResults = !image && !results && savedData?.left_path;
+  const showSavedResults = !image && !results && !!(savedData?.left_path || savedData?.right_path || savedData?.original_path);
 
   return (
     <div className="space-y-6">
