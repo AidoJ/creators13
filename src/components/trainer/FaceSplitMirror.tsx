@@ -2,10 +2,12 @@ import { useRef, useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Upload, RotateCcw, Scissors, Download, Info, ImageIcon, Anchor, GripVertical } from "lucide-react";
+import { Upload, RotateCcw, Scissors, Download, Info, ImageIcon, Save, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useProfilingPhotos } from "@/hooks/useProfilingPhotos";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface Point { x: number; y: number }
 
@@ -16,9 +18,30 @@ export interface FaceSplitData {
   notes: string;
 }
 
+interface SavedFaceSplitData {
+  original_path?: string;
+  left_path?: string;
+  right_path?: string;
+  notes?: string;
+  saved_at?: string;
+}
+
 interface FaceSplitMirrorProps {
   userId?: string;
   onDataChange?: (data: FaceSplitData) => void;
+}
+
+async function uploadDataUrl(dataUrl: string, path: string): Promise<string | null> {
+  try {
+    const res = await fetch(dataUrl);
+    const blob = await res.blob();
+    const { error } = await supabase.storage.from("profiling-photos").upload(path, blob, { upsert: true });
+    if (error) throw error;
+    const { data } = supabase.storage.from("profiling-photos").getPublicUrl(path);
+    return data.publicUrl;
+  } catch {
+    return null;
+  }
 }
 
 export default function FaceSplitMirror({ userId, onDataChange }: FaceSplitMirrorProps) {
@@ -32,18 +55,100 @@ export default function FaceSplitMirror({ userId, onDataChange }: FaceSplitMirro
   const [results, setResults] = useState<{ left: string; right: string } | null>(null);
   const [notes, setNotes] = useState("");
   const [canvasSize, setCanvasSize] = useState({ w: 0, h: 0 });
+  const [saving, setSaving] = useState(false);
+  const [savedData, setSavedData] = useState<SavedFaceSplitData | null>(null);
+  const [loadingSaved, setLoadingSaved] = useState(false);
+  const { toast } = useToast();
 
   const { facePhotos, loading: photosLoading } = useProfilingPhotos(userId);
+
+  // Load saved data on mount
+  useEffect(() => {
+    if (!userId) return;
+    setLoadingSaved(true);
+    supabase.from("creator_type_profiles").select("profiling_data").eq("user_id", userId).maybeSingle()
+      .then(({ data }) => {
+        const pd = data?.profiling_data as Record<string, unknown> | null;
+        const fs = pd?.face_split as SavedFaceSplitData | undefined;
+        if (fs?.left_path) {
+          setSavedData(fs);
+          setNotes(fs.notes || "");
+        }
+        setLoadingSaved(false);
+      });
+  }, [userId]);
 
   // Report data changes to parent
   useEffect(() => {
     onDataChange?.({
-      originalImageUrl: image?.src,
-      leftMirroredDataUrl: results?.left,
-      rightMirroredDataUrl: results?.right,
+      originalImageUrl: image?.src || (savedData?.original_path ? supabase.storage.from("profiling-photos").getPublicUrl(savedData.original_path).data.publicUrl : undefined),
+      leftMirroredDataUrl: results?.left || (savedData?.left_path ? supabase.storage.from("profiling-photos").getPublicUrl(savedData.left_path).data.publicUrl : undefined),
+      rightMirroredDataUrl: results?.right || (savedData?.right_path ? supabase.storage.from("profiling-photos").getPublicUrl(savedData.right_path).data.publicUrl : undefined),
       notes,
     });
-  }, [image, results, notes, onDataChange]);
+  }, [image, results, notes, onDataChange, savedData]);
+
+  const handleSave = async () => {
+    if (!userId || !results) return;
+    setSaving(true);
+    try {
+      const ts = Date.now();
+      const [leftUrl, rightUrl, origUrl] = await Promise.all([
+        uploadDataUrl(results.left, `reports/${userId}/face-split-left-${ts}.png`),
+        uploadDataUrl(results.right, `reports/${userId}/face-split-right-${ts}.png`),
+        image?.src ? uploadDataUrl(image.src.startsWith("data:") ? image.src : await fetch(image.src).then(r => r.blob()).then(b => {
+          return new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.readAsDataURL(b);
+          });
+        }), `reports/${userId}/face-split-original-${ts}.png`) : Promise.resolve(null),
+      ]);
+
+      const faceSplitData: SavedFaceSplitData = {
+        left_path: `reports/${userId}/face-split-left-${ts}.png`,
+        right_path: `reports/${userId}/face-split-right-${ts}.png`,
+        original_path: origUrl ? `reports/${userId}/face-split-original-${ts}.png` : undefined,
+        notes,
+        saved_at: new Date().toISOString(),
+      };
+
+      // Get existing profiling_data
+      const { data: existing } = await supabase.from("creator_type_profiles").select("profiling_data").eq("user_id", userId).maybeSingle();
+      const existingData = (existing?.profiling_data as Record<string, unknown>) || {};
+      const newData = { ...existingData, face_split: faceSplitData };
+
+      const { error } = await supabase.from("creator_type_profiles")
+        .update({ profiling_data: newData as any, updated_at: new Date().toISOString() })
+        .eq("user_id", userId);
+      
+      if (error) throw error;
+      setSavedData(faceSplitData);
+      toast({ title: "Face split saved" });
+    } catch (err: any) {
+      toast({ title: "Save failed", description: err.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveNotes = async () => {
+    if (!userId || !savedData) return;
+    setSaving(true);
+    try {
+      const { data: existing } = await supabase.from("creator_type_profiles").select("profiling_data").eq("user_id", userId).maybeSingle();
+      const existingData = (existing?.profiling_data as Record<string, unknown>) || {};
+      const updatedFaceSplit = { ...savedData, notes };
+      const newData = { ...existingData, face_split: updatedFaceSplit };
+      await supabase.from("creator_type_profiles").update({ profiling_data: newData as any, updated_at: new Date().toISOString() }).eq("user_id", userId);
+      setSavedData(updatedFaceSplit);
+      toast({ title: "Notes saved" });
+    } catch {
+      toast({ title: "Save failed", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const loadImageFromUrl = useCallback((url: string) => {
     const img = new Image();
@@ -72,7 +177,6 @@ export default function FaceSplitMirror({ userId, onDataChange }: FaceSplitMirro
     img.src = URL.createObjectURL(file);
   }, []);
 
-  // 50% of original max – cap at 300px wide
   const getScaledSize = useCallback(() => {
     if (!image) return { w: 0, h: 0, scale: 1 };
     const maxW = Math.min(300, (window.innerWidth - 64) / 2);
@@ -80,7 +184,6 @@ export default function FaceSplitMirror({ userId, onDataChange }: FaceSplitMirro
     return { w: Math.round(image.width * scale), h: Math.round(image.height * scale), scale };
   }, [image]);
 
-  // Check if a point is near the bottom handle
   const isNearPoint = (pos: Point, target: Point, radius = 14): boolean => {
     const dx = pos.x - target.x;
     const dy = pos.y - target.y;
@@ -111,7 +214,6 @@ export default function FaceSplitMirror({ userId, onDataChange }: FaceSplitMirro
     ctx.drawImage(image, 0, 0, w, h);
 
     const drawDot = (p: Point, color: string, label: string, isDraggable = false) => {
-      // Larger handle for draggable point
       const radius = isDraggable ? 8 : 6;
       ctx.beginPath();
       ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
@@ -122,7 +224,6 @@ export default function FaceSplitMirror({ userId, onDataChange }: FaceSplitMirro
       ctx.stroke();
 
       if (isDraggable) {
-        // Draw a grip indicator ring
         ctx.beginPath();
         ctx.arc(p.x, p.y, radius + 4, 0, Math.PI * 2);
         ctx.strokeStyle = "rgba(59,130,246,0.4)";
@@ -162,10 +263,8 @@ export default function FaceSplitMirror({ userId, onDataChange }: FaceSplitMirro
     }
   }, [image, topPoint, bottomPoint, placingPoint, getScaledSize]);
 
-  // Click handler — place anchor, then place cut point
   const handleMouseDown = (e: React.MouseEvent) => {
     const pos = getCanvasPos(e);
-
     if (placingPoint === "top") {
       setTopPoint(pos);
       setPlacingPoint("bottom");
@@ -175,11 +274,9 @@ export default function FaceSplitMirror({ userId, onDataChange }: FaceSplitMirro
       setPlacingPoint("done");
       setResults(null);
     } else if (placingPoint === "done" && bottomPoint && isNearPoint(pos, bottomPoint)) {
-      // Start dragging the bottom point
       setDragging(true);
       setResults(null);
     } else {
-      // Click elsewhere → reset to new anchor
       setTopPoint(pos);
       setBottomPoint(null);
       setPlacingPoint("bottom");
@@ -197,7 +294,6 @@ export default function FaceSplitMirror({ userId, onDataChange }: FaceSplitMirro
     if (dragging) setDragging(false);
   };
 
-  // Touch equivalents
   const handleTouchStart = (e: React.TouchEvent) => {
     if (placingPoint === "done" && bottomPoint) {
       const pos = getCanvasPos(e);
@@ -326,6 +422,12 @@ export default function FaceSplitMirror({ userId, onDataChange }: FaceSplitMirro
   const formatPhotoType = (type: string) =>
     type.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
 
+  const getPublicUrl = (path: string) =>
+    supabase.storage.from("profiling-photos").getPublicUrl(path).data.publicUrl;
+
+  // Show saved results if no active editing session
+  const showSavedResults = !image && !results && savedData?.left_path;
+
   return (
     <div className="space-y-6">
       <div className="rounded-xl border border-border bg-card p-5">
@@ -341,9 +443,40 @@ export default function FaceSplitMirror({ userId, onDataChange }: FaceSplitMirro
           </AlertDescription>
         </Alert>
 
-        {!image ? (
+        {loadingSaved && (
+          <p className="text-xs text-muted-foreground text-center py-4">Loading saved data…</p>
+        )}
+
+        {/* Show previously saved results */}
+        {showSavedResults && !loadingSaved && (
           <div className="space-y-4">
-            {/* Profiling photos picker */}
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-xs text-green-600 font-medium">✓ Previously saved{savedData.saved_at ? ` — ${new Date(savedData.saved_at).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}` : ""}</span>
+              <Button variant="outline" size="sm" onClick={() => setSavedData(null)} className="ml-auto">
+                <RotateCcw className="h-3.5 w-3.5 mr-1" /> Redo Split
+              </Button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2 text-center">
+                <p className="text-xs font-medium text-muted-foreground">Left Side Mirrored</p>
+                <img src={getPublicUrl(savedData.left_path!)} alt="Left mirrored" className="rounded-lg border border-border w-full" />
+              </div>
+              {savedData.original_path && (
+                <div className="space-y-2 text-center">
+                  <p className="text-xs font-medium text-muted-foreground">Original</p>
+                  <img src={getPublicUrl(savedData.original_path)} alt="Original" className="rounded-lg border border-border w-full" />
+                </div>
+              )}
+              <div className="space-y-2 text-center">
+                <p className="text-xs font-medium text-muted-foreground">Right Side Mirrored</p>
+                <img src={getPublicUrl(savedData.right_path!)} alt="Right mirrored" className="rounded-lg border border-border w-full" />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {!image && !showSavedResults && !loadingSaved && (
+          <div className="space-y-4">
             {userId && facePhotos.length > 0 && (
               <div>
                 <p className="text-xs font-medium text-muted-foreground mb-2">
@@ -394,7 +527,9 @@ export default function FaceSplitMirror({ userId, onDataChange }: FaceSplitMirro
               />
             </div>
           </div>
-        ) : (
+        )}
+
+        {image && (
           <div className="space-y-4">
             <div className="flex items-center gap-2 flex-wrap">
               <Button variant="outline" size="sm" onClick={reset}>
@@ -435,7 +570,15 @@ export default function FaceSplitMirror({ userId, onDataChange }: FaceSplitMirro
 
       {results && (
         <div className="rounded-xl border border-border bg-card p-5">
-          <h3 className="text-sm font-semibold text-foreground mb-4">Results</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-foreground">Results</h3>
+            {userId && (
+              <Button size="sm" onClick={handleSave} disabled={saving}>
+                {saving ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+                {saving ? "Saving…" : "Save Results"}
+              </Button>
+            )}
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2 text-center">
               <p className="text-xs font-medium text-muted-foreground">Left Side Mirrored</p>
@@ -469,6 +612,12 @@ export default function FaceSplitMirror({ userId, onDataChange }: FaceSplitMirro
           onChange={(e) => setNotes(e.target.value)}
           className="mt-2 min-h-[100px]"
         />
+        {userId && savedData && (
+          <Button size="sm" variant="outline" className="mt-2" onClick={handleSaveNotes} disabled={saving}>
+            {saving ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+            Save Notes
+          </Button>
+        )}
       </div>
     </div>
   );
