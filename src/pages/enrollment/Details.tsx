@@ -232,8 +232,8 @@ export default function Details() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="phone">Phone</Label>
-              <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+61 400 000 000" />
+              <Label htmlFor="phone">Phone *</Label>
+              <Input id="phone" type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+61 400 000 000" />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="dob">Date of Birth *</Label>
