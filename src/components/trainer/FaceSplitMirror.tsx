@@ -2,7 +2,7 @@ import { useRef, useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Upload, RotateCcw, Scissors, Download, Info, ImageIcon } from "lucide-react";
+import { Upload, RotateCcw, Scissors, Download, Info, ImageIcon, Anchor, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useProfilingPhotos } from "@/hooks/useProfilingPhotos";
@@ -28,6 +28,7 @@ export default function FaceSplitMirror({ userId, onDataChange }: FaceSplitMirro
   const [topPoint, setTopPoint] = useState<Point | null>(null);
   const [bottomPoint, setBottomPoint] = useState<Point | null>(null);
   const [placingPoint, setPlacingPoint] = useState<"top" | "bottom" | "done">("top");
+  const [dragging, setDragging] = useState(false);
   const [results, setResults] = useState<{ left: string; right: string } | null>(null);
   const [notes, setNotes] = useState("");
   const [canvasSize, setCanvasSize] = useState({ w: 0, h: 0 });
@@ -52,6 +53,7 @@ export default function FaceSplitMirror({ userId, onDataChange }: FaceSplitMirro
       setTopPoint(null);
       setBottomPoint(null);
       setPlacingPoint("top");
+      setDragging(false);
       setResults(null);
     };
     img.src = url;
@@ -64,18 +66,39 @@ export default function FaceSplitMirror({ userId, onDataChange }: FaceSplitMirro
       setTopPoint(null);
       setBottomPoint(null);
       setPlacingPoint("top");
+      setDragging(false);
       setResults(null);
     };
     img.src = URL.createObjectURL(file);
   }, []);
 
+  // 50% of original max – cap at 300px wide
   const getScaledSize = useCallback(() => {
     if (!image) return { w: 0, h: 0, scale: 1 };
-    const maxW = Math.min(600, window.innerWidth - 64);
+    const maxW = Math.min(300, (window.innerWidth - 64) / 2);
     const scale = maxW / image.width;
     return { w: Math.round(image.width * scale), h: Math.round(image.height * scale), scale };
   }, [image]);
 
+  // Check if a point is near the bottom handle
+  const isNearPoint = (pos: Point, target: Point, radius = 14): boolean => {
+    const dx = pos.x - target.x;
+    const dy = pos.y - target.y;
+    return dx * dx + dy * dy <= radius * radius;
+  };
+
+  const getCanvasPos = (e: React.MouseEvent | React.TouchEvent): Point => {
+    const canvas = canvasRef.current!;
+    const rect = canvas.getBoundingClientRect();
+    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+    const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+    return {
+      x: Math.round(((clientX - rect.left) / rect.width) * canvas.width),
+      y: Math.round(((clientY - rect.top) / rect.height) * canvas.height),
+    };
+  };
+
+  // Draw the canvas
   useEffect(() => {
     if (!image || !canvasRef.current) return;
     const { w, h } = getScaledSize();
@@ -87,22 +110,36 @@ export default function FaceSplitMirror({ userId, onDataChange }: FaceSplitMirro
     const ctx = canvas.getContext("2d")!;
     ctx.drawImage(image, 0, 0, w, h);
 
-    const drawDot = (p: Point, color: string, label: string) => {
+    const drawDot = (p: Point, color: string, label: string, isDraggable = false) => {
+      // Larger handle for draggable point
+      const radius = isDraggable ? 8 : 6;
       ctx.beginPath();
-      ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
       ctx.fillStyle = color;
       ctx.fill();
       ctx.strokeStyle = "#fff";
       ctx.lineWidth = 2;
       ctx.stroke();
+
+      if (isDraggable) {
+        // Draw a grip indicator ring
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, radius + 4, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(59,130,246,0.4)";
+        ctx.lineWidth = 2;
+        ctx.setLineDash([3, 3]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
       ctx.font = "bold 11px sans-serif";
       ctx.fillStyle = color;
       ctx.textAlign = "center";
-      ctx.fillText(label, p.x, p.y - 12);
+      ctx.fillText(label, p.x, p.y - (isDraggable ? 16 : 12));
     };
 
-    if (topPoint) drawDot(topPoint, "#ef4444", "Top");
-    if (bottomPoint) drawDot(bottomPoint, "#3b82f6", "Bottom");
+    if (topPoint) drawDot(topPoint, "#ef4444", "⚓ Anchor");
+    if (bottomPoint) drawDot(bottomPoint, "#3b82f6", "↕ Drag", true);
 
     if (topPoint && bottomPoint) {
       ctx.strokeStyle = "#ef4444";
@@ -115,27 +152,20 @@ export default function FaceSplitMirror({ userId, onDataChange }: FaceSplitMirro
       ctx.setLineDash([]);
     }
 
-    ctx.font = "bold 12px sans-serif";
+    ctx.font = "bold 11px sans-serif";
     ctx.fillStyle = "rgba(239,68,68,0.9)";
     ctx.textAlign = "center";
     if (placingPoint === "top") {
-      ctx.fillText("Click to place TOP point", w / 2, 20);
+      ctx.fillText("Click to place ANCHOR point", w / 2, 18);
     } else if (placingPoint === "bottom") {
-      ctx.fillText("Click to place BOTTOM point", w / 2, h - 8);
+      ctx.fillText("Click to place CUT point (draggable)", w / 2, h - 8);
     }
   }, [image, topPoint, bottomPoint, placingPoint, getScaledSize]);
 
-  const getCanvasPos = (e: React.MouseEvent): Point => {
-    const canvas = canvasRef.current!;
-    const rect = canvas.getBoundingClientRect();
-    return {
-      x: Math.round(((e.clientX - rect.left) / rect.width) * canvas.width),
-      y: Math.round(((e.clientY - rect.top) / rect.height) * canvas.height),
-    };
-  };
-
-  const handleClick = (e: React.MouseEvent) => {
+  // Click handler — place anchor, then place cut point
+  const handleMouseDown = (e: React.MouseEvent) => {
     const pos = getCanvasPos(e);
+
     if (placingPoint === "top") {
       setTopPoint(pos);
       setPlacingPoint("bottom");
@@ -144,12 +174,51 @@ export default function FaceSplitMirror({ userId, onDataChange }: FaceSplitMirro
       setBottomPoint(pos);
       setPlacingPoint("done");
       setResults(null);
+    } else if (placingPoint === "done" && bottomPoint && isNearPoint(pos, bottomPoint)) {
+      // Start dragging the bottom point
+      setDragging(true);
+      setResults(null);
     } else {
+      // Click elsewhere → reset to new anchor
       setTopPoint(pos);
       setBottomPoint(null);
       setPlacingPoint("bottom");
       setResults(null);
     }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!dragging) return;
+    const pos = getCanvasPos(e);
+    setBottomPoint(pos);
+  };
+
+  const handleMouseUp = () => {
+    if (dragging) setDragging(false);
+  };
+
+  // Touch equivalents
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (placingPoint === "done" && bottomPoint) {
+      const pos = getCanvasPos(e);
+      if (isNearPoint(pos, bottomPoint)) {
+        e.preventDefault();
+        setDragging(true);
+        setResults(null);
+        return;
+      }
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!dragging) return;
+    e.preventDefault();
+    const pos = getCanvasPos(e);
+    setBottomPoint(pos);
+  };
+
+  const handleTouchEnd = () => {
+    if (dragging) setDragging(false);
   };
 
   const generateSplit = useCallback(() => {
@@ -242,6 +311,7 @@ export default function FaceSplitMirror({ userId, onDataChange }: FaceSplitMirro
     setTopPoint(null);
     setBottomPoint(null);
     setPlacingPoint("top");
+    setDragging(false);
     setResults(null);
   };
 
@@ -249,6 +319,7 @@ export default function FaceSplitMirror({ userId, onDataChange }: FaceSplitMirro
     setTopPoint(null);
     setBottomPoint(null);
     setPlacingPoint("top");
+    setDragging(false);
     setResults(null);
   };
 
@@ -260,13 +331,13 @@ export default function FaceSplitMirror({ userId, onDataChange }: FaceSplitMirro
       <div className="rounded-xl border border-border bg-card p-5">
         <h3 className="text-lg font-display font-bold text-foreground mb-1">Face Split &amp; Mirror</h3>
         <p className="text-sm text-muted-foreground mb-3">
-          Upload a face photo or select from the client's profiling images, place a top and bottom point to define the cut line, then generate two symmetrical composites.
+          Upload a face photo or select from the client's profiling images. Place an anchor point (top), then a draggable cut point (bottom) — drag it to adjust the split line in real-time before generating composites.
         </p>
 
         <Alert className="mb-4">
           <Info className="h-4 w-4" />
           <AlertDescription className="text-xs">
-            This tool is for <strong>paying subscribers only</strong> — not for case study subjects.
+            <strong>Anchor &amp; drag:</strong> Click once to set the anchor (red), click again for the cut point (blue). Then drag the blue handle to fine-tune the line without re-clicking.
           </AlertDescription>
         </Alert>
 
@@ -336,9 +407,9 @@ export default function FaceSplitMirror({ userId, onDataChange }: FaceSplitMirro
                 <Scissors className="h-3.5 w-3.5 mr-1" /> Split &amp; Mirror
               </Button>
               <span className="text-xs text-muted-foreground ml-2">
-                {placingPoint === "top" && "Click on the image to place the top point"}
-                {placingPoint === "bottom" && "Now click to place the bottom point"}
-                {placingPoint === "done" && "Line set — click Split & Mirror, or click image to reposition"}
+                {placingPoint === "top" && "Click to place the anchor point"}
+                {placingPoint === "bottom" && "Now click to place the cut point"}
+                {placingPoint === "done" && (dragging ? "Dragging… release to set" : "Drag the blue handle to adjust, or click Split & Mirror")}
               </span>
             </div>
 
@@ -347,9 +418,15 @@ export default function FaceSplitMirror({ userId, onDataChange }: FaceSplitMirro
                 ref={canvasRef}
                 className={cn(
                   "rounded-lg border border-border",
-                  placingPoint !== "done" ? "cursor-crosshair" : "cursor-pointer"
+                  placingPoint !== "done" ? "cursor-crosshair" : dragging ? "cursor-grabbing" : "cursor-pointer"
                 )}
-                onClick={handleClick}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseUp}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
               />
             </div>
           </div>

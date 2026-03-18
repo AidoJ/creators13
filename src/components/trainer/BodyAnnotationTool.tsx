@@ -89,7 +89,7 @@ export default function BodyAnnotationTool({ userId, onDataChange }: BodyAnnotat
 
   const getScaledSize = useCallback(() => {
     if (!image) return { w: 0, h: 0 };
-    const maxW = Math.min(600, window.innerWidth - 64);
+    const maxW = Math.min(300, (window.innerWidth - 64) / 2);
     const scale = maxW / image.width;
     return { w: Math.round(image.width * scale), h: Math.round(image.height * scale) };
   }, [image]);
