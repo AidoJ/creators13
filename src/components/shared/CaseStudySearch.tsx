@@ -63,34 +63,31 @@ export default function CaseStudySearch({ onSelectCaseStudy, onSelectClient }: C
       const q = query.trim().toLowerCase();
       const merged: SearchResult[] = [];
 
-      // Search case studies by title or subject name via profiles
-      const { data: cases } = await supabase
-        .from("case_studies")
-        .select("id, title, status, subject_user_id, practitioner_id, creator_types_identified")
-        .order("created_at", { ascending: false });
+      // Fetch case studies and all accessible profiles in parallel
+      const [casesRes, allProfilesRes] = await Promise.all([
+        supabase
+          .from("case_studies")
+          .select("id, title, status, subject_user_id, practitioner_id, creator_types_identified")
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("profiles")
+          .select("user_id, first_name, last_name, email"),
+      ]);
 
-      // Gather all user IDs for name resolution
-      const userIds = new Set<string>();
-      (cases || []).forEach(c => {
-        userIds.add(c.practitioner_id);
-        if (c.subject_user_id) userIds.add(c.subject_user_id);
-      });
+      const cases = casesRes.data || [];
+      const allProfiles = allProfilesRes.data || [];
 
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, first_name, last_name, email")
-        .in("user_id", [...userIds]);
-
+      // Build name/email maps from all profiles
       const nameMap: Record<string, string> = {};
       const emailMap: Record<string, string> = {};
-      (profiles || []).forEach(p => {
+      allProfiles.forEach(p => {
         nameMap[p.user_id] = `${p.first_name || ""} ${p.last_name || ""}`.trim() || "Unknown";
         emailMap[p.user_id] = p.email || "";
       });
 
       // Match case studies
       const seenClients = new Set<string>();
-      (cases || []).forEach(c => {
+      cases.forEach(c => {
         const subjectName = c.subject_user_id ? nameMap[c.subject_user_id] || "Unknown" : "—";
         const practName = nameMap[c.practitioner_id] || "Unknown";
         const matchesTitle = c.title.toLowerCase().includes(q);
@@ -110,15 +107,21 @@ export default function CaseStudySearch({ onSelectCaseStudy, onSelectClient }: C
           });
         }
 
-        // Also track client matches for standalone client results
-        if (c.subject_user_id && matchesSubject && !seenClients.has(c.subject_user_id)) {
-          seenClients.add(c.subject_user_id);
+        if (c.subject_user_id) seenClients.add(c.subject_user_id);
+      });
+
+      // Match clients from all accessible profiles (includes those without case studies)
+      allProfiles.forEach(p => {
+        if (seenClients.has(p.user_id)) return; // already shown via case study
+        const name = `${p.first_name || ""} ${p.last_name || ""}`.trim().toLowerCase();
+        const email = (p.email || "").toLowerCase();
+        if (name.includes(q) || email.includes(q)) {
           merged.push({
             type: "client",
-            id: c.subject_user_id,
-            name: subjectName,
-            subtitle: emailMap[c.subject_user_id] || "Client",
-            clientId: c.subject_user_id,
+            id: p.user_id,
+            name: nameMap[p.user_id],
+            subtitle: p.email || "Client",
+            clientId: p.user_id,
           });
         }
       });
