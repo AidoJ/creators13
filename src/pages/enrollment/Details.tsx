@@ -60,7 +60,7 @@ export default function Details() {
       if (data) {
         setFirstName(data.first_name || "");
         setLastName(data.last_name || "");
-        setPhone(data.phone || "");
+        setPhone(data.phone || "+61 ");
         setDateOfBirth(data.date_of_birth || "");
         const g = data.gender || "";
         if (["female", "male", "gender-diverse", "prefer-not-to-say"].includes(g)) {
