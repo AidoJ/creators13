@@ -130,6 +130,21 @@ export default function Dashboard() {
       <DashboardHeader email={user?.email} onSignOut={signOut} />
 
       <main className="container mx-auto px-4 py-8 max-w-4xl space-y-5">
+        {/* Coming Soon Banner */}
+        <div className="relative overflow-hidden rounded-2xl border border-secondary/30 bg-gradient-to-r from-primary/10 via-secondary/10 to-accent/10 p-5 sm:p-6 text-center shadow-md">
+          <div className="absolute -top-10 -left-10 w-32 h-32 rounded-full bg-primary/15 blur-2xl" />
+          <div className="absolute -bottom-10 -right-10 w-32 h-32 rounded-full bg-secondary/15 blur-2xl" />
+          <div className="relative space-y-1.5">
+            <p className="text-xs font-semibold uppercase tracking-widest text-secondary">Coming Soon…</p>
+            <h2 className="text-base sm:text-lg font-display font-bold text-foreground leading-snug">
+              Doors open in April 2026 to the Creator Types ecosystem
+            </h2>
+            <p className="text-sm text-muted-foreground max-w-lg mx-auto">
+              The only place online where you can meet other Creators by their body type
+            </p>
+          </div>
+        </div>
+
         {/* Hero welcome */}
         <WelcomeHero
           firstName={profile?.first_name}
