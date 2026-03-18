@@ -12,6 +12,7 @@ interface ProgressCardProps {
   bookingDate?: string | null;
   tier?: string | null;
   isCaseStudy?: boolean;
+  confirmedTypeCount?: number;
 }
 
 const ALL_STEPS = [
