@@ -58,6 +58,10 @@ export default function ClientDetail({ clientId, onClientNameLoaded }: ClientDet
   const [editingZoom, setEditingZoom] = useState(false);
   const [zoomInput, setZoomInput] = useState("");
   const [savingZoom, setSavingZoom] = useState(false);
+  const { user } = useAuth();
+  const [isCertified, setIsCertified] = useState(false);
+  const [clientIsPaidSubscriber, setClientIsPaidSubscriber] = useState(false);
+  const [isCaseStudySubject, setIsCaseStudySubject] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
