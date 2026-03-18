@@ -37,7 +37,7 @@ interface CompositePhotoLayoutProps {
 }
 
 export default function CompositePhotoLayout({ userId, subjectName, className, showReclassify = false }: CompositePhotoLayoutProps) {
-  const [photos, setPhotos] = useState<Record<string, string | null>>({});
+  const [photos, setPhotos] = useState<Record<string, { thumb: string; full: string } | null>>({});
   const [loading, setLoading] = useState(true);
   const [reclassifying, setReclassifying] = useState(false);
   const [zoomedPhoto, setZoomedPhoto] = useState<{ url: string; label: string } | null>(null);
