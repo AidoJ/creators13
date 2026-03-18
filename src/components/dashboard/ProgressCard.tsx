@@ -20,7 +20,7 @@ const ALL_STEPS = [
   { key: "details", label: "Personal details" },
   { key: "photos", label: "Photos uploaded" },
   { key: "booking", label: "Session booked" },
-  { key: "complete", label: "Profiling complete" },
+  { key: "complete", label: "Profiling complete" }, // dynamic label below
 ];
 
 export default function ProgressCard({ step, isComplete, photosUploaded, bookingMade, hasDetails, bookingDate, tier, isCaseStudy }: ProgressCardProps) {
