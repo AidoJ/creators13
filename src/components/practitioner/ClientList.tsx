@@ -51,7 +51,7 @@ export default function ClientList({ onSelectClient, selectedClientId }: ClientL
       // Fetch profiles for those clients
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("user_id, first_name, last_name, email, enrollment_step")
+        .select("user_id, first_name, last_name, email, enrollment_step, case_study_consent_at")
         .in("user_id", clientIds);
 
       // Fetch creator type profiles — all 4 slots
