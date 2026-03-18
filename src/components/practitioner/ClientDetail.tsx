@@ -1,15 +1,19 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import CompositePhotoLayout from "@/components/profiling/CompositePhotoLayout";
 import CreatorTypeAssignmentForm from "@/components/practitioner/CreatorTypeAssignmentForm";
 import ClientSubscriptionCard from "@/components/practitioner/ClientSubscriptionCard";
 import ClientRecordingLinks from "@/components/practitioner/ClientRecordingLinks";
+import FaceSplitMirror from "@/components/trainer/FaceSplitMirror";
+import BodyAnnotationTool from "@/components/trainer/BodyAnnotationTool";
 import { User, Calendar, Sparkles, Video, Pencil, Check, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { getCreatorTypeColor, sortCreatorTypes } from "@/lib/creatorTypes";
+import { isPaidTier } from "@/lib/clientClassification";
 
 interface ProfileData {
   first_name: string | null;
