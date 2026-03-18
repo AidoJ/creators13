@@ -142,6 +142,7 @@ export default function Dashboard() {
               bookingDate={booking?.scheduled_at}
               tier={subscription?.tier}
               isCaseStudy={isCaseStudySubject}
+              confirmedTypeCount={creatorTypes.length}
             />
             {!isCaseStudySubject && (
               <SessionCard
