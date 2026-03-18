@@ -55,12 +55,20 @@ export default function CompositePhotoLayout({ userId, subjectName, className, s
       return;
     }
 
-    const photoMap: Record<string, string | null> = {};
+    const photoMap: Record<string, { thumb: string; full: string } | null> = {};
     for (const row of data) {
       const { data: urlData } = supabase.storage
         .from("profiling-photos")
         .getPublicUrl(row.storage_path);
-      photoMap[row.photo_type] = urlData?.publicUrl || null;
+      if (urlData?.publicUrl) {
+        const base = urlData.publicUrl;
+        photoMap[row.photo_type] = {
+          thumb: `${base}?width=300&quality=60`,
+          full: base,
+        };
+      } else {
+        photoMap[row.photo_type] = null;
+      }
     }
     setPhotos(photoMap);
     setLoading(false);
