@@ -328,8 +328,10 @@ export default function TrainerDashboard() {
             <InvitationsManager />
           </TabsContent>
 
-          <TabsContent value="face-split" className="space-y-4">
+          <TabsContent value="face-split" className="space-y-8">
             <FaceSplitMirror />
+            <div className="border-t border-border pt-6" />
+            <BodyAnnotationTool />
           </TabsContent>
         </Tabs>
       </main>
