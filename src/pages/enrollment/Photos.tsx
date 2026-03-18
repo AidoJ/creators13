@@ -206,9 +206,26 @@ export default function Photos() {
     if (currentStep > 0) setCurrentStep(currentStep - 1);
   };
 
+  // Body photo types that require passing AI review
+  const BLOCKING_PHOTO_TYPES = ["body_front", "body_back", "body_side"];
+
+  const hasBlockingFailures = BLOCKING_PHOTO_TYPES.some((key) => {
+    const p = photos[key];
+    return p.review && !p.review.pass;
+  });
+
   const handleSubmitAll = async () => {
     if (!user) {
       toast({ title: "Please sign in first", variant: "destructive" });
+      return;
+    }
+
+    if (hasBlockingFailures) {
+      toast({
+        title: "Some photos need to be retaken",
+        description: "Your body photos did not pass the quality check. Please review the feedback and retake the flagged photos before submitting.",
+        variant: "destructive",
+      });
       return;
     }
     setSubmitting(true);
