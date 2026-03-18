@@ -20,9 +20,9 @@ const PHOTO_REQUIREMENTS: Record<string, string> = {
   body_side:
     "A full body photo from head to toe, side profile of the person standing naturally. Must be wearing tight-fitting clothing. No shoes or socks. The entire body from head to feet must be visible.",
   feet:
-    "A top-down photo of both feet together, bare feet (no shoes or socks). Toes and arches should be clearly visible.",
+    "A photo of BOTH bare feet (no shoes or socks) while STANDING upright on the ground. Both feet must be visible. Toes and arches should be clearly visible. The person must be standing, not sitting or lying down.",
   hands:
-    "A photo of both hands shown palm-down (back of hands facing camera). Fingers should be spread slightly. Both hands visible.",
+    "A photo of BOTH hands placed flat (palm-down) on a table or floor surface. The back of both hands must face the camera. Fingers should be spread slightly. BOTH hands must be visible in the photo.",
 };
 
 serve(async (req) => {
