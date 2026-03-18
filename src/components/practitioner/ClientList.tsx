@@ -13,6 +13,7 @@ interface ClientRow {
     last_name: string | null;
     email: string | null;
     enrollment_step: string | null;
+    case_study_consent_at: string | null;
   } | null;
   creatorTypes: string[];
 }
@@ -50,7 +51,7 @@ export default function ClientList({ onSelectClient, selectedClientId }: ClientL
       // Fetch profiles for those clients
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("user_id, first_name, last_name, email, enrollment_step")
+        .select("user_id, first_name, last_name, email, enrollment_step, case_study_consent_at")
         .in("user_id", clientIds);
 
       // Fetch creator type profiles — all 4 slots
@@ -75,6 +76,7 @@ export default function ClientList({ onSelectClient, selectedClientId }: ClientL
             last_name: prof.last_name,
             email: prof.email,
             enrollment_step: prof.enrollment_step,
+            case_study_consent_at: prof.case_study_consent_at,
           } : null,
           creatorTypes: types,
         };
@@ -94,7 +96,12 @@ export default function ClientList({ onSelectClient, selectedClientId }: ClientL
     return name.includes(q) || (c.profile?.email || "").toLowerCase().includes(q);
   });
 
-  const stepLabel = (step: string | null) => {
+  const stepLabel = (step: string | null, isCaseStudy: boolean, typeCount: number) => {
+    if (step === "complete") {
+      if (isCaseStudy) return "Case Study Complete";
+      if (typeCount >= 4) return "Creator Blueprint Complete";
+      return "Partially Complete";
+    }
     if (!step) return "Not Started";
     return step.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
   };
@@ -155,7 +162,7 @@ export default function ClientList({ onSelectClient, selectedClientId }: ClientL
               <p className="text-xs text-muted-foreground truncate mb-1.5">{client.profile?.email || ""}</p>
               <div className="flex flex-wrap gap-1">
                 <Badge variant="outline" className={`text-[10px] ${stepColor(client.profile?.enrollment_step || null)}`}>
-                  {stepLabel(client.profile?.enrollment_step || null)}
+                  {stepLabel(client.profile?.enrollment_step || null, !!client.profile?.case_study_consent_at, client.creatorTypes.length)}
                 </Badge>
                 {sortCreatorTypes(client.creatorTypes).map(t => {
                   const color = getCreatorTypeColor(t);
