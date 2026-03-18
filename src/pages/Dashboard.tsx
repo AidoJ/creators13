@@ -156,8 +156,9 @@ export default function Dashboard() {
               tier={subscription?.tier}
               isCaseStudy={isCaseStudySubject}
               confirmedTypeCount={creatorTypes.length}
+              showBooking={hasTrainerPractitioner && !isCaseStudySubject}
             />
-            {!isCaseStudySubject && (
+            {hasTrainerPractitioner && !isCaseStudySubject && (
               <SessionCard
                 scheduledAt={booking?.scheduled_at || null}
                 status={booking?.status || null}
