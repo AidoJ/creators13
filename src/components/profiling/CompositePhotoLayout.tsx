@@ -37,7 +37,7 @@ interface CompositePhotoLayoutProps {
 }
 
 export default function CompositePhotoLayout({ userId, subjectName, className, showReclassify = false }: CompositePhotoLayoutProps) {
-  const [photos, setPhotos] = useState<Record<string, string | null>>({});
+  const [photos, setPhotos] = useState<Record<string, { thumb: string; full: string } | null>>({});
   const [loading, setLoading] = useState(true);
   const [reclassifying, setReclassifying] = useState(false);
   const [zoomedPhoto, setZoomedPhoto] = useState<{ url: string; label: string } | null>(null);
@@ -55,12 +55,20 @@ export default function CompositePhotoLayout({ userId, subjectName, className, s
       return;
     }
 
-    const photoMap: Record<string, string | null> = {};
+    const photoMap: Record<string, { thumb: string; full: string } | null> = {};
     for (const row of data) {
       const { data: urlData } = supabase.storage
         .from("profiling-photos")
         .getPublicUrl(row.storage_path);
-      photoMap[row.photo_type] = urlData?.publicUrl || null;
+      if (urlData?.publicUrl) {
+        const base = urlData.publicUrl;
+        photoMap[row.photo_type] = {
+          thumb: `${base}?width=300&quality=60`,
+          full: base,
+        };
+      } else {
+        photoMap[row.photo_type] = null;
+      }
     }
     setPhotos(photoMap);
     setLoading(false);
@@ -105,15 +113,15 @@ export default function CompositePhotoLayout({ userId, subjectName, className, s
   );
 
   const PhotoCell = ({ photoKey, label, className: cellClass }: { photoKey: string; label: string; className?: string }) => {
-    // Try the specific key first, then fall back to generic photo_N type
-    const url = photos[photoKey] || photos[GENERIC_FALLBACK[photoKey]] || null;
+    const entry = photos[photoKey] || photos[GENERIC_FALLBACK[photoKey]] || null;
+    const thumbUrl = entry?.thumb || null;
     return (
       <div className={cn("overflow-hidden rounded-lg group relative cursor-pointer", cellClass)}
-        onClick={() => url && setZoomedPhoto({ url, label })}
+        onClick={() => entry && setZoomedPhoto({ url: entry.full, label })}
       >
-        {url ? (
+        {thumbUrl ? (
           <>
-            <img src={url} alt={label} className="w-full h-full object-contain bg-muted/30" loading="lazy" decoding="async" />
+            <img src={thumbUrl} alt={label} className="w-full h-full object-contain bg-muted/30" loading="lazy" decoding="async" />
             <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/10 transition-colors flex items-center justify-center">
               <ZoomIn className="h-5 w-5 text-primary-foreground opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
             </div>
@@ -173,9 +181,12 @@ export default function CompositePhotoLayout({ userId, subjectName, className, s
           <p className="text-xs text-muted-foreground mb-1">{zoomedPhoto?.label}</p>
           {zoomedPhoto && (() => {
             const availablePhotos = PHOTO_ORDER
-              .map(p => ({ key: p.key, label: p.label, url: photos[p.key] || photos[GENERIC_FALLBACK[p.key]] || null }))
-              .filter(p => p.url);
-            const currentIdx = availablePhotos.findIndex(p => p.url === zoomedPhoto.url);
+              .map(p => {
+                const entry = photos[p.key] || photos[GENERIC_FALLBACK[p.key]] || null;
+                return { key: p.key, label: p.label, full: entry?.full || null };
+              })
+              .filter(p => p.full);
+            const currentIdx = availablePhotos.findIndex(p => p.full === zoomedPhoto.url);
             const hasPrev = currentIdx > 0;
             const hasNext = currentIdx < availablePhotos.length - 1;
 
@@ -183,7 +194,7 @@ export default function CompositePhotoLayout({ userId, subjectName, className, s
               <div className="relative w-full flex items-center justify-center">
                 {hasPrev && (
                   <button
-                    onClick={(e) => { e.stopPropagation(); setZoomedPhoto({ url: availablePhotos[currentIdx - 1].url!, label: availablePhotos[currentIdx - 1].label }); }}
+                    onClick={(e) => { e.stopPropagation(); setZoomedPhoto({ url: availablePhotos[currentIdx - 1].full!, label: availablePhotos[currentIdx - 1].label }); }}
                     className="absolute left-1 z-10 rounded-full bg-background/80 hover:bg-background border border-border p-2 transition-colors shadow-md"
                     aria-label="Previous photo"
                   >
@@ -197,7 +208,7 @@ export default function CompositePhotoLayout({ userId, subjectName, className, s
                 />
                 {hasNext && (
                   <button
-                    onClick={(e) => { e.stopPropagation(); setZoomedPhoto({ url: availablePhotos[currentIdx + 1].url!, label: availablePhotos[currentIdx + 1].label }); }}
+                    onClick={(e) => { e.stopPropagation(); setZoomedPhoto({ url: availablePhotos[currentIdx + 1].full!, label: availablePhotos[currentIdx + 1].label }); }}
                     className="absolute right-1 z-10 rounded-full bg-background/80 hover:bg-background border border-border p-2 transition-colors shadow-md"
                     aria-label="Next photo"
                   >
