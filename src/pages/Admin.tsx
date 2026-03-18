@@ -82,7 +82,8 @@ export default function AdminDashboard() {
   const [expandedCaseStudy, setExpandedCaseStudy] = useState<string | null>(null);
   const [revisionNotes, setRevisionNotes] = useState<Record<string, string>>({});
   const [cohortFilter, setCohortFilter] = useState<string>("all");
-  // No longer need trainer check — trainer-specific tabs moved to /trainer
+  const [viewingClientId, setViewingClientId] = useState<string | null>(null);
+  const [viewingClientName, setViewingClientName] = useState<string>("");
 
   const fetchUsers = useCallback(async () => {
     const [profilesRes, rolesRes, subsRes] = await Promise.all([
