@@ -307,9 +307,10 @@ export default function CaseStudyPipeline({ onSelectClient, onStartCaseStudy, on
           </p>
           <div className="space-y-2">
             {studiesByStatus["revision_requested"].map(cs => (
-              <div
+              <button
                 key={cs.id}
-                className="flex items-center justify-between gap-3 rounded-lg bg-card border border-border px-3 py-2"
+                onClick={() => cs.subject_user_id && onSelectClient?.(cs.subject_user_id)}
+                className="w-full flex items-center justify-between gap-3 rounded-lg bg-card border border-border px-3 py-2 hover:bg-accent/30 transition-colors cursor-pointer text-left"
               >
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">{cs.title}</p>
@@ -320,7 +321,7 @@ export default function CaseStudyPipeline({ onSelectClient, onStartCaseStudy, on
                 <Badge variant="outline" className="text-xs bg-destructive/10 text-destructive border-destructive/20 shrink-0">
                   Review Feedback
                 </Badge>
-              </div>
+              </button>
             ))}
           </div>
         </div>
