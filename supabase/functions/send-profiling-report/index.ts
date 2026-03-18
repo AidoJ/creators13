@@ -119,13 +119,13 @@ function buildDefaultHtml(data: ReportData): string {
     creator_types,
   } = data;
 
-  const imageSection = (url: string | undefined, label: string) => {
+  const imageTd = (url: string | undefined, label: string) => {
     if (!url) return "";
     return `
-      <div style="margin-bottom:16px;text-align:center;">
-        <p style="font-size:12px;color:#8b6f5e;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">${label}</p>
-        <img src="${url}" alt="${label}" style="max-width:280px;border-radius:12px;border:2px solid #e8ddd4;" />
-      </div>
+      <td style="padding:8px;text-align:center;vertical-align:top;">
+        <p style="font-size:12px;color:#8b6f5e;margin:0 0 8px;text-transform:uppercase;letter-spacing:1px;">${label}</p>
+        <img src="${url}" alt="${label}" width="160" style="max-width:160px;width:100%;height:auto;border-radius:12px;border:2px solid #e8ddd4;display:block;margin:0 auto;" />
+      </td>
     `;
   };
 
