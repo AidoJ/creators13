@@ -9,11 +9,19 @@ import { useProfilingPhotos } from "@/hooks/useProfilingPhotos";
 
 interface Point { x: number; y: number }
 
-interface FaceSplitMirrorProps {
-  userId?: string;
+export interface FaceSplitData {
+  originalImageUrl?: string;
+  leftMirroredDataUrl?: string;
+  rightMirroredDataUrl?: string;
+  notes: string;
 }
 
-export default function FaceSplitMirror({ userId }: FaceSplitMirrorProps) {
+interface FaceSplitMirrorProps {
+  userId?: string;
+  onDataChange?: (data: FaceSplitData) => void;
+}
+
+export default function FaceSplitMirror({ userId, onDataChange }: FaceSplitMirrorProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
@@ -25,6 +33,16 @@ export default function FaceSplitMirror({ userId }: FaceSplitMirrorProps) {
   const [canvasSize, setCanvasSize] = useState({ w: 0, h: 0 });
 
   const { facePhotos, loading: photosLoading } = useProfilingPhotos(userId);
+
+  // Report data changes to parent
+  useEffect(() => {
+    onDataChange?.({
+      originalImageUrl: image?.src,
+      leftMirroredDataUrl: results?.left,
+      rightMirroredDataUrl: results?.right,
+      notes,
+    });
+  }, [image, results, notes, onDataChange]);
 
   const loadImageFromUrl = useCallback((url: string) => {
     const img = new Image();

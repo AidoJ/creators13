@@ -1,12 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import CompositePhotoLayout from "@/components/profiling/CompositePhotoLayout";
 import CreatorTypeAssignmentForm from "@/components/practitioner/CreatorTypeAssignmentForm";
 import ClientSubscriptionCard from "@/components/practitioner/ClientSubscriptionCard";
 import ClientRecordingLinks from "@/components/practitioner/ClientRecordingLinks";
-import FaceSplitMirror from "@/components/trainer/FaceSplitMirror";
-import BodyAnnotationTool from "@/components/trainer/BodyAnnotationTool";
+import ProfilingReportButton from "@/components/practitioner/ProfilingReportButton";
+import FaceSplitMirror, { type FaceSplitData } from "@/components/trainer/FaceSplitMirror";
+import BodyAnnotationTool, { type BodyAnnotationData } from "@/components/trainer/BodyAnnotationTool";
 import { User, Calendar, Sparkles, Video, Pencil, Check, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -62,7 +63,12 @@ export default function ClientDetail({ clientId, onClientNameLoaded }: ClientDet
   const [isCertified, setIsCertified] = useState(false);
   const [clientIsPaidSubscriber, setClientIsPaidSubscriber] = useState(false);
   const [isCaseStudySubject, setIsCaseStudySubject] = useState(false);
+  const [faceSplitData, setFaceSplitData] = useState<FaceSplitData | null>(null);
+  const [bodyAnnotationData, setBodyAnnotationData] = useState<BodyAnnotationData | null>(null);
   const { toast } = useToast();
+
+  const handleFaceSplitChange = useCallback((data: FaceSplitData) => setFaceSplitData(data), []);
+  const handleBodyAnnotationChange = useCallback((data: BodyAnnotationData) => setBodyAnnotationData(data), []);
 
   // Fetch practitioner certification status
   useEffect(() => {
@@ -275,8 +281,21 @@ export default function ClientDetail({ clientId, onClientNameLoaded }: ClientDet
       {/* Face Split & Body Annotation — certified practitioners only, paying subscribers only */}
       {isCertified && clientIsPaidSubscriber && !isCaseStudySubject && (
         <>
-          <FaceSplitMirror userId={clientId} />
-          <BodyAnnotationTool userId={clientId} />
+          <FaceSplitMirror userId={clientId} onDataChange={handleFaceSplitChange} />
+          <BodyAnnotationTool userId={clientId} onDataChange={handleBodyAnnotationChange} />
+
+          {/* Send Profiling Report */}
+          <ProfilingReportButton
+            clientId={clientId}
+            clientEmail={profile.email}
+            clientName={fullName}
+            practitionerName={user?.email?.split("@")[0] || "Practitioner"}
+            creatorTypes={sortCreatorTypes(
+              [creatorType?.primary_type, creatorType?.secondary_type, creatorType?.type_3, creatorType?.type_4].filter(Boolean) as string[]
+            )}
+            faceSplitData={faceSplitData}
+            bodyAnnotationData={bodyAnnotationData}
+          />
         </>
       )}
     </div>

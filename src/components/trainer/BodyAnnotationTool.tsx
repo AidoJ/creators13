@@ -35,11 +35,17 @@ const COLORS = [
 
 const LINE_WIDTHS = [2, 3, 5, 8];
 
-interface BodyAnnotationToolProps {
-  userId?: string;
+export interface BodyAnnotationData {
+  annotatedImageDataUrl?: string;
+  notes: string;
 }
 
-export default function BodyAnnotationTool({ userId }: BodyAnnotationToolProps) {
+interface BodyAnnotationToolProps {
+  userId?: string;
+  onDataChange?: (data: BodyAnnotationData) => void;
+}
+
+export default function BodyAnnotationTool({ userId, onDataChange }: BodyAnnotationToolProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
@@ -53,6 +59,14 @@ export default function BodyAnnotationTool({ userId }: BodyAnnotationToolProps) 
   const [canvasSize, setCanvasSize] = useState({ w: 0, h: 0 });
 
   const { bodyPhotos, loading: photosLoading } = useProfilingPhotos(userId);
+
+  // Report data changes to parent
+  useEffect(() => {
+    onDataChange?.({
+      annotatedImageDataUrl: canvasRef.current?.toDataURL("image/png"),
+      notes,
+    });
+  }, [notes, actions, onDataChange]);
 
   const loadImageFromUrl = useCallback((url: string) => {
     const img = new Image();
