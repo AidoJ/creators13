@@ -192,7 +192,8 @@ export default function TrainerDashboard() {
               setPipelinePractitionerFilter(null);
               setActiveTab("cases-filtered");
             }}
-            onSelectClient={(clientId) => {
+            onSelectClient={async (clientId) => {
+              // Try local cache first
               const cs = caseStudies.find(c => c.subject_user_id === clientId);
               if (cs) {
                 setSearchFilterId(cs.id);
@@ -200,6 +201,28 @@ export default function TrainerDashboard() {
                 setPipelineStatusFilter(null);
                 setPipelinePractitionerFilter(null);
                 setActiveTab("cases-filtered");
+                return;
+              }
+              // Fallback: query DB for any case study linked to this client
+              const { data } = await supabase
+                .from("case_studies")
+                .select("id")
+                .eq("subject_user_id", clientId)
+                .order("created_at", { ascending: false })
+                .limit(1)
+                .maybeSingle();
+              if (data) {
+                await fetchCaseStudies(); // refresh list so filter works
+                setSearchFilterId(data.id);
+                setExpandedCaseStudy(data.id);
+                setPipelineStatusFilter(null);
+                setPipelinePractitionerFilter(null);
+                setActiveTab("cases-filtered");
+              } else {
+                toast({
+                  title: "No case study found",
+                  description: "This client does not have a case study yet. Ask their practitioner to create one.",
+                });
               }
             }}
           />
