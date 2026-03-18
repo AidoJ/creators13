@@ -140,7 +140,7 @@ export default function FaceSplitMirror({ userId, onDataChange }: FaceSplitMirro
       const existingData = (existing?.profiling_data as Record<string, unknown>) || {};
       const updatedFaceSplit = { ...savedData, notes };
       const newData = { ...existingData, face_split: updatedFaceSplit };
-      await supabase.from("creator_type_profiles").update({ profiling_data: newData, updated_at: new Date().toISOString() }).eq("user_id", userId);
+      await supabase.from("creator_type_profiles").update({ profiling_data: newData as unknown as Record<string, unknown>, updated_at: new Date().toISOString() }).eq("user_id", userId);
       setSavedData(updatedFaceSplit);
       toast({ title: "Notes saved" });
     } catch {

@@ -141,7 +141,7 @@ export default function BodyAnnotationTool({ userId, onDataChange }: BodyAnnotat
       const existingData = (existing?.profiling_data as Record<string, unknown>) || {};
       const updatedBA = { ...savedData, notes };
       const newData = { ...existingData, body_annotation: updatedBA };
-      await supabase.from("creator_type_profiles").update({ profiling_data: newData, updated_at: new Date().toISOString() }).eq("user_id", userId);
+      await supabase.from("creator_type_profiles").update({ profiling_data: newData as unknown as Record<string, unknown>, updated_at: new Date().toISOString() }).eq("user_id", userId);
       setSavedData(updatedBA);
       toast({ title: "Notes saved" });
     } catch {
