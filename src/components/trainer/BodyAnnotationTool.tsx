@@ -120,21 +120,32 @@ export default function BodyAnnotationTool({ userId, onDataChange }: BodyAnnotat
         }
         ctx.stroke();
       } else if (action.type === "text") {
-        ctx.font = `bold ${action.fontSize}px sans-serif`;
-        ctx.fillStyle = action.color;
+        const fontSize = Math.max(action.fontSize, 24);
+        const padX = 8;
+        const padY = 6;
+
+        ctx.font = `700 ${fontSize}px sans-serif`;
         ctx.textAlign = "left";
         ctx.textBaseline = "top";
-        // Background for readability
+
         const metrics = ctx.measureText(action.text);
-        const pad = 3;
-        ctx.fillStyle = "rgba(0,0,0,0.5)";
-        ctx.fillRect(
-          action.position.x - pad,
-          action.position.y - pad,
-          metrics.width + pad * 2,
-          action.fontSize + pad * 2
-        );
-        ctx.fillStyle = action.color;
+        const textHeight = fontSize;
+        const boxX = action.position.x - padX;
+        const boxY = action.position.y - padY;
+        const boxW = metrics.width + padX * 2;
+        const boxH = textHeight + padY * 2;
+
+        // White background for clarity
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(boxX, boxY, boxW, boxH);
+
+        // Black border for definition
+        ctx.strokeStyle = "#000000";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(boxX, boxY, boxW, boxH);
+
+        // Black text for high contrast
+        ctx.fillStyle = "#000000";
         ctx.fillText(action.text, action.position.x, action.position.y);
       }
     }
@@ -175,7 +186,7 @@ export default function BodyAnnotationTool({ userId, onDataChange }: BodyAnnotat
       const pos = getPos(e);
       const text = prompt("Enter text to place on the image:");
       if (text?.trim()) {
-        setActions(prev => [...prev, { type: "text", text: text.trim(), position: pos, color: currentColor, fontSize: 16 }]);
+        setActions(prev => [...prev, { type: "text", text: text.trim(), position: pos, color: "#000000", fontSize: 24 }]);
       }
     }
   };
