@@ -181,9 +181,12 @@ export default function CompositePhotoLayout({ userId, subjectName, className, s
           <p className="text-xs text-muted-foreground mb-1">{zoomedPhoto?.label}</p>
           {zoomedPhoto && (() => {
             const availablePhotos = PHOTO_ORDER
-              .map(p => ({ key: p.key, label: p.label, url: photos[p.key] || photos[GENERIC_FALLBACK[p.key]] || null }))
-              .filter(p => p.url);
-            const currentIdx = availablePhotos.findIndex(p => p.url === zoomedPhoto.url);
+              .map(p => {
+                const entry = photos[p.key] || photos[GENERIC_FALLBACK[p.key]] || null;
+                return { key: p.key, label: p.label, full: entry?.full || null };
+              })
+              .filter(p => p.full);
+            const currentIdx = availablePhotos.findIndex(p => p.full === zoomedPhoto.url);
             const hasPrev = currentIdx > 0;
             const hasNext = currentIdx < availablePhotos.length - 1;
 
@@ -191,7 +194,7 @@ export default function CompositePhotoLayout({ userId, subjectName, className, s
               <div className="relative w-full flex items-center justify-center">
                 {hasPrev && (
                   <button
-                    onClick={(e) => { e.stopPropagation(); setZoomedPhoto({ url: availablePhotos[currentIdx - 1].url!, label: availablePhotos[currentIdx - 1].label }); }}
+                    onClick={(e) => { e.stopPropagation(); setZoomedPhoto({ url: availablePhotos[currentIdx - 1].full!, label: availablePhotos[currentIdx - 1].label }); }}
                     className="absolute left-1 z-10 rounded-full bg-background/80 hover:bg-background border border-border p-2 transition-colors shadow-md"
                     aria-label="Previous photo"
                   >
