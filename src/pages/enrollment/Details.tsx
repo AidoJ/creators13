@@ -309,8 +309,8 @@ export default function Details() {
                 <Input id="postal" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} placeholder="2000" />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="country">Country</Label>
-                <Input id="country" value={country} onChange={(e) => setCountry(e.target.value)} />
+                <Label htmlFor="country">Country *</Label>
+                <Input id="country" required value={country} onChange={(e) => setCountry(e.target.value)} />
               </div>
             </div>
           </section>
