@@ -326,6 +326,10 @@ export default function TrainerDashboard() {
           <TabsContent value="invitations" className="space-y-4">
             <InvitationsManager />
           </TabsContent>
+
+          <TabsContent value="face-split" className="space-y-4">
+            <FaceSplitMirror />
+          </TabsContent>
         </Tabs>
       </main>
     </div>
