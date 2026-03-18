@@ -24,7 +24,7 @@ const ALL_STEPS = [
   { key: "complete", label: "Profiling complete" }, // dynamic label below
 ];
 
-export default function ProgressCard({ step, isComplete, photosUploaded, bookingMade, hasDetails, bookingDate, tier, isCaseStudy, confirmedTypeCount = 0 }: ProgressCardProps) {
+export default function ProgressCard({ step, isComplete, photosUploaded, bookingMade, hasDetails, bookingDate, tier, isCaseStudy, confirmedTypeCount = 0, showBooking = false }: ProgressCardProps) {
   const navigate = useNavigate();
 
   const profilingLabel = confirmedTypeCount >= 4
@@ -33,7 +33,8 @@ export default function ProgressCard({ step, isComplete, photosUploaded, booking
       ? `${confirmedTypeCount} of 4 Creator Types Profiled`
       : "Profiling complete";
 
-  const STEPS = (isCaseStudy ? ALL_STEPS.filter(s => s.key !== "booking") : ALL_STEPS)
+  const hideBooking = isCaseStudy || !showBooking;
+  const STEPS = (hideBooking ? ALL_STEPS.filter(s => s.key !== "booking") : ALL_STEPS)
     .map(s => s.key === "complete" ? { ...s, label: profilingLabel } : s);
 
   const doneMap: Record<string, boolean> = {
