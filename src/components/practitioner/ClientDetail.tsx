@@ -281,8 +281,21 @@ export default function ClientDetail({ clientId, onClientNameLoaded }: ClientDet
       {/* Face Split & Body Annotation — certified practitioners only, paying subscribers only */}
       {isCertified && clientIsPaidSubscriber && !isCaseStudySubject && (
         <>
-          <FaceSplitMirror userId={clientId} />
-          <BodyAnnotationTool userId={clientId} />
+          <FaceSplitMirror userId={clientId} onDataChange={handleFaceSplitChange} />
+          <BodyAnnotationTool userId={clientId} onDataChange={handleBodyAnnotationChange} />
+
+          {/* Send Profiling Report */}
+          <ProfilingReportButton
+            clientId={clientId}
+            clientEmail={profile.email}
+            clientName={fullName}
+            practitionerName={user?.email?.split("@")[0] || "Practitioner"}
+            creatorTypes={sortCreatorTypes(
+              [creatorType?.primary_type, creatorType?.secondary_type, creatorType?.type_3, creatorType?.type_4].filter(Boolean) as string[]
+            )}
+            faceSplitData={faceSplitData}
+            bodyAnnotationData={bodyAnnotationData}
+          />
         </>
       )}
     </div>
