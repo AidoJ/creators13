@@ -230,6 +230,7 @@ export default function TrainerDashboard() {
             <TabsTrigger value="cases-pr"><FileText className="h-3.5 w-3.5 mr-1" />Case Studies (PR) {pendingCaseStudies > 0 && <Badge className="ml-1 h-5 text-[10px]" variant="destructive">{pendingCaseStudies}</Badge>}</TabsTrigger>
             <TabsTrigger value="cases-dt"><FileText className="h-3.5 w-3.5 mr-1" />Case Studies (Dt) {draftCaseStudies > 0 && <Badge className="ml-1 h-5 text-[10px]" variant="outline">{draftCaseStudies}</Badge>}</TabsTrigger>
             <TabsTrigger value="invitations"><Mail className="h-3.5 w-3.5 mr-1" />Invitations</TabsTrigger>
+            <TabsTrigger value="face-split"><Scissors className="h-3.5 w-3.5 mr-1" />Face Split</TabsTrigger>
           </TabsList>
 
           <TabsContent value="pipeline" className="space-y-4">
