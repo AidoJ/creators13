@@ -21,6 +21,33 @@ export default function Booking() {
   const [calendlyBooked, setCalendlyBooked] = useState(false);
   const [manualDate, setManualDate] = useState("");
   const [manualTime, setManualTime] = useState("");
+  const [accessChecked, setAccessChecked] = useState(false);
+  const [hasAccess, setHasAccess] = useState(false);
+
+  // Only allow clients linked to a trainer-role practitioner
+  useEffect(() => {
+    if (!user || loading) return;
+    const checkAccess = async () => {
+      const { data: links } = await supabase
+        .from("client_practitioner")
+        .select("practitioner_id")
+        .eq("client_id", user.id)
+        .eq("active", true);
+      if (links && links.length > 0) {
+        const practIds = links.map(l => l.practitioner_id);
+        const { data: trainerRoles } = await supabase
+          .from("user_roles")
+          .select("user_id")
+          .in("user_id", practIds)
+          .eq("role", "trainer");
+        if (trainerRoles && trainerRoles.length > 0) {
+          setHasAccess(true);
+        }
+      }
+      setAccessChecked(true);
+    };
+    checkAccess();
+  }, [user, loading]);
 
   // Listen for Calendly postMessage events to capture scheduled time
   useEffect(() => {
