@@ -187,7 +187,159 @@ export default function BodyAnnotationTool({ userId, onDataChange }: BodyAnnotat
       setSaving(false);
     }
   };
-...
+
+  const loadImageFromUrl = useCallback((url: string) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      setImage(img);
+      setActions([]);
+    };
+    img.src = url;
+  }, []);
+
+  const handleFile = useCallback((file: File) => {
+    const img = new Image();
+    img.onload = () => {
+      setImage(img);
+      setActions([]);
+    };
+    img.src = URL.createObjectURL(file);
+  }, []);
+
+  const getScaledSize = useCallback(() => {
+    if (!image) return { w: 0, h: 0 };
+    const maxW = Math.min(300, (window.innerWidth - 64) / 2);
+    const scale = maxW / image.width;
+    return { w: Math.round(image.width * scale), h: Math.round(image.height * scale) };
+  }, [image]);
+
+  const renderCanvas = useCallback(() => {
+    if (!image || !canvasRef.current) return;
+    const { w, h } = getScaledSize();
+    const canvas = canvasRef.current;
+    canvas.width = w;
+    canvas.height = h;
+    setCanvasSize({ w, h });
+    const ctx = canvas.getContext("2d")!;
+
+    ctx.drawImage(image, 0, 0, w, h);
+
+    for (const action of actions) {
+      if (action.type === "line" && action.points.length > 1) {
+        ctx.strokeStyle = action.color;
+        ctx.lineWidth = action.width;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.beginPath();
+        ctx.moveTo(action.points[0].x, action.points[0].y);
+        for (let i = 1; i < action.points.length; i++) {
+          ctx.lineTo(action.points[i].x, action.points[i].y);
+        }
+        ctx.stroke();
+      } else if (action.type === "text") {
+        const fontSize = Math.max(action.fontSize, 24);
+        const padX = 8;
+        const padY = 6;
+
+        ctx.font = `700 ${fontSize}px sans-serif`;
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+
+        const metrics = ctx.measureText(action.text);
+        const textHeight = fontSize;
+        const boxX = action.position.x - padX;
+        const boxY = action.position.y - padY;
+        const boxW = metrics.width + padX * 2;
+        const boxH = textHeight + padY * 2;
+
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(boxX, boxY, boxW, boxH);
+        ctx.strokeStyle = "#000000";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(boxX, boxY, boxW, boxH);
+        ctx.fillStyle = "#000000";
+        ctx.fillText(action.text, action.position.x, action.position.y);
+      }
+    }
+
+    if (isDrawing && currentPoints.length > 1) {
+      ctx.strokeStyle = currentColor;
+      ctx.lineWidth = lineWidth;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.beginPath();
+      ctx.moveTo(currentPoints[0].x, currentPoints[0].y);
+      for (let i = 1; i < currentPoints.length; i++) {
+        ctx.lineTo(currentPoints[i].x, currentPoints[i].y);
+      }
+      ctx.stroke();
+    }
+  }, [image, actions, isDrawing, currentPoints, currentColor, lineWidth, getScaledSize]);
+
+  useEffect(() => {
+    renderCanvas();
+  }, [renderCanvas]);
+
+  const getPos = (e: React.MouseEvent | React.TouchEvent): Point => {
+    const canvas = canvasRef.current!;
+    const rect = canvas.getBoundingClientRect();
+    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+    const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+    return {
+      x: Math.round(((clientX - rect.left) / rect.width) * canvas.width),
+      y: Math.round(((clientY - rect.top) / rect.height) * canvas.height),
+    };
+  };
+
+  const handlePointerDown = (e: React.MouseEvent | React.TouchEvent) => {
+    if (tool === "draw") {
+      setIsDrawing(true);
+      setCurrentPoints([getPos(e)]);
+    } else if (tool === "text") {
+      const pos = getPos(e);
+      const text = prompt("Enter text to place on the image:");
+      if (text?.trim()) {
+        setActions((prev) => [...prev, { type: "text", text: text.trim(), position: pos, color: "#000000", fontSize: 24 }]);
+      }
+    }
+  };
+
+  const handlePointerMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!isDrawing || tool !== "draw") return;
+    e.preventDefault();
+    setCurrentPoints((prev) => [...prev, getPos(e)]);
+  };
+
+  const handlePointerUp = () => {
+    if (isDrawing && currentPoints.length > 1) {
+      setActions((prev) => [...prev, { type: "line", points: currentPoints, color: currentColor, width: lineWidth }]);
+    }
+    setIsDrawing(false);
+    setCurrentPoints([]);
+  };
+
+  const undo = () => setActions((prev) => prev.slice(0, -1));
+  const clearAll = () => setActions([]);
+
+  const downloadAnnotated = () => {
+    if (!canvasRef.current) return;
+    const a = document.createElement("a");
+    a.href = canvasRef.current.toDataURL("image/png");
+    a.download = "body-annotated.png";
+    a.click();
+  };
+
+  const reset = () => {
+    setImage(null);
+    setActions([]);
+    setCurrentPoints([]);
+    setIsDrawing(false);
+  };
+
+  const formatPhotoType = (type: string) =>
+    type.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+
   const getPublicUrl = (path: string) =>
     supabase.storage.from("profiling-photos").getPublicUrl(path).data.publicUrl;
 
