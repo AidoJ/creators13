@@ -21,6 +21,33 @@ export default function Booking() {
   const [calendlyBooked, setCalendlyBooked] = useState(false);
   const [manualDate, setManualDate] = useState("");
   const [manualTime, setManualTime] = useState("");
+  const [accessChecked, setAccessChecked] = useState(false);
+  const [hasAccess, setHasAccess] = useState(false);
+
+  // Only allow clients linked to a trainer-role practitioner
+  useEffect(() => {
+    if (!user || loading) return;
+    const checkAccess = async () => {
+      const { data: links } = await supabase
+        .from("client_practitioner")
+        .select("practitioner_id")
+        .eq("client_id", user.id)
+        .eq("active", true);
+      if (links && links.length > 0) {
+        const practIds = links.map(l => l.practitioner_id);
+        const { data: trainerRoles } = await supabase
+          .from("user_roles")
+          .select("user_id")
+          .in("user_id", practIds)
+          .eq("role", "trainer");
+        if (trainerRoles && trainerRoles.length > 0) {
+          setHasAccess(true);
+        }
+      }
+      setAccessChecked(true);
+    };
+    checkAccess();
+  }, [user, loading]);
 
   // Listen for Calendly postMessage events to capture scheduled time
   useEffect(() => {
@@ -72,12 +99,28 @@ export default function Booking() {
     };
   }, []);
 
-  if (loading) {
+  if (loading || !accessChecked) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           <p className="mt-4 text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!hasAccess) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center max-w-md px-4">
+          <h1 className="text-xl font-display font-bold text-foreground mb-2">Booking Not Available</h1>
+          <p className="text-muted-foreground mb-4">
+            Zoom session booking is only available for clients with a direct profiling session.
+          </p>
+          <Button onClick={() => navigate("/dashboard")} className="rounded-full">
+            Go to Dashboard
+          </Button>
         </div>
       </div>
     );

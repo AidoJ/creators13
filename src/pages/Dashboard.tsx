@@ -137,6 +137,7 @@ export default function Dashboard() {
           showStatusBadge={showStatusBadge}
           enrollmentStep={profile?.enrollment_step}
           country={profile?.country}
+          showBooking={hasTrainerPractitioner && !isCaseStudySubject}
         />
 
         {/* Upsell for lower tiers — hidden until paid tiers are available */}
