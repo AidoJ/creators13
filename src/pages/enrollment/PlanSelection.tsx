@@ -228,7 +228,22 @@ export default function PlanSelection() {
                   onChange={(e) => setPractitionerCode(e.target.value)}
                   placeholder="e.g. AN001"
                   className="font-mono"
+                  readOnly={!!urlPractitionerCode}
                 />
+                {lookingUpCode && (
+                  <p className="text-[11px] text-muted-foreground mt-1.5">Looking up practitioner…</p>
+                )}
+                {!lookingUpCode && practitionerName && (
+                  <div className="flex items-center gap-1.5 mt-2 bg-green-500/10 border border-green-500/20 rounded-lg px-3 py-1.5">
+                    <Check className="h-3.5 w-3.5 text-green-600 shrink-0" />
+                    <span className="text-xs font-semibold text-green-700">
+                      {practitionerName}
+                    </span>
+                  </div>
+                )}
+                {!lookingUpCode && practitionerCode.trim() && !practitionerName && (
+                  <p className="text-[11px] text-destructive mt-1.5">No practitioner found with this code.</p>
+                )}
               </div>
             </div>
           </div>
