@@ -1,14 +1,18 @@
 import { useRef, useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Upload, RotateCcw, Scissors, Download } from "lucide-react";
+import { Upload, RotateCcw, Scissors, Download, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+interface Point { x: number; y: number }
 
 export default function FaceSplitMirror() {
   const fileRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
-  const [splitX, setSplitX] = useState<number | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
+  const [topPoint, setTopPoint] = useState<Point | null>(null);
+  const [bottomPoint, setBottomPoint] = useState<Point | null>(null);
+  const [placingPoint, setPlacingPoint] = useState<"top" | "bottom" | "done">("top");
   const [results, setResults] = useState<{ left: string; right: string } | null>(null);
   const [canvasSize, setCanvasSize] = useState({ w: 0, h: 0 });
 
@@ -16,20 +20,27 @@ export default function FaceSplitMirror() {
     const img = new Image();
     img.onload = () => {
       setImage(img);
-      setSplitX(null);
+      setTopPoint(null);
+      setBottomPoint(null);
+      setPlacingPoint("top");
       setResults(null);
     };
     img.src = URL.createObjectURL(file);
   }, []);
 
+  // Compute canvas dimensions
+  const getScaledSize = useCallback(() => {
+    if (!image) return { w: 0, h: 0, scale: 1 };
+    const maxW = Math.min(600, window.innerWidth - 64);
+    const scale = maxW / image.width;
+    return { w: Math.round(image.width * scale), h: Math.round(image.height * scale), scale };
+  }, [image]);
+
   // Draw image + split line
   useEffect(() => {
     if (!image || !canvasRef.current) return;
+    const { w, h } = getScaledSize();
     const canvas = canvasRef.current;
-    const maxW = Math.min(600, window.innerWidth - 64);
-    const scale = maxW / image.width;
-    const w = Math.round(image.width * scale);
-    const h = Math.round(image.height * scale);
     canvas.width = w;
     canvas.height = h;
     setCanvasSize({ w, h });
@@ -37,112 +48,161 @@ export default function FaceSplitMirror() {
     const ctx = canvas.getContext("2d")!;
     ctx.drawImage(image, 0, 0, w, h);
 
-    // Draw split line
-    const lineX = splitX ?? Math.round(w / 2);
-    ctx.strokeStyle = "#ef4444";
-    ctx.lineWidth = 2;
-    ctx.setLineDash([8, 4]);
-    ctx.beginPath();
-    ctx.moveTo(lineX, 0);
-    ctx.lineTo(lineX, h);
-    ctx.stroke();
-    ctx.setLineDash([]);
+    // Draw points and line
+    const drawDot = (p: Point, color: string, label: string) => {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.strokeStyle = "#fff";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.font = "bold 11px sans-serif";
+      ctx.fillStyle = color;
+      ctx.textAlign = "center";
+      ctx.fillText(label, p.x, p.y - 12);
+    };
 
-    // Labels
+    if (topPoint) drawDot(topPoint, "#ef4444", "Top");
+    if (bottomPoint) drawDot(bottomPoint, "#3b82f6", "Bottom");
+
+    if (topPoint && bottomPoint) {
+      ctx.strokeStyle = "#ef4444";
+      ctx.lineWidth = 2;
+      ctx.setLineDash([8, 4]);
+      ctx.beginPath();
+      ctx.moveTo(topPoint.x, topPoint.y);
+      ctx.lineTo(bottomPoint.x, bottomPoint.y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Instructions
     ctx.font = "bold 12px sans-serif";
-    ctx.fillStyle = "#ef4444";
+    ctx.fillStyle = "rgba(239,68,68,0.9)";
     ctx.textAlign = "center";
-    ctx.fillText("◄ drag line ►", lineX, 16);
-  }, [image, splitX]);
+    if (placingPoint === "top") {
+      ctx.fillText("Click to place TOP point", w / 2, 20);
+    } else if (placingPoint === "bottom") {
+      ctx.fillText("Click to place BOTTOM point", w / 2, h - 8);
+    }
+  }, [image, topPoint, bottomPoint, placingPoint, getScaledSize]);
 
-  const getCanvasX = (e: React.MouseEvent | React.TouchEvent) => {
+  const getCanvasPos = (e: React.MouseEvent): Point => {
     const canvas = canvasRef.current!;
     const rect = canvas.getBoundingClientRect();
-    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
-    return Math.max(10, Math.min(canvasSize.w - 10, Math.round(((clientX - rect.left) / rect.width) * canvas.width)));
+    return {
+      x: Math.round(((e.clientX - rect.left) / rect.width) * canvas.width),
+      y: Math.round(((e.clientY - rect.top) / rect.height) * canvas.height),
+    };
   };
 
-  const handlePointerDown = (e: React.MouseEvent | React.TouchEvent) => {
-    setIsDragging(true);
-    setSplitX(getCanvasX(e));
+  const handleClick = (e: React.MouseEvent) => {
+    const pos = getCanvasPos(e);
+    if (placingPoint === "top") {
+      setTopPoint(pos);
+      setPlacingPoint("bottom");
+      setResults(null);
+    } else if (placingPoint === "bottom") {
+      setBottomPoint(pos);
+      setPlacingPoint("done");
+      setResults(null);
+    } else {
+      // Re-place: cycle back to top
+      setTopPoint(pos);
+      setBottomPoint(null);
+      setPlacingPoint("bottom");
+      setResults(null);
+    }
   };
-  const handlePointerMove = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!isDragging) return;
-    setSplitX(getCanvasX(e));
-  };
-  const handlePointerUp = () => setIsDragging(false);
 
   const generateSplit = useCallback(() => {
-    if (!image) return;
-    const maxW = Math.min(600, window.innerWidth - 64);
-    const scale = maxW / image.width;
-    const w = Math.round(image.width * scale);
-    const h = Math.round(image.height * scale);
-    const lineX = splitX ?? Math.round(w / 2);
+    if (!image || !topPoint || !bottomPoint) return;
+    const { w, h } = getScaledSize();
 
-    // Left-mirrored: take left half, mirror it to fill right side
+    // For each scanline y, compute the x position of the split line
+    const getLineX = (y: number): number => {
+      if (bottomPoint.y === topPoint.y) return topPoint.x;
+      const t = (y - topPoint.y) / (bottomPoint.y - topPoint.y);
+      return topPoint.x + t * (bottomPoint.x - topPoint.x);
+    };
+
+    // Source canvas
+    const srcCanvas = document.createElement("canvas");
+    srcCanvas.width = w;
+    srcCanvas.height = h;
+    const srcCtx = srcCanvas.getContext("2d")!;
+    srcCtx.drawImage(image, 0, 0, w, h);
+    const srcData = srcCtx.getImageData(0, 0, w, h);
+
+    // Left-mirrored: left half + mirror of left half
     const leftCanvas = document.createElement("canvas");
     leftCanvas.width = w;
     leftCanvas.height = h;
-    const lCtx = leftCanvas.getContext("2d")!;
-    // Draw left half normally
-    lCtx.drawImage(image, 0, 0, w, h);
-    // Clear right side
-    lCtx.clearRect(lineX, 0, w - lineX, h);
-    // Draw mirrored left half on right side
-    lCtx.save();
-    lCtx.translate(lineX * 2, 0);
-    lCtx.scale(-1, 1);
-    lCtx.drawImage(image, 0, 0, w, h);
-    // Clip to only fill the right portion
-    lCtx.restore();
-    // Re-do properly with clipping
-    leftCanvas.width = w; // reset
-    const lCtx2 = leftCanvas.getContext("2d")!;
-    // Left half as-is
-    lCtx2.save();
-    lCtx2.beginPath();
-    lCtx2.rect(0, 0, lineX, h);
-    lCtx2.clip();
-    lCtx2.drawImage(image, 0, 0, w, h);
-    lCtx2.restore();
-    // Mirrored left half on right
-    lCtx2.save();
-    lCtx2.beginPath();
-    lCtx2.rect(lineX, 0, w - lineX, h);
-    lCtx2.clip();
-    lCtx2.translate(lineX * 2, 0);
-    lCtx2.scale(-1, 1);
-    lCtx2.drawImage(image, 0, 0, w, h);
-    lCtx2.restore();
+    const leftCtx = leftCanvas.getContext("2d")!;
+    const leftImgData = leftCtx.createImageData(w, h);
 
-    // Right-mirrored: take right half, mirror it to fill left side
+    // Right-mirrored: right half + mirror of right half
     const rightCanvas = document.createElement("canvas");
     rightCanvas.width = w;
     rightCanvas.height = h;
-    const rCtx = rightCanvas.getContext("2d")!;
-    // Right half as-is
-    rCtx.save();
-    rCtx.beginPath();
-    rCtx.rect(lineX, 0, w - lineX, h);
-    rCtx.clip();
-    rCtx.drawImage(image, 0, 0, w, h);
-    rCtx.restore();
-    // Mirrored right half on left
-    rCtx.save();
-    rCtx.beginPath();
-    rCtx.rect(0, 0, lineX, h);
-    rCtx.clip();
-    rCtx.translate(lineX * 2, 0);
-    rCtx.scale(-1, 1);
-    rCtx.drawImage(image, 0, 0, w, h);
-    rCtx.restore();
+    const rightCtx = rightCanvas.getContext("2d")!;
+    const rightImgData = rightCtx.createImageData(w, h);
+
+    for (let y = 0; y < h; y++) {
+      const lineX = Math.round(getLineX(y));
+
+      for (let x = 0; x < w; x++) {
+        const srcIdx = (y * w + x) * 4;
+
+        // Left composite: if x < lineX use original, else mirror from left side
+        const leftIdx = (y * w + x) * 4;
+        if (x <= lineX) {
+          // Original left pixel
+          leftImgData.data[leftIdx] = srcData.data[srcIdx];
+          leftImgData.data[leftIdx + 1] = srcData.data[srcIdx + 1];
+          leftImgData.data[leftIdx + 2] = srcData.data[srcIdx + 2];
+          leftImgData.data[leftIdx + 3] = srcData.data[srcIdx + 3];
+        } else {
+          // Mirror: reflect x across lineX
+          const mirrorX = Math.round(lineX - (x - lineX));
+          if (mirrorX >= 0 && mirrorX < w) {
+            const mirrorIdx = (y * w + mirrorX) * 4;
+            leftImgData.data[leftIdx] = srcData.data[mirrorIdx];
+            leftImgData.data[leftIdx + 1] = srcData.data[mirrorIdx + 1];
+            leftImgData.data[leftIdx + 2] = srcData.data[mirrorIdx + 2];
+            leftImgData.data[leftIdx + 3] = srcData.data[mirrorIdx + 3];
+          }
+        }
+
+        // Right composite: if x >= lineX use original, else mirror from right side
+        const rightIdx = (y * w + x) * 4;
+        if (x >= lineX) {
+          rightImgData.data[rightIdx] = srcData.data[srcIdx];
+          rightImgData.data[rightIdx + 1] = srcData.data[srcIdx + 1];
+          rightImgData.data[rightIdx + 2] = srcData.data[srcIdx + 2];
+          rightImgData.data[rightIdx + 3] = srcData.data[srcIdx + 3];
+        } else {
+          const mirrorX = Math.round(lineX + (lineX - x));
+          if (mirrorX >= 0 && mirrorX < w) {
+            const mirrorIdx = (y * w + mirrorX) * 4;
+            rightImgData.data[rightIdx] = srcData.data[mirrorIdx];
+            rightImgData.data[rightIdx + 1] = srcData.data[mirrorIdx + 1];
+            rightImgData.data[rightIdx + 2] = srcData.data[mirrorIdx + 2];
+            rightImgData.data[rightIdx + 3] = srcData.data[mirrorIdx + 3];
+          }
+        }
+      }
+    }
+
+    leftCtx.putImageData(leftImgData, 0, 0);
+    rightCtx.putImageData(rightImgData, 0, 0);
 
     setResults({
       left: leftCanvas.toDataURL("image/png"),
       right: rightCanvas.toDataURL("image/png"),
     });
-  }, [image, splitX]);
+  }, [image, topPoint, bottomPoint, getScaledSize]);
 
   const downloadImage = (dataUrl: string, name: string) => {
     const a = document.createElement("a");
@@ -153,7 +213,16 @@ export default function FaceSplitMirror() {
 
   const reset = () => {
     setImage(null);
-    setSplitX(null);
+    setTopPoint(null);
+    setBottomPoint(null);
+    setPlacingPoint("top");
+    setResults(null);
+  };
+
+  const resetLine = () => {
+    setTopPoint(null);
+    setBottomPoint(null);
+    setPlacingPoint("top");
     setResults(null);
   };
 
@@ -161,9 +230,16 @@ export default function FaceSplitMirror() {
     <div className="space-y-6">
       <div className="rounded-xl border border-border bg-card p-5">
         <h3 className="text-lg font-display font-bold text-foreground mb-1">Face Split &amp; Mirror</h3>
-        <p className="text-sm text-muted-foreground mb-4">
-          Upload a face photo, position the split line, then generate two symmetrical composites — one from each half mirrored.
+        <p className="text-sm text-muted-foreground mb-3">
+          Upload a face photo, place a top and bottom point to define the cut line, then generate two symmetrical composites.
         </p>
+
+        <Alert className="mb-4">
+          <Info className="h-4 w-4" />
+          <AlertDescription className="text-xs">
+            This tool is for <strong>paying subscribers only</strong> — not for case study subjects.
+          </AlertDescription>
+        </Alert>
 
         {!image ? (
           <div
@@ -186,22 +262,27 @@ export default function FaceSplitMirror() {
               <Button variant="outline" size="sm" onClick={reset}>
                 <RotateCcw className="h-3.5 w-3.5 mr-1" /> New Photo
               </Button>
-              <Button size="sm" onClick={generateSplit} disabled={!image}>
+              <Button variant="outline" size="sm" onClick={resetLine} disabled={!topPoint}>
+                <RotateCcw className="h-3.5 w-3.5 mr-1" /> Reset Line
+              </Button>
+              <Button size="sm" onClick={generateSplit} disabled={placingPoint !== "done"}>
                 <Scissors className="h-3.5 w-3.5 mr-1" /> Split &amp; Mirror
               </Button>
+              <span className="text-xs text-muted-foreground ml-2">
+                {placingPoint === "top" && "Click on the image to place the top point"}
+                {placingPoint === "bottom" && "Now click to place the bottom point"}
+                {placingPoint === "done" && "Line set — click Split & Mirror, or click image to reposition"}
+              </span>
             </div>
 
             <div className="flex justify-center">
               <canvas
                 ref={canvasRef}
-                className={cn("rounded-lg border border-border cursor-col-resize", isDragging && "cursor-grabbing")}
-                onMouseDown={handlePointerDown}
-                onMouseMove={handlePointerMove}
-                onMouseUp={handlePointerUp}
-                onMouseLeave={handlePointerUp}
-                onTouchStart={handlePointerDown}
-                onTouchMove={handlePointerMove}
-                onTouchEnd={handlePointerUp}
+                className={cn(
+                  "rounded-lg border border-border",
+                  placingPoint !== "done" ? "cursor-crosshair" : "cursor-pointer"
+                )}
+                onClick={handleClick}
               />
             </div>
           </div>
@@ -212,7 +293,6 @@ export default function FaceSplitMirror() {
         <div className="rounded-xl border border-border bg-card p-5">
           <h3 className="text-sm font-semibold text-foreground mb-4">Results</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Left mirrored */}
             <div className="space-y-2 text-center">
               <p className="text-xs font-medium text-muted-foreground">Left Side Mirrored</p>
               <img src={results.left} alt="Left mirrored" className="rounded-lg border border-border w-full" />
@@ -220,16 +300,10 @@ export default function FaceSplitMirror() {
                 <Download className="h-3 w-3 mr-1" /> Download
               </Button>
             </div>
-
-            {/* Original */}
             <div className="space-y-2 text-center">
               <p className="text-xs font-medium text-muted-foreground">Original</p>
-              {image && (
-                <img src={image.src} alt="Original" className="rounded-lg border border-border w-full" />
-              )}
+              {image && <img src={image.src} alt="Original" className="rounded-lg border border-border w-full" />}
             </div>
-
-            {/* Right mirrored */}
             <div className="space-y-2 text-center">
               <p className="text-xs font-medium text-muted-foreground">Right Side Mirrored</p>
               <img src={results.right} alt="Right mirrored" className="rounded-lg border border-border w-full" />
