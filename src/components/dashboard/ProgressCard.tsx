@@ -40,7 +40,7 @@ export default function ProgressCard({ step, isComplete, photosUploaded, booking
     details: hasDetails,
     photos: photosUploaded,
     booking: bookingMade,
-    complete: isComplete,
+    complete: isComplete && confirmedTypeCount >= 4,
   };
 
   const completedCount = Object.values(doneMap).filter(Boolean).length;
