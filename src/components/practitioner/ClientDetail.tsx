@@ -64,13 +64,23 @@ export default function ClientDetail({ clientId, onClientNameLoaded }: ClientDet
   const [isCaseStudySubject, setIsCaseStudySubject] = useState(false);
   const { toast } = useToast();
 
+  // Fetch practitioner certification status
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("profiles").select("practitioner_status").eq("user_id", user.id).maybeSingle()
+      .then(({ data }) => setIsCertified(data?.practitioner_status === "certified"));
+  }, [user]);
+
+  // Fetch client data + subscription
   useEffect(() => {
     async function fetchClientData() {
       setLoading(true);
-      const [profileRes, bookingRes, ctRes] = await Promise.all([
+      const [profileRes, bookingRes, ctRes, subRes, csRes] = await Promise.all([
         supabase.from("profiles").select("first_name, last_name, email, enrollment_step, date_of_birth, gender, height_cm, shoe_size, city, state, country, case_study_consent_at").eq("user_id", clientId).maybeSingle(),
         supabase.from("bookings").select("id, scheduled_at, status, zoom_link").eq("client_id", clientId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("creator_type_profiles").select("primary_type, secondary_type, type_3, type_4, profiled_at").eq("user_id", clientId).maybeSingle(),
+        supabase.from("subscriptions").select("tier").eq("user_id", clientId).maybeSingle(),
+        supabase.from("case_studies").select("id").eq("subject_user_id", clientId).limit(1),
       ]);
       if (profileRes.data) {
         setProfile(profileRes.data);
@@ -79,6 +89,8 @@ export default function ClientDetail({ clientId, onClientNameLoaded }: ClientDet
       }
       if (bookingRes.data) setBooking(bookingRes.data);
       if (ctRes.data) setCreatorType(ctRes.data);
+      setClientIsPaidSubscriber(isPaidTier(subRes.data?.tier));
+      setIsCaseStudySubject(!!(csRes.data && csRes.data.length > 0));
       setLoading(false);
     }
     fetchClientData();
