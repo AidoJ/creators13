@@ -119,7 +119,7 @@ export default function FaceSplitMirror({ userId, onDataChange }: FaceSplitMirro
       const newData = { ...existingData, face_split: faceSplitData };
 
       const { error } = await supabase.from("creator_type_profiles")
-        .update({ profiling_data: newData, updated_at: new Date().toISOString() })
+        .update({ profiling_data: newData as unknown as Record<string, unknown>, updated_at: new Date().toISOString() })
         .eq("user_id", userId);
       
       if (error) throw error;
