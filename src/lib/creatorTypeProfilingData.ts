@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 
-export type ProfilingDataMap = Record<string, Json | undefined>;
+export type ProfilingDataMap = Record<string, unknown>;
 
 function toProfilingDataMap(value: Json | null | undefined): ProfilingDataMap {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -36,7 +36,7 @@ export async function mergeCreatorProfilingData(
     .upsert(
       {
         user_id: userId,
-        profiling_data: merged,
+        profiling_data: merged as Json,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "user_id" }
