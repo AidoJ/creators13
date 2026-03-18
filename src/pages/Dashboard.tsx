@@ -52,6 +52,7 @@ export default function Dashboard() {
   const [isCaseStudySubject, setIsCaseStudySubject] = useState(false);
   const [creatorTypes, setCreatorTypes] = useState<string[]>([]);
   const [hasTrainerPractitioner, setHasTrainerPractitioner] = useState(false);
+  const [photoCount, setPhotoCount] = useState(0);
 
   useEffect(() => {
     if (!user) return;
