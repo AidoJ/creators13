@@ -7,8 +7,16 @@ import { cn } from "@/lib/utils";
 import { useProfilingPhotos } from "@/hooks/useProfilingPhotos";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import {
+  getStoragePathFromPublicUrl,
+  loadCreatorProfilingData,
+  mergeCreatorProfilingData,
+} from "@/lib/creatorTypeProfilingData";
 
-interface Point { x: number; y: number }
+interface Point {
+  x: number;
+  y: number;
+}
 interface DrawAction {
   type: "line";
   points: Point[];
@@ -53,6 +61,22 @@ interface BodyAnnotationToolProps {
   onDataChange?: (data: BodyAnnotationData) => void;
 }
 
+function normalizeSavedBodyAnnotationData(raw?: SavedBodyAnnotationData): SavedBodyAnnotationData | null {
+  if (!raw) return null;
+
+  const normalized: SavedBodyAnnotationData = {
+    annotated_path: getStoragePathFromPublicUrl(raw.annotated_path),
+    notes: raw.notes,
+    saved_at: raw.saved_at,
+  };
+
+  if (!normalized.annotated_path && !normalized.notes) {
+    return null;
+  }
+
+  return normalized;
+}
+
 export default function BodyAnnotationTool({ userId, onDataChange }: BodyAnnotationToolProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -75,29 +99,47 @@ export default function BodyAnnotationTool({ userId, onDataChange }: BodyAnnotat
   // Load saved data on mount
   useEffect(() => {
     if (!userId) return;
-    setLoadingSaved(true);
-    supabase.from("creator_type_profiles").select("profiling_data").eq("user_id", userId).maybeSingle()
-      .then(({ data }) => {
-        const pd = data?.profiling_data as Record<string, unknown> | null;
-        const ba = pd?.body_annotation as SavedBodyAnnotationData | undefined;
-        if (ba?.annotated_path) {
-          setSavedData(ba);
-          setNotes(ba.notes || "");
+
+    const loadSaved = async () => {
+      setLoadingSaved(true);
+      try {
+        const profilingData = await loadCreatorProfilingData(userId);
+        const bodyAnnotationRaw = (profilingData.body_annotation ?? profilingData.bodyAnnotation) as
+          | SavedBodyAnnotationData
+          | undefined;
+        const normalized = normalizeSavedBodyAnnotationData(bodyAnnotationRaw);
+
+        if (normalized) {
+          setSavedData(normalized);
+          setNotes(normalized.notes || "");
+        } else {
+          setSavedData(null);
         }
+      } catch (error) {
+        console.error("Failed to load saved body annotation:", error);
+      } finally {
         setLoadingSaved(false);
-      });
+      }
+    };
+
+    loadSaved();
   }, [userId]);
 
   // Report data changes to parent
   useEffect(() => {
     onDataChange?.({
-      annotatedImageDataUrl: canvasRef.current?.toDataURL("image/png") || (savedData?.annotated_path ? supabase.storage.from("profiling-photos").getPublicUrl(savedData.annotated_path).data.publicUrl : undefined),
+      annotatedImageDataUrl:
+        canvasRef.current?.toDataURL("image/png") ||
+        (savedData?.annotated_path
+          ? supabase.storage.from("profiling-photos").getPublicUrl(savedData.annotated_path).data.publicUrl
+          : undefined),
       notes,
     });
   }, [notes, actions, onDataChange, savedData]);
 
   const handleSave = async () => {
     if (!userId || !canvasRef.current) return;
+
     setSaving(true);
     try {
       const dataUrl = canvasRef.current.toDataURL("image/png");
@@ -115,19 +157,11 @@ export default function BodyAnnotationTool({ userId, onDataChange }: BodyAnnotat
         saved_at: new Date().toISOString(),
       };
 
-      const { data: existing } = await supabase.from("creator_type_profiles").select("profiling_data").eq("user_id", userId).maybeSingle();
-      const existingData = (existing?.profiling_data as Record<string, unknown>) || {};
-      const newData = { ...existingData, body_annotation: bodyAnnotationData };
-
-      const { error } = await supabase.from("creator_type_profiles")
-        .update({ profiling_data: newData as any, updated_at: new Date().toISOString() })
-        .eq("user_id", userId);
-
-      if (error) throw error;
+      await mergeCreatorProfilingData(userId, { body_annotation: bodyAnnotationData });
       setSavedData(bodyAnnotationData);
       toast({ title: "Body annotation saved" });
     } catch (err: any) {
-      toast({ title: "Save failed", description: err.message, variant: "destructive" });
+      toast({ title: "Save failed", description: err?.message || "Please try again.", variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -135,176 +169,29 @@ export default function BodyAnnotationTool({ userId, onDataChange }: BodyAnnotat
 
   const handleSaveNotes = async () => {
     if (!userId || !savedData) return;
+
     setSaving(true);
     try {
-      const { data: existing } = await supabase.from("creator_type_profiles").select("profiling_data").eq("user_id", userId).maybeSingle();
-      const existingData = (existing?.profiling_data as Record<string, unknown>) || {};
-      const updatedBA = { ...savedData, notes };
-      const newData = { ...existingData, body_annotation: updatedBA };
-      await supabase.from("creator_type_profiles").update({ profiling_data: newData as any, updated_at: new Date().toISOString() }).eq("user_id", userId);
-      setSavedData(updatedBA);
+      const updatedBodyAnnotation: SavedBodyAnnotationData = {
+        ...savedData,
+        notes,
+        saved_at: savedData.saved_at ?? new Date().toISOString(),
+      };
+
+      await mergeCreatorProfilingData(userId, { body_annotation: updatedBodyAnnotation });
+      setSavedData(updatedBodyAnnotation);
       toast({ title: "Notes saved" });
-    } catch {
-      toast({ title: "Save failed", variant: "destructive" });
+    } catch (err: any) {
+      toast({ title: "Save failed", description: err?.message || "Please try again.", variant: "destructive" });
     } finally {
       setSaving(false);
     }
   };
-
-  const loadImageFromUrl = useCallback((url: string) => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      setImage(img);
-      setActions([]);
-    };
-    img.src = url;
-  }, []);
-
-  const handleFile = useCallback((file: File) => {
-    const img = new Image();
-    img.onload = () => {
-      setImage(img);
-      setActions([]);
-    };
-    img.src = URL.createObjectURL(file);
-  }, []);
-
-  const getScaledSize = useCallback(() => {
-    if (!image) return { w: 0, h: 0 };
-    const maxW = Math.min(300, (window.innerWidth - 64) / 2);
-    const scale = maxW / image.width;
-    return { w: Math.round(image.width * scale), h: Math.round(image.height * scale) };
-  }, [image]);
-
-  const renderCanvas = useCallback(() => {
-    if (!image || !canvasRef.current) return;
-    const { w, h } = getScaledSize();
-    const canvas = canvasRef.current;
-    canvas.width = w;
-    canvas.height = h;
-    setCanvasSize({ w, h });
-    const ctx = canvas.getContext("2d")!;
-
-    ctx.drawImage(image, 0, 0, w, h);
-
-    for (const action of actions) {
-      if (action.type === "line" && action.points.length > 1) {
-        ctx.strokeStyle = action.color;
-        ctx.lineWidth = action.width;
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
-        ctx.beginPath();
-        ctx.moveTo(action.points[0].x, action.points[0].y);
-        for (let i = 1; i < action.points.length; i++) {
-          ctx.lineTo(action.points[i].x, action.points[i].y);
-        }
-        ctx.stroke();
-      } else if (action.type === "text") {
-        const fontSize = Math.max(action.fontSize, 24);
-        const padX = 8;
-        const padY = 6;
-
-        ctx.font = `700 ${fontSize}px sans-serif`;
-        ctx.textAlign = "left";
-        ctx.textBaseline = "top";
-
-        const metrics = ctx.measureText(action.text);
-        const textHeight = fontSize;
-        const boxX = action.position.x - padX;
-        const boxY = action.position.y - padY;
-        const boxW = metrics.width + padX * 2;
-        const boxH = textHeight + padY * 2;
-
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(boxX, boxY, boxW, boxH);
-        ctx.strokeStyle = "#000000";
-        ctx.lineWidth = 1;
-        ctx.strokeRect(boxX, boxY, boxW, boxH);
-        ctx.fillStyle = "#000000";
-        ctx.fillText(action.text, action.position.x, action.position.y);
-      }
-    }
-
-    if (isDrawing && currentPoints.length > 1) {
-      ctx.strokeStyle = currentColor;
-      ctx.lineWidth = lineWidth;
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-      ctx.beginPath();
-      ctx.moveTo(currentPoints[0].x, currentPoints[0].y);
-      for (let i = 1; i < currentPoints.length; i++) {
-        ctx.lineTo(currentPoints[i].x, currentPoints[i].y);
-      }
-      ctx.stroke();
-    }
-  }, [image, actions, isDrawing, currentPoints, currentColor, lineWidth, getScaledSize]);
-
-  useEffect(() => { renderCanvas(); }, [renderCanvas]);
-
-  const getPos = (e: React.MouseEvent | React.TouchEvent): Point => {
-    const canvas = canvasRef.current!;
-    const rect = canvas.getBoundingClientRect();
-    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
-    const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
-    return {
-      x: Math.round(((clientX - rect.left) / rect.width) * canvas.width),
-      y: Math.round(((clientY - rect.top) / rect.height) * canvas.height),
-    };
-  };
-
-  const handlePointerDown = (e: React.MouseEvent | React.TouchEvent) => {
-    if (tool === "draw") {
-      setIsDrawing(true);
-      setCurrentPoints([getPos(e)]);
-    } else if (tool === "text") {
-      const pos = getPos(e);
-      const text = prompt("Enter text to place on the image:");
-      if (text?.trim()) {
-        setActions(prev => [...prev, { type: "text", text: text.trim(), position: pos, color: "#000000", fontSize: 24 }]);
-      }
-    }
-  };
-
-  const handlePointerMove = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!isDrawing || tool !== "draw") return;
-    e.preventDefault();
-    setCurrentPoints(prev => [...prev, getPos(e)]);
-  };
-
-  const handlePointerUp = () => {
-    if (isDrawing && currentPoints.length > 1) {
-      setActions(prev => [...prev, { type: "line", points: currentPoints, color: currentColor, width: lineWidth }]);
-    }
-    setIsDrawing(false);
-    setCurrentPoints([]);
-  };
-
-  const undo = () => setActions(prev => prev.slice(0, -1));
-  const clearAll = () => setActions([]);
-
-  const downloadAnnotated = () => {
-    if (!canvasRef.current) return;
-    const a = document.createElement("a");
-    a.href = canvasRef.current.toDataURL("image/png");
-    a.download = "body-annotated.png";
-    a.click();
-  };
-
-  const reset = () => {
-    setImage(null);
-    setActions([]);
-    setCurrentPoints([]);
-    setIsDrawing(false);
-  };
-
-  const formatPhotoType = (type: string) =>
-    type.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
-
+...
   const getPublicUrl = (path: string) =>
     supabase.storage.from("profiling-photos").getPublicUrl(path).data.publicUrl;
 
-  const showSavedResult = !image && savedData?.annotated_path;
+  const showSavedResult = !image && !!savedData?.annotated_path;
 
   return (
     <div className="space-y-6">

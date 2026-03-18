@@ -8,8 +8,16 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useProfilingPhotos } from "@/hooks/useProfilingPhotos";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import {
+  getStoragePathFromPublicUrl,
+  loadCreatorProfilingData,
+  mergeCreatorProfilingData,
+} from "@/lib/creatorTypeProfilingData";
 
-interface Point { x: number; y: number }
+interface Point {
+  x: number;
+  y: number;
+}
 
 export interface FaceSplitData {
   originalImageUrl?: string;
@@ -44,6 +52,24 @@ async function uploadDataUrl(dataUrl: string, path: string): Promise<string | nu
   }
 }
 
+function normalizeSavedFaceSplitData(raw?: SavedFaceSplitData): SavedFaceSplitData | null {
+  if (!raw) return null;
+
+  const normalized: SavedFaceSplitData = {
+    original_path: getStoragePathFromPublicUrl(raw.original_path),
+    left_path: getStoragePathFromPublicUrl(raw.left_path),
+    right_path: getStoragePathFromPublicUrl(raw.right_path),
+    notes: raw.notes,
+    saved_at: raw.saved_at,
+  };
+
+  if (!normalized.left_path && !normalized.right_path && !normalized.original_path && !normalized.notes) {
+    return null;
+  }
+
+  return normalized;
+}
+
 export default function FaceSplitMirror({ userId, onDataChange }: FaceSplitMirrorProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -65,68 +91,101 @@ export default function FaceSplitMirror({ userId, onDataChange }: FaceSplitMirro
   // Load saved data on mount
   useEffect(() => {
     if (!userId) return;
-    setLoadingSaved(true);
-    supabase.from("creator_type_profiles").select("profiling_data").eq("user_id", userId).maybeSingle()
-      .then(({ data }) => {
-        const pd = data?.profiling_data as Record<string, unknown> | null;
-        const fs = pd?.face_split as SavedFaceSplitData | undefined;
-        if (fs?.left_path) {
-          setSavedData(fs);
-          setNotes(fs.notes || "");
+
+    const loadSaved = async () => {
+      setLoadingSaved(true);
+      try {
+        const profilingData = await loadCreatorProfilingData(userId);
+        const faceSplitRaw = (profilingData.face_split ?? profilingData.faceSplit) as SavedFaceSplitData | undefined;
+        const normalized = normalizeSavedFaceSplitData(faceSplitRaw);
+
+        if (normalized) {
+          setSavedData(normalized);
+          setNotes(normalized.notes || "");
+        } else {
+          setSavedData(null);
         }
+      } catch (error) {
+        console.error("Failed to load saved face split data:", error);
+      } finally {
         setLoadingSaved(false);
-      });
+      }
+    };
+
+    loadSaved();
   }, [userId]);
 
   // Report data changes to parent
   useEffect(() => {
     onDataChange?.({
-      originalImageUrl: image?.src || (savedData?.original_path ? supabase.storage.from("profiling-photos").getPublicUrl(savedData.original_path).data.publicUrl : undefined),
-      leftMirroredDataUrl: results?.left || (savedData?.left_path ? supabase.storage.from("profiling-photos").getPublicUrl(savedData.left_path).data.publicUrl : undefined),
-      rightMirroredDataUrl: results?.right || (savedData?.right_path ? supabase.storage.from("profiling-photos").getPublicUrl(savedData.right_path).data.publicUrl : undefined),
+      originalImageUrl:
+        image?.src ||
+        (savedData?.original_path
+          ? supabase.storage.from("profiling-photos").getPublicUrl(savedData.original_path).data.publicUrl
+          : undefined),
+      leftMirroredDataUrl:
+        results?.left ||
+        (savedData?.left_path
+          ? supabase.storage.from("profiling-photos").getPublicUrl(savedData.left_path).data.publicUrl
+          : undefined),
+      rightMirroredDataUrl:
+        results?.right ||
+        (savedData?.right_path
+          ? supabase.storage.from("profiling-photos").getPublicUrl(savedData.right_path).data.publicUrl
+          : undefined),
       notes,
     });
   }, [image, results, notes, onDataChange, savedData]);
 
   const handleSave = async () => {
     if (!userId || !results) return;
+
     setSaving(true);
     try {
       const ts = Date.now();
+      const leftPath = `reports/${userId}/face-split-left-${ts}.png`;
+      const rightPath = `reports/${userId}/face-split-right-${ts}.png`;
+      const originalPath = `reports/${userId}/face-split-original-${ts}.png`;
+
       const [leftUrl, rightUrl, origUrl] = await Promise.all([
-        uploadDataUrl(results.left, `reports/${userId}/face-split-left-${ts}.png`),
-        uploadDataUrl(results.right, `reports/${userId}/face-split-right-${ts}.png`),
-        image?.src ? uploadDataUrl(image.src.startsWith("data:") ? image.src : await fetch(image.src).then(r => r.blob()).then(b => {
-          return new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result as string);
-            reader.readAsDataURL(b);
-          });
-        }), `reports/${userId}/face-split-original-${ts}.png`) : Promise.resolve(null),
+        uploadDataUrl(results.left, leftPath),
+        uploadDataUrl(results.right, rightPath),
+        image?.src
+          ? uploadDataUrl(
+              image.src.startsWith("data:")
+                ? image.src
+                : await fetch(image.src)
+                    .then((response) => response.blob())
+                    .then(
+                      (blob) =>
+                        new Promise<string>((resolve) => {
+                          const reader = new FileReader();
+                          reader.onload = () => resolve(reader.result as string);
+                          reader.readAsDataURL(blob);
+                        })
+                    ),
+              originalPath
+            )
+          : Promise.resolve(null),
       ]);
 
+      if (!leftUrl || !rightUrl) {
+        throw new Error("Could not upload mirrored images. Please try again.");
+      }
+
       const faceSplitData: SavedFaceSplitData = {
-        left_path: `reports/${userId}/face-split-left-${ts}.png`,
-        right_path: `reports/${userId}/face-split-right-${ts}.png`,
-        original_path: origUrl ? `reports/${userId}/face-split-original-${ts}.png` : undefined,
+        left_path: leftPath,
+        right_path: rightPath,
+        original_path: origUrl ? originalPath : undefined,
         notes,
         saved_at: new Date().toISOString(),
       };
 
-      // Get existing profiling_data
-      const { data: existing } = await supabase.from("creator_type_profiles").select("profiling_data").eq("user_id", userId).maybeSingle();
-      const existingData = (existing?.profiling_data as Record<string, unknown>) || {};
-      const newData = { ...existingData, face_split: faceSplitData };
-
-      const { error } = await supabase.from("creator_type_profiles")
-        .update({ profiling_data: newData as any, updated_at: new Date().toISOString() })
-        .eq("user_id", userId);
-      
-      if (error) throw error;
+      await mergeCreatorProfilingData(userId, { face_split: faceSplitData });
       setSavedData(faceSplitData);
       toast({ title: "Face split saved" });
     } catch (err: any) {
-      toast({ title: "Save failed", description: err.message, variant: "destructive" });
+      toast({ title: "Save failed", description: err?.message || "Please try again.", variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -134,299 +193,30 @@ export default function FaceSplitMirror({ userId, onDataChange }: FaceSplitMirro
 
   const handleSaveNotes = async () => {
     if (!userId || !savedData) return;
+
     setSaving(true);
     try {
-      const { data: existing } = await supabase.from("creator_type_profiles").select("profiling_data").eq("user_id", userId).maybeSingle();
-      const existingData = (existing?.profiling_data as Record<string, unknown>) || {};
-      const updatedFaceSplit = { ...savedData, notes };
-      const newData = { ...existingData, face_split: updatedFaceSplit };
-      await supabase.from("creator_type_profiles").update({ profiling_data: newData as any, updated_at: new Date().toISOString() }).eq("user_id", userId);
+      const updatedFaceSplit: SavedFaceSplitData = {
+        ...savedData,
+        notes,
+        saved_at: savedData.saved_at ?? new Date().toISOString(),
+      };
+
+      await mergeCreatorProfilingData(userId, { face_split: updatedFaceSplit });
       setSavedData(updatedFaceSplit);
       toast({ title: "Notes saved" });
-    } catch {
-      toast({ title: "Save failed", variant: "destructive" });
+    } catch (err: any) {
+      toast({ title: "Save failed", description: err?.message || "Please try again.", variant: "destructive" });
     } finally {
       setSaving(false);
     }
   };
-
-  const loadImageFromUrl = useCallback((url: string) => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      setImage(img);
-      setTopPoint(null);
-      setBottomPoint(null);
-      setPlacingPoint("top");
-      setDragging(false);
-      setResults(null);
-    };
-    img.src = url;
-  }, []);
-
-  const handleFile = useCallback((file: File) => {
-    const img = new Image();
-    img.onload = () => {
-      setImage(img);
-      setTopPoint(null);
-      setBottomPoint(null);
-      setPlacingPoint("top");
-      setDragging(false);
-      setResults(null);
-    };
-    img.src = URL.createObjectURL(file);
-  }, []);
-
-  const getScaledSize = useCallback(() => {
-    if (!image) return { w: 0, h: 0, scale: 1 };
-    const maxW = Math.min(300, (window.innerWidth - 64) / 2);
-    const scale = maxW / image.width;
-    return { w: Math.round(image.width * scale), h: Math.round(image.height * scale), scale };
-  }, [image]);
-
-  const isNearPoint = (pos: Point, target: Point, radius = 14): boolean => {
-    const dx = pos.x - target.x;
-    const dy = pos.y - target.y;
-    return dx * dx + dy * dy <= radius * radius;
-  };
-
-  const getCanvasPos = (e: React.MouseEvent | React.TouchEvent): Point => {
-    const canvas = canvasRef.current!;
-    const rect = canvas.getBoundingClientRect();
-    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
-    const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
-    return {
-      x: Math.round(((clientX - rect.left) / rect.width) * canvas.width),
-      y: Math.round(((clientY - rect.top) / rect.height) * canvas.height),
-    };
-  };
-
-  // Draw the canvas
-  useEffect(() => {
-    if (!image || !canvasRef.current) return;
-    const { w, h } = getScaledSize();
-    const canvas = canvasRef.current;
-    canvas.width = w;
-    canvas.height = h;
-    setCanvasSize({ w, h });
-
-    const ctx = canvas.getContext("2d")!;
-    ctx.drawImage(image, 0, 0, w, h);
-
-    const drawDot = (p: Point, color: string, label: string, isDraggable = false) => {
-      const radius = isDraggable ? 8 : 6;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
-      ctx.fillStyle = color;
-      ctx.fill();
-      ctx.strokeStyle = "#fff";
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      if (isDraggable) {
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, radius + 4, 0, Math.PI * 2);
-        ctx.strokeStyle = "rgba(59,130,246,0.4)";
-        ctx.lineWidth = 2;
-        ctx.setLineDash([3, 3]);
-        ctx.stroke();
-        ctx.setLineDash([]);
-      }
-
-      ctx.font = "bold 11px sans-serif";
-      ctx.fillStyle = color;
-      ctx.textAlign = "center";
-      ctx.fillText(label, p.x, p.y - (isDraggable ? 16 : 12));
-    };
-
-    if (topPoint) drawDot(topPoint, "#ef4444", "⚓ Anchor");
-    if (bottomPoint) drawDot(bottomPoint, "#3b82f6", "↕ Drag", true);
-
-    if (topPoint && bottomPoint) {
-      ctx.strokeStyle = "#ef4444";
-      ctx.lineWidth = 2;
-      ctx.setLineDash([8, 4]);
-      ctx.beginPath();
-      ctx.moveTo(topPoint.x, topPoint.y);
-      ctx.lineTo(bottomPoint.x, bottomPoint.y);
-      ctx.stroke();
-      ctx.setLineDash([]);
-    }
-
-    ctx.font = "bold 11px sans-serif";
-    ctx.fillStyle = "rgba(239,68,68,0.9)";
-    ctx.textAlign = "center";
-    if (placingPoint === "top") {
-      ctx.fillText("Click to place ANCHOR point", w / 2, 18);
-    } else if (placingPoint === "bottom") {
-      ctx.fillText("Click to place CUT point (draggable)", w / 2, h - 8);
-    }
-  }, [image, topPoint, bottomPoint, placingPoint, getScaledSize]);
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    const pos = getCanvasPos(e);
-    if (placingPoint === "top") {
-      setTopPoint(pos);
-      setPlacingPoint("bottom");
-      setResults(null);
-    } else if (placingPoint === "bottom") {
-      setBottomPoint(pos);
-      setPlacingPoint("done");
-      setResults(null);
-    } else if (placingPoint === "done" && bottomPoint && isNearPoint(pos, bottomPoint)) {
-      setDragging(true);
-      setResults(null);
-    } else {
-      setTopPoint(pos);
-      setBottomPoint(null);
-      setPlacingPoint("bottom");
-      setResults(null);
-    }
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!dragging) return;
-    const pos = getCanvasPos(e);
-    setBottomPoint(pos);
-  };
-
-  const handleMouseUp = () => {
-    if (dragging) setDragging(false);
-  };
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (placingPoint === "done" && bottomPoint) {
-      const pos = getCanvasPos(e);
-      if (isNearPoint(pos, bottomPoint)) {
-        e.preventDefault();
-        setDragging(true);
-        setResults(null);
-        return;
-      }
-    }
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!dragging) return;
-    e.preventDefault();
-    const pos = getCanvasPos(e);
-    setBottomPoint(pos);
-  };
-
-  const handleTouchEnd = () => {
-    if (dragging) setDragging(false);
-  };
-
-  const generateSplit = useCallback(() => {
-    if (!image || !topPoint || !bottomPoint) return;
-    const { w, h } = getScaledSize();
-
-    const getLineX = (y: number): number => {
-      if (bottomPoint.y === topPoint.y) return topPoint.x;
-      const t = (y - topPoint.y) / (bottomPoint.y - topPoint.y);
-      return topPoint.x + t * (bottomPoint.x - topPoint.x);
-    };
-
-    const srcCanvas = document.createElement("canvas");
-    srcCanvas.width = w;
-    srcCanvas.height = h;
-    const srcCtx = srcCanvas.getContext("2d")!;
-    srcCtx.drawImage(image, 0, 0, w, h);
-    const srcData = srcCtx.getImageData(0, 0, w, h);
-
-    const leftCanvas = document.createElement("canvas");
-    leftCanvas.width = w;
-    leftCanvas.height = h;
-    const leftCtx = leftCanvas.getContext("2d")!;
-    const leftImgData = leftCtx.createImageData(w, h);
-
-    const rightCanvas = document.createElement("canvas");
-    rightCanvas.width = w;
-    rightCanvas.height = h;
-    const rightCtx = rightCanvas.getContext("2d")!;
-    const rightImgData = rightCtx.createImageData(w, h);
-
-    for (let y = 0; y < h; y++) {
-      const lineX = Math.round(getLineX(y));
-      for (let x = 0; x < w; x++) {
-        const srcIdx = (y * w + x) * 4;
-        const leftIdx = (y * w + x) * 4;
-        if (x <= lineX) {
-          leftImgData.data[leftIdx] = srcData.data[srcIdx];
-          leftImgData.data[leftIdx + 1] = srcData.data[srcIdx + 1];
-          leftImgData.data[leftIdx + 2] = srcData.data[srcIdx + 2];
-          leftImgData.data[leftIdx + 3] = srcData.data[srcIdx + 3];
-        } else {
-          const mirrorX = Math.round(lineX - (x - lineX));
-          if (mirrorX >= 0 && mirrorX < w) {
-            const mirrorIdx = (y * w + mirrorX) * 4;
-            leftImgData.data[leftIdx] = srcData.data[mirrorIdx];
-            leftImgData.data[leftIdx + 1] = srcData.data[mirrorIdx + 1];
-            leftImgData.data[leftIdx + 2] = srcData.data[mirrorIdx + 2];
-            leftImgData.data[leftIdx + 3] = srcData.data[mirrorIdx + 3];
-          }
-        }
-
-        const rightIdx = (y * w + x) * 4;
-        if (x >= lineX) {
-          rightImgData.data[rightIdx] = srcData.data[srcIdx];
-          rightImgData.data[rightIdx + 1] = srcData.data[srcIdx + 1];
-          rightImgData.data[rightIdx + 2] = srcData.data[srcIdx + 2];
-          rightImgData.data[rightIdx + 3] = srcData.data[srcIdx + 3];
-        } else {
-          const mirrorX = Math.round(lineX + (lineX - x));
-          if (mirrorX >= 0 && mirrorX < w) {
-            const mirrorIdx = (y * w + mirrorX) * 4;
-            rightImgData.data[rightIdx] = srcData.data[mirrorIdx];
-            rightImgData.data[rightIdx + 1] = srcData.data[mirrorIdx + 1];
-            rightImgData.data[rightIdx + 2] = srcData.data[mirrorIdx + 2];
-            rightImgData.data[rightIdx + 3] = srcData.data[mirrorIdx + 3];
-          }
-        }
-      }
-    }
-
-    leftCtx.putImageData(leftImgData, 0, 0);
-    rightCtx.putImageData(rightImgData, 0, 0);
-
-    setResults({
-      left: leftCanvas.toDataURL("image/png"),
-      right: rightCanvas.toDataURL("image/png"),
-    });
-  }, [image, topPoint, bottomPoint, getScaledSize]);
-
-  const downloadImage = (dataUrl: string, name: string) => {
-    const a = document.createElement("a");
-    a.href = dataUrl;
-    a.download = name;
-    a.click();
-  };
-
-  const reset = () => {
-    setImage(null);
-    setTopPoint(null);
-    setBottomPoint(null);
-    setPlacingPoint("top");
-    setDragging(false);
-    setResults(null);
-  };
-
-  const resetLine = () => {
-    setTopPoint(null);
-    setBottomPoint(null);
-    setPlacingPoint("top");
-    setDragging(false);
-    setResults(null);
-  };
-
-  const formatPhotoType = (type: string) =>
-    type.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
-
+...
   const getPublicUrl = (path: string) =>
     supabase.storage.from("profiling-photos").getPublicUrl(path).data.publicUrl;
 
   // Show saved results if no active editing session
-  const showSavedResults = !image && !results && savedData?.left_path;
+  const showSavedResults = !image && !results && !!(savedData?.left_path || savedData?.right_path || savedData?.original_path);
 
   return (
     <div className="space-y-6">
