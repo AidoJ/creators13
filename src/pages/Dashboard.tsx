@@ -126,8 +126,8 @@ export default function Dashboard() {
           country={profile?.country}
         />
 
-        {/* Upsell for lower tiers */}
-        <UpsellBanner currentTier={subscription?.tier} />
+        {/* Upsell for lower tiers — hidden until paid tiers are available */}
+        {/* <UpsellBanner currentTier={subscription?.tier} /> */}
 
         {/* Two-column layout */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
