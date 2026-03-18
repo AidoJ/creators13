@@ -2,13 +2,18 @@ import { useRef, useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Upload, RotateCcw, Scissors, Download, Info } from "lucide-react";
+import { Upload, RotateCcw, Scissors, Download, Info, ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useProfilingPhotos } from "@/hooks/useProfilingPhotos";
 
 interface Point { x: number; y: number }
 
-export default function FaceSplitMirror() {
+interface FaceSplitMirrorProps {
+  userId?: string;
+}
+
+export default function FaceSplitMirror({ userId }: FaceSplitMirrorProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
@@ -18,6 +23,21 @@ export default function FaceSplitMirror() {
   const [results, setResults] = useState<{ left: string; right: string } | null>(null);
   const [notes, setNotes] = useState("");
   const [canvasSize, setCanvasSize] = useState({ w: 0, h: 0 });
+
+  const { facePhotos, loading: photosLoading } = useProfilingPhotos(userId);
+
+  const loadImageFromUrl = useCallback((url: string) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      setImage(img);
+      setTopPoint(null);
+      setBottomPoint(null);
+      setPlacingPoint("top");
+      setResults(null);
+    };
+    img.src = url;
+  }, []);
 
   const handleFile = useCallback((file: File) => {
     const img = new Image();
@@ -31,7 +51,6 @@ export default function FaceSplitMirror() {
     img.src = URL.createObjectURL(file);
   }, []);
 
-  // Compute canvas dimensions
   const getScaledSize = useCallback(() => {
     if (!image) return { w: 0, h: 0, scale: 1 };
     const maxW = Math.min(600, window.innerWidth - 64);
@@ -39,7 +58,6 @@ export default function FaceSplitMirror() {
     return { w: Math.round(image.width * scale), h: Math.round(image.height * scale), scale };
   }, [image]);
 
-  // Draw image + split line
   useEffect(() => {
     if (!image || !canvasRef.current) return;
     const { w, h } = getScaledSize();
@@ -51,7 +69,6 @@ export default function FaceSplitMirror() {
     const ctx = canvas.getContext("2d")!;
     ctx.drawImage(image, 0, 0, w, h);
 
-    // Draw points and line
     const drawDot = (p: Point, color: string, label: string) => {
       ctx.beginPath();
       ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
@@ -80,7 +97,6 @@ export default function FaceSplitMirror() {
       ctx.setLineDash([]);
     }
 
-    // Instructions
     ctx.font = "bold 12px sans-serif";
     ctx.fillStyle = "rgba(239,68,68,0.9)";
     ctx.textAlign = "center";
@@ -111,7 +127,6 @@ export default function FaceSplitMirror() {
       setPlacingPoint("done");
       setResults(null);
     } else {
-      // Re-place: cycle back to top
       setTopPoint(pos);
       setBottomPoint(null);
       setPlacingPoint("bottom");
@@ -123,14 +138,12 @@ export default function FaceSplitMirror() {
     if (!image || !topPoint || !bottomPoint) return;
     const { w, h } = getScaledSize();
 
-    // For each scanline y, compute the x position of the split line
     const getLineX = (y: number): number => {
       if (bottomPoint.y === topPoint.y) return topPoint.x;
       const t = (y - topPoint.y) / (bottomPoint.y - topPoint.y);
       return topPoint.x + t * (bottomPoint.x - topPoint.x);
     };
 
-    // Source canvas
     const srcCanvas = document.createElement("canvas");
     srcCanvas.width = w;
     srcCanvas.height = h;
@@ -138,14 +151,12 @@ export default function FaceSplitMirror() {
     srcCtx.drawImage(image, 0, 0, w, h);
     const srcData = srcCtx.getImageData(0, 0, w, h);
 
-    // Left-mirrored: left half + mirror of left half
     const leftCanvas = document.createElement("canvas");
     leftCanvas.width = w;
     leftCanvas.height = h;
     const leftCtx = leftCanvas.getContext("2d")!;
     const leftImgData = leftCtx.createImageData(w, h);
 
-    // Right-mirrored: right half + mirror of right half
     const rightCanvas = document.createElement("canvas");
     rightCanvas.width = w;
     rightCanvas.height = h;
@@ -154,20 +165,15 @@ export default function FaceSplitMirror() {
 
     for (let y = 0; y < h; y++) {
       const lineX = Math.round(getLineX(y));
-
       for (let x = 0; x < w; x++) {
         const srcIdx = (y * w + x) * 4;
-
-        // Left composite: if x < lineX use original, else mirror from left side
         const leftIdx = (y * w + x) * 4;
         if (x <= lineX) {
-          // Original left pixel
           leftImgData.data[leftIdx] = srcData.data[srcIdx];
           leftImgData.data[leftIdx + 1] = srcData.data[srcIdx + 1];
           leftImgData.data[leftIdx + 2] = srcData.data[srcIdx + 2];
           leftImgData.data[leftIdx + 3] = srcData.data[srcIdx + 3];
         } else {
-          // Mirror: reflect x across lineX
           const mirrorX = Math.round(lineX - (x - lineX));
           if (mirrorX >= 0 && mirrorX < w) {
             const mirrorIdx = (y * w + mirrorX) * 4;
@@ -178,7 +184,6 @@ export default function FaceSplitMirror() {
           }
         }
 
-        // Right composite: if x >= lineX use original, else mirror from right side
         const rightIdx = (y * w + x) * 4;
         if (x >= lineX) {
           rightImgData.data[rightIdx] = srcData.data[srcIdx];
@@ -229,12 +234,15 @@ export default function FaceSplitMirror() {
     setResults(null);
   };
 
+  const formatPhotoType = (type: string) =>
+    type.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+
   return (
     <div className="space-y-6">
       <div className="rounded-xl border border-border bg-card p-5">
         <h3 className="text-lg font-display font-bold text-foreground mb-1">Face Split &amp; Mirror</h3>
         <p className="text-sm text-muted-foreground mb-3">
-          Upload a face photo, place a top and bottom point to define the cut line, then generate two symmetrical composites.
+          Upload a face photo or select from the client's profiling images, place a top and bottom point to define the cut line, then generate two symmetrical composites.
         </p>
 
         <Alert className="mb-4">
@@ -245,19 +253,57 @@ export default function FaceSplitMirror() {
         </Alert>
 
         {!image ? (
-          <div
-            className="border-2 border-dashed border-border rounded-xl p-12 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors"
-            onClick={() => fileRef.current?.click()}
-          >
-            <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-            <span className="text-sm text-muted-foreground">Click to upload a face photo</span>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
-            />
+          <div className="space-y-4">
+            {/* Profiling photos picker */}
+            {userId && facePhotos.length > 0 && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-2">
+                  <ImageIcon className="h-3.5 w-3.5 inline mr-1" />
+                  Select from client's profiling photos:
+                </p>
+                <div className="grid grid-cols-3 gap-3">
+                  {facePhotos.map((photo) => (
+                    <button
+                      key={photo.photo_type}
+                      className="group relative rounded-lg border-2 border-border hover:border-primary/50 overflow-hidden transition-colors"
+                      onClick={() => loadImageFromUrl(photo.url)}
+                    >
+                      <img
+                        src={photo.url}
+                        alt={formatPhotoType(photo.photo_type)}
+                        className="w-full aspect-[3/4] object-cover"
+                      />
+                      <span className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[10px] py-1 text-center">
+                        {formatPhotoType(photo.photo_type)}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-3 my-3">
+                  <div className="flex-1 h-px bg-border" />
+                  <span className="text-xs text-muted-foreground">or</span>
+                  <div className="flex-1 h-px bg-border" />
+                </div>
+              </div>
+            )}
+            {photosLoading && userId && (
+              <p className="text-xs text-muted-foreground text-center py-2">Loading client photos…</p>
+            )}
+
+            <div
+              className="border-2 border-dashed border-border rounded-xl p-12 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors"
+              onClick={() => fileRef.current?.click()}
+            >
+              <Upload className="h-8 w-8 text-muted-foreground mb-2" />
+              <span className="text-sm text-muted-foreground">Click to upload a face photo</span>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+              />
+            </div>
           </div>
         ) : (
           <div className="space-y-4">
