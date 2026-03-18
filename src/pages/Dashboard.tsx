@@ -25,6 +25,7 @@ interface ProfileData {
   pronouns: string | null;
   height_cm: number | null;
   shoe_size: string | null;
+  phone: string | null;
   city: string | null;
   state: string | null;
   country: string | null;
