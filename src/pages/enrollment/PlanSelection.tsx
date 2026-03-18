@@ -40,6 +40,8 @@ export default function PlanSelection() {
   const [selectedTier, setSelectedTier] = useState<TierKey | null>(urlCaseStudy ? "wren" : urlTier);
   const [annual, setAnnual] = useState(searchParams.get("billing") === "annual");
   const [practitionerCode, setPractitionerCode] = useState(urlPractitionerCode);
+  const [practitionerName, setPractitionerName] = useState<string | null>(null);
+  const [lookingUpCode, setLookingUpCode] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
   const isCaseStudy = signupPath === "case_study";
@@ -57,6 +59,30 @@ export default function PlanSelection() {
       setSelectedTier("wren");
     }
   }, [signupPath]);
+
+  // Look up practitioner name when code changes
+  useEffect(() => {
+    const code = practitionerCode.trim();
+    if (!code) {
+      setPractitionerName(null);
+      return;
+    }
+    setLookingUpCode(true);
+    const timeout = setTimeout(async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("first_name, last_name")
+        .eq("practitioner_code", code)
+        .maybeSingle();
+      if (data) {
+        setPractitionerName(`${data.first_name || ""} ${data.last_name || ""}`.trim() || null);
+      } else {
+        setPractitionerName(null);
+      }
+      setLookingUpCode(false);
+    }, 400);
+    return () => clearTimeout(timeout);
+  }, [practitionerCode]);
 
   const handleContinue = async () => {
     if (!selectedTier || !signupPath) return;
@@ -99,7 +125,7 @@ export default function PlanSelection() {
     }
   };
 
-  const canContinue = signupPath && selectedTier && (!isCaseStudy || practitionerCode.trim());
+  const canContinue = signupPath && selectedTier && (!isCaseStudy || (practitionerCode.trim() && practitionerName));
 
   return (
     <div className="min-h-screen bg-background">
@@ -202,7 +228,22 @@ export default function PlanSelection() {
                   onChange={(e) => setPractitionerCode(e.target.value)}
                   placeholder="e.g. AN001"
                   className="font-mono"
+                  readOnly={!!urlPractitionerCode}
                 />
+                {lookingUpCode && (
+                  <p className="text-[11px] text-muted-foreground mt-1.5">Looking up practitioner…</p>
+                )}
+                {!lookingUpCode && practitionerName && (
+                  <div className="flex items-center gap-1.5 mt-2 bg-green-500/10 border border-green-500/20 rounded-lg px-3 py-1.5">
+                    <Check className="h-3.5 w-3.5 text-green-600 shrink-0" />
+                    <span className="text-xs font-semibold text-green-700">
+                      {practitionerName}
+                    </span>
+                  </div>
+                )}
+                {!lookingUpCode && practitionerCode.trim() && !practitionerName && (
+                  <p className="text-[11px] text-destructive mt-1.5">No practitioner found with this code.</p>
+                )}
               </div>
             </div>
           </div>
