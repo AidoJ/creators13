@@ -51,26 +51,38 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [isCaseStudySubject, setIsCaseStudySubject] = useState(false);
   const [creatorTypes, setCreatorTypes] = useState<string[]>([]);
+  const [hasTrainerPractitioner, setHasTrainerPractitioner] = useState(false);
 
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
-      const [profileRes, bookingRes, subRes, ctpRes, csRes] = await Promise.all([
+      const [profileRes, bookingRes, subRes, ctpRes, csRes, cpRes] = await Promise.all([
         supabase.from("profiles").select("first_name, last_name, enrollment_step, date_of_birth, gender, pronouns, height_cm, shoe_size, phone, city, state, country, case_study_consent_at").eq("user_id", user.id).maybeSingle(),
         supabase.from("bookings").select("scheduled_at, status, zoom_link").eq("client_id", user.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("subscriptions").select("tier, status, referral_code").eq("user_id", user.id).maybeSingle(),
         supabase.from("creator_type_profiles").select("primary_type, secondary_type, type_3, type_4").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("case_studies").select("id").eq("subject_user_id", user.id).limit(1),
+        supabase.from("client_practitioner").select("practitioner_id").eq("client_id", user.id).eq("active", true),
       ]);
       if (profileRes.data) setProfile(profileRes.data);
       if (bookingRes.data) setBooking(bookingRes.data);
       if (subRes.data) setSubscription(subRes.data as SubData);
-      // A user is a case study subject if they have a case_studies record,
-      // OR if they gave case study consent, OR their subscription has a referral_code (practitioner invite)
       const hasCsRecord = !!(csRes.data && csRes.data.length > 0);
       const hasConsent = !!profileRes.data?.case_study_consent_at;
       const hasReferral = !!(subRes.data && (subRes.data as any).referral_code);
       setIsCaseStudySubject(hasCsRecord || hasConsent || hasReferral);
+
+      // Check if any linked practitioner has the trainer role
+      if (cpRes.data && cpRes.data.length > 0) {
+        const practIds = cpRes.data.map(r => r.practitioner_id);
+        const { data: trainerRoles } = await supabase
+          .from("user_roles")
+          .select("user_id")
+          .in("user_id", practIds)
+          .eq("role", "trainer");
+        setHasTrainerPractitioner(!!(trainerRoles && trainerRoles.length > 0));
+      }
+
       if (ctpRes.data) {
         const types: string[] = [];
         if (ctpRes.data.primary_type) types.push(ctpRes.data.primary_type);
