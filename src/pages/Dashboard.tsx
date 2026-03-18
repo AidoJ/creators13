@@ -52,20 +52,23 @@ export default function Dashboard() {
   const [isCaseStudySubject, setIsCaseStudySubject] = useState(false);
   const [creatorTypes, setCreatorTypes] = useState<string[]>([]);
   const [hasTrainerPractitioner, setHasTrainerPractitioner] = useState(false);
+  const [photoCount, setPhotoCount] = useState(0);
 
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
-      const [profileRes, bookingRes, subRes, ctpRes, csRes, cpRes] = await Promise.all([
+      const [profileRes, bookingRes, subRes, ctpRes, csRes, cpRes, photosRes] = await Promise.all([
         supabase.from("profiles").select("first_name, last_name, enrollment_step, date_of_birth, gender, pronouns, height_cm, shoe_size, phone, city, state, country, case_study_consent_at").eq("user_id", user.id).maybeSingle(),
         supabase.from("bookings").select("scheduled_at, status, zoom_link").eq("client_id", user.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("subscriptions").select("tier, status, referral_code").eq("user_id", user.id).maybeSingle(),
         supabase.from("creator_type_profiles").select("primary_type, secondary_type, type_3, type_4").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("case_studies").select("id").eq("subject_user_id", user.id).limit(1),
         supabase.from("client_practitioner").select("practitioner_id").eq("client_id", user.id).eq("active", true),
+        supabase.from("profiling_photos").select("id", { count: "exact", head: true }).eq("user_id", user.id),
       ]);
       if (profileRes.data) setProfile(profileRes.data);
       if (bookingRes.data) setBooking(bookingRes.data);
+      setPhotoCount(photosRes.count || 0);
       if (subRes.data) setSubscription(subRes.data as SubData);
       const hasCsRecord = !!(csRes.data && csRes.data.length > 0);
       const hasConsent = !!profileRes.data?.case_study_consent_at;
@@ -97,9 +100,10 @@ export default function Dashboard() {
   }, [user]);
 
   const step = profile?.enrollment_step || null;
-  const isComplete = step === "complete";
-  const photosUploaded = step === "photos_uploaded" || step === "booking_made" || isComplete;
-  const bookingMade = step === "booking_made" || isComplete;
+  // Derive progress from actual data, not just enrollment_step
+  const isComplete = step === "complete" || creatorTypes.length >= 4;
+  const photosUploaded = photoCount > 0 || step === "photos_uploaded" || step === "awaiting_profiling" || step === "booking_made" || isComplete;
+  const bookingMade = step === "booking_made" || (isComplete && !!booking);
   const hasDetails = !!(profile?.first_name && profile?.date_of_birth && profile?.gender && profile?.height_cm);
 
   const showStatusBadge = photosUploaded && !isComplete;
