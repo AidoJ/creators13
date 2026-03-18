@@ -21,7 +21,7 @@ interface FaceSplitMirrorProps {
   onDataChange?: (data: FaceSplitData) => void;
 }
 
-export default function FaceSplitMirror({ userId }: FaceSplitMirrorProps) {
+export default function FaceSplitMirror({ userId, onDataChange }: FaceSplitMirrorProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
