@@ -317,6 +317,18 @@ export default function FaceSplitMirror() {
           </div>
         </div>
       )}
+
+      {/* Trainer notes */}
+      <div className="rounded-xl border border-border bg-card p-5">
+        <Label htmlFor="face-split-notes" className="text-sm font-semibold text-foreground">Trainer Notes — Face Split</Label>
+        <Textarea
+          id="face-split-notes"
+          placeholder="Add your observations about facial symmetry, asymmetries noticed, etc…"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          className="mt-2 min-h-[100px]"
+        />
+      </div>
     </div>
   );
 }
