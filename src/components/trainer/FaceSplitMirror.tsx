@@ -16,6 +16,7 @@ export default function FaceSplitMirror() {
   const [bottomPoint, setBottomPoint] = useState<Point | null>(null);
   const [placingPoint, setPlacingPoint] = useState<"top" | "bottom" | "done">("top");
   const [results, setResults] = useState<{ left: string; right: string } | null>(null);
+  const [notes, setNotes] = useState("");
   const [canvasSize, setCanvasSize] = useState({ w: 0, h: 0 });
 
   const handleFile = useCallback((file: File) => {
