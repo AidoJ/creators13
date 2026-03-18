@@ -180,11 +180,11 @@ function buildDefaultHtml(data: ReportData): string {
           <h2 style="font-size:18px;color:#5a3a28;font-family:'Cormorant Garamond',Georgia,serif;margin:0 0 16px;border-bottom:2px solid #e8ddd4;padding-bottom:8px;">
             Face Symmetry Analysis
           </h2>
-          <table width="100%" cellpadding="0" cellspacing="0">
+          <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
             <tr>
-              ${imageSection(image_urls?.leftMirrored, "Left Mirrored")}
-              ${imageSection(image_urls?.original, "Original")}
-              ${imageSection(image_urls?.rightMirrored, "Right Mirrored")}
+              ${imageTd(image_urls?.leftMirrored, "Left Mirrored")}
+              ${imageTd(image_urls?.original, "Original")}
+              ${imageTd(image_urls?.rightMirrored, "Right Mirrored")}
             </tr>
           </table>
           ` : ""}
