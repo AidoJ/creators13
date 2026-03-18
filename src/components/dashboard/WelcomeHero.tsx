@@ -92,8 +92,10 @@ export default function WelcomeHero({ firstName, tier, subscriptionStatus, statu
       return { label: "Complete your personal details", link: "/enroll/details" };
     if (enrollmentStep === "payment_complete")
       return { label: "Upload your profiling photos", link: "/enroll/photos" };
-    if (enrollmentStep === "photos_uploaded")
+    if (enrollmentStep === "photos_uploaded" && showBooking)
       return { label: "Book your profiling session", link: "/enroll/booking" };
+    if (enrollmentStep === "photos_uploaded" && !showBooking)
+      return { label: "Your photos are being reviewed", link: null };
     if (enrollmentStep === "booking_made" || enrollmentStep === "awaiting_profiling")
       return { label: "Your profile is being reviewed", link: null };
     return null; // complete
