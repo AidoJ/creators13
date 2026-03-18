@@ -237,7 +237,16 @@ export default function Details() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="phone">Phone *</Label>
-              <Input id="phone" type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+61 400 000 000" />
+              <Input id="phone" type="tel" required value={phone} onChange={(e) => {
+                        const val = e.target.value;
+                        // Keep the + prefix if user tries to delete it
+                        if (!val.startsWith("+")) {
+                          setPhone("+" + val.replace(/^\+*/, ""));
+                        } else {
+                          setPhone(val);
+                        }
+                      }} placeholder="+61 412 293 255" />
+                      <p className="text-[11px] text-muted-foreground mt-0.5">Include country code, e.g. +61 for Australia</p>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="dob">Date of Birth *</Label>
