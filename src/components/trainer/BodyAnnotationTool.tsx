@@ -60,6 +60,14 @@ export default function BodyAnnotationTool({ userId, onDataChange }: BodyAnnotat
 
   const { bodyPhotos, loading: photosLoading } = useProfilingPhotos(userId);
 
+  // Report data changes to parent
+  useEffect(() => {
+    onDataChange?.({
+      annotatedImageDataUrl: canvasRef.current?.toDataURL("image/png"),
+      notes,
+    });
+  }, [notes, actions, onDataChange]);
+
   const loadImageFromUrl = useCallback((url: string) => {
     const img = new Image();
     img.crossOrigin = "anonymous";
