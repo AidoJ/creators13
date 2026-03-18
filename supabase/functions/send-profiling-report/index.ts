@@ -32,6 +32,8 @@ serve(async (req) => {
 
     if (!client_email) throw new Error("client_email is required");
 
+    const firstName = (client_name || "").split(" ")[0] || "there";
+
     // Load email template if exists
     const { data: tmpl } = await supabase
       .from("email_templates")
@@ -41,11 +43,13 @@ serve(async (req) => {
 
     const subject = (tmpl?.subject || "Your Creator Profiling Report — 13 Creators")
       .replace(/\{\{clientName\}\}/g, client_name || "")
+      .replace(/\{\{firstName\}\}/g, firstName)
       .replace(/\{\{practitionerName\}\}/g, practitioner_name || "");
 
     const htmlBody = tmpl?.html_body
       ? tmpl.html_body
           .replace(/\{\{clientName\}\}/g, client_name || "")
+          .replace(/\{\{firstName\}\}/g, firstName)
           .replace(/\{\{practitionerName\}\}/g, practitioner_name || "")
           .replace(/\{\{creatorTypes\}\}/g, creator_types || "")
           .replace(/\{\{faceSplitNotes\}\}/g, face_split_notes || "")
