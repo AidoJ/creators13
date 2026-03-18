@@ -19,6 +19,7 @@ import TrainingCalendar from "@/components/practitioner/TrainingCalendar";
 import CaseStudySearch from "@/components/shared/CaseStudySearch";
 import InvitationsManager from "@/components/admin/InvitationsManager";
 import FaceSplitMirror from "@/components/trainer/FaceSplitMirror";
+import BodyAnnotationTool from "@/components/trainer/BodyAnnotationTool";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 type EnrollmentStep = Database["public"]["Enums"]["enrollment_step"];
@@ -327,8 +328,10 @@ export default function TrainerDashboard() {
             <InvitationsManager />
           </TabsContent>
 
-          <TabsContent value="face-split" className="space-y-4">
+          <TabsContent value="face-split" className="space-y-8">
             <FaceSplitMirror />
+            <div className="border-t border-border pt-6" />
+            <BodyAnnotationTool />
           </TabsContent>
         </Tabs>
       </main>

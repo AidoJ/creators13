@@ -1,5 +1,7 @@
 import { useRef, useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { Upload, RotateCcw, Scissors, Download, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -14,6 +16,7 @@ export default function FaceSplitMirror() {
   const [bottomPoint, setBottomPoint] = useState<Point | null>(null);
   const [placingPoint, setPlacingPoint] = useState<"top" | "bottom" | "done">("top");
   const [results, setResults] = useState<{ left: string; right: string } | null>(null);
+  const [notes, setNotes] = useState("");
   const [canvasSize, setCanvasSize] = useState({ w: 0, h: 0 });
 
   const handleFile = useCallback((file: File) => {
@@ -314,6 +317,18 @@ export default function FaceSplitMirror() {
           </div>
         </div>
       )}
+
+      {/* Trainer notes */}
+      <div className="rounded-xl border border-border bg-card p-5">
+        <Label htmlFor="face-split-notes" className="text-sm font-semibold text-foreground">Trainer Notes — Face Split</Label>
+        <Textarea
+          id="face-split-notes"
+          placeholder="Add your observations about facial symmetry, asymmetries noticed, etc…"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          className="mt-2 min-h-[100px]"
+        />
+      </div>
     </div>
   );
 }
