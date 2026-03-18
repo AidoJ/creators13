@@ -34,6 +34,16 @@ export default function FaceSplitMirror({ userId, onDataChange }: FaceSplitMirro
 
   const { facePhotos, loading: photosLoading } = useProfilingPhotos(userId);
 
+  // Report data changes to parent
+  useEffect(() => {
+    onDataChange?.({
+      originalImageUrl: image?.src,
+      leftMirroredDataUrl: results?.left,
+      rightMirroredDataUrl: results?.right,
+      notes,
+    });
+  }, [image, results, notes, onDataChange]);
+
   const loadImageFromUrl = useCallback((url: string) => {
     const img = new Image();
     img.crossOrigin = "anonymous";

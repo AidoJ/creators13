@@ -35,8 +35,14 @@ const COLORS = [
 
 const LINE_WIDTHS = [2, 3, 5, 8];
 
+export interface BodyAnnotationData {
+  annotatedImageDataUrl?: string;
+  notes: string;
+}
+
 interface BodyAnnotationToolProps {
   userId?: string;
+  onDataChange?: (data: BodyAnnotationData) => void;
 }
 
 export default function BodyAnnotationTool({ userId }: BodyAnnotationToolProps) {
