@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FileText, CheckCircle, XCircle, Clock, BarChart3, Eye, EyeOff, GitBranch, Save, Calendar, ArrowLeft, Mail } from "lucide-react";
+import { FileText, CheckCircle, XCircle, Clock, BarChart3, Eye, EyeOff, GitBranch, Save, Calendar, ArrowLeft, Mail, Scissors } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
 import CompositePhotoLayout from "@/components/profiling/CompositePhotoLayout";
