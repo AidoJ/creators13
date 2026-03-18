@@ -33,7 +33,7 @@ export default function Details() {
   // Form state
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [phone, setPhone] = useState("+61 ");
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [gender, setGender] = useState("");
   const [genderOther, setGenderOther] = useState("");
@@ -60,7 +60,7 @@ export default function Details() {
       if (data) {
         setFirstName(data.first_name || "");
         setLastName(data.last_name || "");
-        setPhone(data.phone || "");
+        setPhone(data.phone || "+61 ");
         setDateOfBirth(data.date_of_birth || "");
         const g = data.gender || "";
         if (["female", "male", "gender-diverse", "prefer-not-to-say"].includes(g)) {
@@ -237,7 +237,16 @@ export default function Details() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="phone">Phone *</Label>
-              <Input id="phone" type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+61 400 000 000" />
+              <Input id="phone" type="tel" required value={phone} onChange={(e) => {
+                        const val = e.target.value;
+                        // Keep the + prefix if user tries to delete it
+                        if (!val.startsWith("+")) {
+                          setPhone("+" + val.replace(/^\+*/, ""));
+                        } else {
+                          setPhone(val);
+                        }
+                      }} placeholder="+61 412 293 255" />
+                      <p className="text-[11px] text-muted-foreground mt-0.5">Include country code, e.g. +61 for Australia</p>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="dob">Date of Birth *</Label>
