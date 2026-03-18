@@ -448,6 +448,7 @@ export default function AdminDashboard() {
                         assignedPracCode={assignedPracCodeMap[u.user_id] || null}
                         practitioners={practitioners}
                         currentPracId={assignments.find(a => a.client_id === u.user_id && a.active)?.practitioner_id || null}
+                        onViewFile={(userId) => { setViewingClientId(userId); setViewingClientName(`${u.first_name || ""} ${u.last_name || ""}`.trim() || "Client"); }}
                         onAssignPractitioner={async (clientId, pracId) => {
                           // Deactivate existing active assignments
                           const existing = assignments.filter(a => a.client_id === clientId && a.active);
