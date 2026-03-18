@@ -9,8 +9,16 @@ import { useProfilingPhotos } from "@/hooks/useProfilingPhotos";
 
 interface Point { x: number; y: number }
 
+export interface FaceSplitData {
+  originalImageUrl?: string;
+  leftMirroredDataUrl?: string;
+  rightMirroredDataUrl?: string;
+  notes: string;
+}
+
 interface FaceSplitMirrorProps {
   userId?: string;
+  onDataChange?: (data: FaceSplitData) => void;
 }
 
 export default function FaceSplitMirror({ userId }: FaceSplitMirrorProps) {
