@@ -120,7 +120,7 @@ export default function BodyAnnotationTool({ userId, onDataChange }: BodyAnnotat
       const newData = { ...existingData, body_annotation: bodyAnnotationData };
 
       const { error } = await supabase.from("creator_type_profiles")
-        .update({ profiling_data: newData, updated_at: new Date().toISOString() })
+        .update({ profiling_data: newData as unknown as Record<string, unknown>, updated_at: new Date().toISOString() })
         .eq("user_id", userId);
 
       if (error) throw error;
