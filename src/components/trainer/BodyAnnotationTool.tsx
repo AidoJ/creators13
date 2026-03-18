@@ -45,7 +45,7 @@ interface BodyAnnotationToolProps {
   onDataChange?: (data: BodyAnnotationData) => void;
 }
 
-export default function BodyAnnotationTool({ userId }: BodyAnnotationToolProps) {
+export default function BodyAnnotationTool({ userId, onDataChange }: BodyAnnotationToolProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
