@@ -125,7 +125,7 @@ export default function PlanSelection() {
     }
   };
 
-  const canContinue = signupPath && selectedTier && (!isCaseStudy || practitionerCode.trim());
+  const canContinue = signupPath && selectedTier && (!isCaseStudy || (practitionerCode.trim() && practitionerName));
 
   return (
     <div className="min-h-screen bg-background">
