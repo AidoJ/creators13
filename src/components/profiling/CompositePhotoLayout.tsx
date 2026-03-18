@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, User, X, ZoomIn, RefreshCw } from "lucide-react";
+import { Loader2, User, X, ZoomIn, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -166,18 +166,47 @@ export default function CompositePhotoLayout({ userId, subjectName, className, s
         <div /> {/* empty cell */}
       </div>
 
-      {/* Zoom dialog */}
+      {/* Zoom dialog with navigation */}
       <Dialog open={!!zoomedPhoto} onOpenChange={() => setZoomedPhoto(null)}>
         <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh] p-2 flex flex-col items-center">
           <DialogTitle className="text-sm font-medium text-foreground sr-only">{zoomedPhoto?.label}</DialogTitle>
           <p className="text-xs text-muted-foreground mb-1">{zoomedPhoto?.label}</p>
-          {zoomedPhoto && (
-            <img
-              src={zoomedPhoto.url}
-              alt={zoomedPhoto.label}
-              className="max-w-full max-h-[80vh] object-contain rounded-lg"
-            />
-          )}
+          {zoomedPhoto && (() => {
+            const availablePhotos = PHOTO_ORDER
+              .map(p => ({ key: p.key, label: p.label, url: photos[p.key] || photos[GENERIC_FALLBACK[p.key]] || null }))
+              .filter(p => p.url);
+            const currentIdx = availablePhotos.findIndex(p => p.url === zoomedPhoto.url);
+            const hasPrev = currentIdx > 0;
+            const hasNext = currentIdx < availablePhotos.length - 1;
+
+            return (
+              <div className="relative w-full flex items-center justify-center">
+                {hasPrev && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setZoomedPhoto({ url: availablePhotos[currentIdx - 1].url!, label: availablePhotos[currentIdx - 1].label }); }}
+                    className="absolute left-1 z-10 rounded-full bg-background/80 hover:bg-background border border-border p-2 transition-colors shadow-md"
+                    aria-label="Previous photo"
+                  >
+                    <ChevronLeft className="h-5 w-5 text-foreground" />
+                  </button>
+                )}
+                <img
+                  src={zoomedPhoto.url}
+                  alt={zoomedPhoto.label}
+                  className="max-w-full max-h-[80vh] object-contain rounded-lg"
+                />
+                {hasNext && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setZoomedPhoto({ url: availablePhotos[currentIdx + 1].url!, label: availablePhotos[currentIdx + 1].label }); }}
+                    className="absolute right-1 z-10 rounded-full bg-background/80 hover:bg-background border border-border p-2 transition-colors shadow-md"
+                    aria-label="Next photo"
+                  >
+                    <ChevronRight className="h-5 w-5 text-foreground" />
+                  </button>
+                )}
+              </div>
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </div>
