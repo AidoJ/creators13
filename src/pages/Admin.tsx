@@ -7,7 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Users, Shield, ChevronDown, ChevronUp, FileText, CheckCircle, Clock, BarChart3, Eye, EyeOff, FolderOpen, Save, HelpCircle, Briefcase, CreditCard, Mail, Send, UserPlus } from "lucide-react";
+import { Search, Users, Shield, ChevronDown, ChevronUp, FileText, CheckCircle, Clock, BarChart3, Eye, EyeOff, FolderOpen, Save, HelpCircle, Briefcase, CreditCard, Mail, Send, UserPlus, ExternalLink } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import ClientDetail from "@/components/practitioner/ClientDetail";
 import { toast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
 import CreateUserForm from "@/components/admin/CreateUserForm";
@@ -80,7 +82,8 @@ export default function AdminDashboard() {
   const [expandedCaseStudy, setExpandedCaseStudy] = useState<string | null>(null);
   const [revisionNotes, setRevisionNotes] = useState<Record<string, string>>({});
   const [cohortFilter, setCohortFilter] = useState<string>("all");
-  // No longer need trainer check — trainer-specific tabs moved to /trainer
+  const [viewingClientId, setViewingClientId] = useState<string | null>(null);
+  const [viewingClientName, setViewingClientName] = useState<string>("");
 
   const fetchUsers = useCallback(async () => {
     const [profilesRes, rolesRes, subsRes] = await Promise.all([
@@ -445,6 +448,7 @@ export default function AdminDashboard() {
                         assignedPracCode={assignedPracCodeMap[u.user_id] || null}
                         practitioners={practitioners}
                         currentPracId={assignments.find(a => a.client_id === u.user_id && a.active)?.practitioner_id || null}
+                        onViewFile={(userId) => { setViewingClientId(userId); setViewingClientName(`${u.first_name || ""} ${u.last_name || ""}`.trim() || "Client"); }}
                         onAssignPractitioner={async (clientId, pracId) => {
                           // Deactivate existing active assignments
                           const existing = assignments.filter(a => a.client_id === clientId && a.active);
@@ -489,13 +493,23 @@ export default function AdminDashboard() {
             <InvitationsManager />
           </TabsContent>
         </Tabs>
+
+        {/* Client File Sheet */}
+        <Sheet open={!!viewingClientId} onOpenChange={(open) => { if (!open) setViewingClientId(null); }}>
+          <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle>{viewingClientName}'s File</SheetTitle>
+            </SheetHeader>
+            {viewingClientId && <div className="mt-4"><ClientDetail clientId={viewingClientId} /></div>}
+          </SheetContent>
+        </Sheet>
       </main>
     </div>
   );
 }
 
 
-function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, addingRole, stepLabel, onStatusChange, onRefresh, assignedPractitioner, assignedPracCode, practitioners, currentPracId, onAssignPractitioner }: {
+function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, addingRole, stepLabel, onStatusChange, onRefresh, assignedPractitioner, assignedPracCode, practitioners, currentPracId, onViewFile, onAssignPractitioner }: {
   user: UserRow; isExpanded: boolean; onToggle: () => void;
   onAddRole: (userId: string, role: AppRole) => void;
   onRemoveRole: (userId: string, role: AppRole) => void;
@@ -507,6 +521,7 @@ function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, 
   assignedPracCode: string | null;
   practitioners: UserRow[];
   currentPracId: string | null;
+  onViewFile: (userId: string) => void;
   onAssignPractitioner: (clientId: string, pracId: string) => Promise<void>;
 }) {
   const [selectedRole, setSelectedRole] = useState<AppRole | "">("");
@@ -643,9 +658,14 @@ function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, 
                     <Input value={editEmail} onChange={e => setEditEmail(e.target.value)} className="h-8 text-xs" onClick={e => e.stopPropagation()} />
                   </div>
                 </div>
-                <Button size="sm" className="h-7 text-xs" disabled={savingProfile} onClick={e => { e.stopPropagation(); handleSaveProfile(); }}>
-                  <Save className="h-3 w-3 mr-1" />{savingProfile ? "Saving…" : "Save Profile"}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button size="sm" className="h-7 text-xs" disabled={savingProfile} onClick={e => { e.stopPropagation(); handleSaveProfile(); }}>
+                    <Save className="h-3 w-3 mr-1" />{savingProfile ? "Saving…" : "Save Profile"}
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-7 text-xs" onClick={e => { e.stopPropagation(); onViewFile(u.user_id); }}>
+                    <ExternalLink className="h-3 w-3 mr-1" />View File
+                  </Button>
+                </div>
               </div>
 
               {/* Password Reset */}
