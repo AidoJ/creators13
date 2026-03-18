@@ -206,9 +206,26 @@ export default function Photos() {
     if (currentStep > 0) setCurrentStep(currentStep - 1);
   };
 
+  // Body photo types that require passing AI review
+  const BLOCKING_PHOTO_TYPES = ["body_front", "body_back", "body_side"];
+
+  const hasBlockingFailures = BLOCKING_PHOTO_TYPES.some((key) => {
+    const p = photos[key];
+    return p.review && !p.review.pass;
+  });
+
   const handleSubmitAll = async () => {
     if (!user) {
       toast({ title: "Please sign in first", variant: "destructive" });
+      return;
+    }
+
+    if (hasBlockingFailures) {
+      toast({
+        title: "Some photos need to be retaken",
+        description: "Your body photos did not pass the quality check. Please review the feedback and retake the flagged photos before submitting.",
+        variant: "destructive",
+      });
       return;
     }
     setSubmitting(true);
@@ -594,11 +611,13 @@ export default function Photos() {
             </Button>
             <Button
               onClick={handleSubmitAll}
-              disabled={submitting}
+              disabled={submitting || hasBlockingFailures}
               className="rounded-full px-8"
             >
               {submitting ? (
                 <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Uploading {uploadedCount}/{PHOTO_SLOTS.length}...</>
+              ) : hasBlockingFailures ? (
+                <>Fix Flagged Photos First</>
               ) : (
                 <>Submit All Photos <ArrowRight className="ml-2 h-4 w-4" /></>
               )}
