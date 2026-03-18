@@ -208,7 +208,7 @@ export default function CompositePhotoLayout({ userId, subjectName, className, s
                 />
                 {hasNext && (
                   <button
-                    onClick={(e) => { e.stopPropagation(); setZoomedPhoto({ url: availablePhotos[currentIdx + 1].url!, label: availablePhotos[currentIdx + 1].label }); }}
+                    onClick={(e) => { e.stopPropagation(); setZoomedPhoto({ url: availablePhotos[currentIdx + 1].full!, label: availablePhotos[currentIdx + 1].label }); }}
                     className="absolute right-1 z-10 rounded-full bg-background/80 hover:bg-background border border-border p-2 transition-colors shadow-md"
                     aria-label="Next photo"
                   >
