@@ -18,6 +18,7 @@ import TrainingCallManager from "@/components/trainer/TrainingCallManager";
 import TrainingCalendar from "@/components/practitioner/TrainingCalendar";
 import CaseStudySearch from "@/components/shared/CaseStudySearch";
 import InvitationsManager from "@/components/admin/InvitationsManager";
+import FaceSplitMirror from "@/components/trainer/FaceSplitMirror";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 type EnrollmentStep = Database["public"]["Enums"]["enrollment_step"];
