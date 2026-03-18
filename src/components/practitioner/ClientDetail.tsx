@@ -271,6 +271,14 @@ export default function ClientDetail({ clientId, onClientNameLoaded }: ClientDet
 
       {/* Photo composite */}
       <CompositePhotoLayout userId={clientId} subjectName={`${fullName}'s Profiling Photos`} showReclassify />
+
+      {/* Face Split & Body Annotation — certified practitioners only, paying subscribers only */}
+      {isCertified && clientIsPaidSubscriber && !isCaseStudySubject && (
+        <>
+          <FaceSplitMirror />
+          <BodyAnnotationTool />
+        </>
+      )}
     </div>
   );
 }
