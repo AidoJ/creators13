@@ -509,7 +509,7 @@ export default function AdminDashboard() {
 }
 
 
-function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, addingRole, stepLabel, onStatusChange, onRefresh, assignedPractitioner, assignedPracCode, practitioners, currentPracId, onAssignPractitioner }: {
+function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, addingRole, stepLabel, onStatusChange, onRefresh, assignedPractitioner, assignedPracCode, practitioners, currentPracId, onViewFile, onAssignPractitioner }: {
   user: UserRow; isExpanded: boolean; onToggle: () => void;
   onAddRole: (userId: string, role: AppRole) => void;
   onRemoveRole: (userId: string, role: AppRole) => void;
@@ -521,6 +521,7 @@ function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, 
   assignedPracCode: string | null;
   practitioners: UserRow[];
   currentPracId: string | null;
+  onViewFile: (userId: string) => void;
   onAssignPractitioner: (clientId: string, pracId: string) => Promise<void>;
 }) {
   const [selectedRole, setSelectedRole] = useState<AppRole | "">("");
