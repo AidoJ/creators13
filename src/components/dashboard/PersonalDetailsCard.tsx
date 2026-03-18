@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Pencil, MapPin, Ruler, Calendar as CalIcon } from "lucide-react";
+import { Pencil, MapPin, Ruler, Calendar as CalIcon, Phone, AlertCircle } from "lucide-react";
 
 interface ProfileData {
   first_name: string | null;
@@ -10,6 +10,7 @@ interface ProfileData {
   pronouns: string | null;
   height_cm: number | null;
   shoe_size: string | null;
+  phone: string | null;
   city: string | null;
   state: string | null;
   country: string | null;
@@ -23,7 +24,12 @@ interface PersonalDetailsCardProps {
 export default function PersonalDetailsCard({ profile, hasDetails }: PersonalDetailsCardProps) {
   const navigate = useNavigate();
 
-  if (!hasDetails) {
+  const hasAnyData = !!(
+    profile?.first_name || profile?.date_of_birth || profile?.gender ||
+    profile?.height_cm || profile?.shoe_size || profile?.phone
+  );
+
+  if (!hasAnyData) {
     return (
       <div className="rounded-2xl border border-dashed border-border bg-card/50 p-6 text-center space-y-3">
         <p className="text-sm text-muted-foreground">Personal details not yet added.</p>
@@ -48,12 +54,24 @@ export default function PersonalDetailsCard({ profile, hasDetails }: PersonalDet
           <Pencil className="h-3 w-3 mr-1" /> Edit
         </Button>
       </div>
+
+      {!hasDetails && (
+        <div className="flex items-center gap-2 rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2 text-xs text-amber-700">
+          <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+          <span>Some required details are missing.</span>
+          <Button variant="link" size="sm" className="text-xs text-amber-700 underline h-auto p-0 ml-auto" onClick={() => navigate("/enroll/details?returnTo=/dashboard")}>
+            Complete now
+          </Button>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
         <DetailItem icon={<CalIcon className="h-3.5 w-3.5" />} label="DOB" value={profile?.date_of_birth ? new Date(profile.date_of_birth).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" }) : "—"} />
         <DetailItem label="Gender" value={profile?.gender || "—"} />
         <DetailItem label="Pronouns" value={profile?.pronouns || "—"} />
         <DetailItem icon={<Ruler className="h-3.5 w-3.5" />} label="Height" value={profile?.height_cm ? `${profile.height_cm} cm` : "—"} />
         <DetailItem label="Shoe Size" value={profile?.shoe_size || "—"} />
+        <DetailItem icon={<Phone className="h-3.5 w-3.5" />} label="Phone" value={profile?.phone || "—"} />
         {location && (
           <DetailItem icon={<MapPin className="h-3.5 w-3.5" />} label="Location" value={location} className="col-span-2" />
         )}
