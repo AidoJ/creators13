@@ -20,9 +20,9 @@ const PHOTO_REQUIREMENTS: Record<string, string> = {
   body_side:
     "A full body photo from head to toe, side profile of the person standing naturally. Must be wearing tight-fitting clothing. No shoes or socks. The entire body from head to feet must be visible.",
   feet:
-    "A top-down photo of both feet together, bare feet (no shoes or socks). Toes and arches should be clearly visible.",
+    "A photo of BOTH bare feet (no shoes or socks) while STANDING upright on the ground. Both feet must be visible. Toes and arches should be clearly visible. The person must be standing, not sitting or lying down.",
   hands:
-    "A photo of both hands shown palm-down (back of hands facing camera). Fingers should be spread slightly. Both hands visible.",
+    "A photo of BOTH hands placed flat (palm-down) on a table or floor surface. The back of both hands must face the camera. Fingers should be spread slightly. BOTH hands must be visible in the photo.",
 };
 
 serve(async (req) => {
@@ -60,6 +60,8 @@ HARD FAIL rules — these MUST cause a fail:
 1. **Selfies**: If the person is visibly holding a phone or has an arm raised/extended to hold a camera, FAIL immediately. Body photos must be taken by another person or using a timer with the phone propped up. Look for: arm reaching toward camera, phone visible in hand, mirror selfie with phone visible.
 2. **Cut-off body parts**: For full body photos (body_front, body_back, body_side), the ENTIRE body from the top of the head to the tips of the toes MUST be visible in the frame. If feet are cut off, even partially, FAIL. If the head is cut off, FAIL.
 3. **Severely blurry**: If the subject is so blurry that facial features or body contours cannot be distinguished, FAIL.
+4. **Only one hand**: For hand photos, BOTH hands must be visible. If only one hand is shown, FAIL. The hands must be placed flat (palm-down) on a table or floor surface.
+5. **Only one foot**: For feet photos, BOTH feet must be visible. If only one foot is shown, FAIL. The person must be STANDING upright — if they are sitting or lying down with feet in the air, FAIL.
 
 Things that are OK (do NOT fail for these):
 - Photo orientation (portrait vs landscape) — either is fine
