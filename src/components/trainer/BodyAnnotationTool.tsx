@@ -2,9 +2,11 @@ import { useRef, useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Upload, RotateCcw, Download, Pencil, Type, Undo2, ImageIcon } from "lucide-react";
+import { Upload, RotateCcw, Download, Pencil, Type, Undo2, ImageIcon, Save, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useProfilingPhotos } from "@/hooks/useProfilingPhotos";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface Point { x: number; y: number }
 interface DrawAction {
@@ -40,6 +42,12 @@ export interface BodyAnnotationData {
   notes: string;
 }
 
+interface SavedBodyAnnotationData {
+  annotated_path?: string;
+  notes?: string;
+  saved_at?: string;
+}
+
 interface BodyAnnotationToolProps {
   userId?: string;
   onDataChange?: (data: BodyAnnotationData) => void;
@@ -57,16 +65,91 @@ export default function BodyAnnotationTool({ userId, onDataChange }: BodyAnnotat
   const [currentPoints, setCurrentPoints] = useState<Point[]>([]);
   const [notes, setNotes] = useState("");
   const [canvasSize, setCanvasSize] = useState({ w: 0, h: 0 });
+  const [saving, setSaving] = useState(false);
+  const [savedData, setSavedData] = useState<SavedBodyAnnotationData | null>(null);
+  const [loadingSaved, setLoadingSaved] = useState(false);
+  const { toast } = useToast();
 
   const { bodyPhotos, loading: photosLoading } = useProfilingPhotos(userId);
+
+  // Load saved data on mount
+  useEffect(() => {
+    if (!userId) return;
+    setLoadingSaved(true);
+    supabase.from("creator_type_profiles").select("profiling_data").eq("user_id", userId).maybeSingle()
+      .then(({ data }) => {
+        const pd = data?.profiling_data as Record<string, unknown> | null;
+        const ba = pd?.body_annotation as SavedBodyAnnotationData | undefined;
+        if (ba?.annotated_path) {
+          setSavedData(ba);
+          setNotes(ba.notes || "");
+        }
+        setLoadingSaved(false);
+      });
+  }, [userId]);
 
   // Report data changes to parent
   useEffect(() => {
     onDataChange?.({
-      annotatedImageDataUrl: canvasRef.current?.toDataURL("image/png"),
+      annotatedImageDataUrl: canvasRef.current?.toDataURL("image/png") || (savedData?.annotated_path ? supabase.storage.from("profiling-photos").getPublicUrl(savedData.annotated_path).data.publicUrl : undefined),
       notes,
     });
-  }, [notes, actions, onDataChange]);
+  }, [notes, actions, onDataChange, savedData]);
+
+  const handleSave = async () => {
+    if (!userId || !canvasRef.current) return;
+    setSaving(true);
+    try {
+      const dataUrl = canvasRef.current.toDataURL("image/png");
+      const ts = Date.now();
+      const path = `reports/${userId}/body-annotated-${ts}.png`;
+
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      const { error: uploadErr } = await supabase.storage.from("profiling-photos").upload(path, blob, { upsert: true });
+      if (uploadErr) throw uploadErr;
+
+      const bodyAnnotationData: SavedBodyAnnotationData = {
+        annotated_path: path,
+        notes,
+        saved_at: new Date().toISOString(),
+      };
+
+      const { data: existing } = await supabase.from("creator_type_profiles").select("profiling_data").eq("user_id", userId).maybeSingle();
+      const existingData = (existing?.profiling_data as Record<string, unknown>) || {};
+      const newData = { ...existingData, body_annotation: bodyAnnotationData };
+
+      const { error } = await supabase.from("creator_type_profiles")
+        .update({ profiling_data: newData, updated_at: new Date().toISOString() })
+        .eq("user_id", userId);
+
+      if (error) throw error;
+      setSavedData(bodyAnnotationData);
+      toast({ title: "Body annotation saved" });
+    } catch (err: any) {
+      toast({ title: "Save failed", description: err.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveNotes = async () => {
+    if (!userId || !savedData) return;
+    setSaving(true);
+    try {
+      const { data: existing } = await supabase.from("creator_type_profiles").select("profiling_data").eq("user_id", userId).maybeSingle();
+      const existingData = (existing?.profiling_data as Record<string, unknown>) || {};
+      const updatedBA = { ...savedData, notes };
+      const newData = { ...existingData, body_annotation: updatedBA };
+      await supabase.from("creator_type_profiles").update({ profiling_data: newData, updated_at: new Date().toISOString() }).eq("user_id", userId);
+      setSavedData(updatedBA);
+      toast({ title: "Notes saved" });
+    } catch {
+      toast({ title: "Save failed", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const loadImageFromUrl = useCallback((url: string) => {
     const img = new Image();
@@ -94,7 +177,6 @@ export default function BodyAnnotationTool({ userId, onDataChange }: BodyAnnotat
     return { w: Math.round(image.width * scale), h: Math.round(image.height * scale) };
   }, [image]);
 
-  // Render canvas
   const renderCanvas = useCallback(() => {
     if (!image || !canvasRef.current) return;
     const { w, h } = getScaledSize();
@@ -106,7 +188,6 @@ export default function BodyAnnotationTool({ userId, onDataChange }: BodyAnnotat
 
     ctx.drawImage(image, 0, 0, w, h);
 
-    // Replay actions
     for (const action of actions) {
       if (action.type === "line" && action.points.length > 1) {
         ctx.strokeStyle = action.color;
@@ -135,22 +216,16 @@ export default function BodyAnnotationTool({ userId, onDataChange }: BodyAnnotat
         const boxW = metrics.width + padX * 2;
         const boxH = textHeight + padY * 2;
 
-        // White background for clarity
         ctx.fillStyle = "#ffffff";
         ctx.fillRect(boxX, boxY, boxW, boxH);
-
-        // Black border for definition
         ctx.strokeStyle = "#000000";
         ctx.lineWidth = 1;
         ctx.strokeRect(boxX, boxY, boxW, boxH);
-
-        // Black text for high contrast
         ctx.fillStyle = "#000000";
         ctx.fillText(action.text, action.position.x, action.position.y);
       }
     }
 
-    // Draw current stroke in progress
     if (isDrawing && currentPoints.length > 1) {
       ctx.strokeStyle = currentColor;
       ctx.lineWidth = lineWidth;
@@ -226,6 +301,11 @@ export default function BodyAnnotationTool({ userId, onDataChange }: BodyAnnotat
   const formatPhotoType = (type: string) =>
     type.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
 
+  const getPublicUrl = (path: string) =>
+    supabase.storage.from("profiling-photos").getPublicUrl(path).data.publicUrl;
+
+  const showSavedResult = !image && savedData?.annotated_path;
+
   return (
     <div className="space-y-6">
       <div className="rounded-xl border border-border bg-card p-5">
@@ -234,9 +314,27 @@ export default function BodyAnnotationTool({ userId, onDataChange }: BodyAnnotat
           Select from the client's body photos or upload an image, then draw coloured lines and add text labels to annotate features.
         </p>
 
-        {!image ? (
+        {loadingSaved && (
+          <p className="text-xs text-muted-foreground text-center py-4">Loading saved data…</p>
+        )}
+
+        {/* Show previously saved result */}
+        {showSavedResult && !loadingSaved && (
           <div className="space-y-4">
-            {/* Profiling photos picker */}
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-xs text-green-600 font-medium">✓ Previously saved{savedData.saved_at ? ` — ${new Date(savedData.saved_at).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}` : ""}</span>
+              <Button variant="outline" size="sm" onClick={() => setSavedData(null)} className="ml-auto">
+                <RotateCcw className="h-3.5 w-3.5 mr-1" /> Redo Annotation
+              </Button>
+            </div>
+            <div className="flex justify-center">
+              <img src={getPublicUrl(savedData.annotated_path!)} alt="Body annotated" className="rounded-lg border border-border max-w-[300px]" />
+            </div>
+          </div>
+        )}
+
+        {!image && !showSavedResult && !loadingSaved && (
+          <div className="space-y-4">
             {userId && bodyPhotos.length > 0 && (
               <div>
                 <p className="text-xs font-medium text-muted-foreground mb-2">
@@ -287,9 +385,10 @@ export default function BodyAnnotationTool({ userId, onDataChange }: BodyAnnotat
               />
             </div>
           </div>
-        ) : (
+        )}
+
+        {image && (
           <div className="space-y-4">
-            {/* Toolbar */}
             <div className="flex items-center gap-2 flex-wrap">
               <Button variant="outline" size="sm" onClick={reset}>
                 <RotateCcw className="h-3.5 w-3.5 mr-1" /> New Photo
@@ -297,7 +396,6 @@ export default function BodyAnnotationTool({ userId, onDataChange }: BodyAnnotat
 
               <div className="h-6 w-px bg-border" />
 
-              {/* Tool selector */}
               <Button
                 variant={tool === "draw" ? "default" : "outline"}
                 size="sm"
@@ -315,7 +413,6 @@ export default function BodyAnnotationTool({ userId, onDataChange }: BodyAnnotat
 
               <div className="h-6 w-px bg-border" />
 
-              {/* Colour picker */}
               <div className="flex items-center gap-1">
                 {COLORS.map(c => (
                   <button
@@ -333,7 +430,6 @@ export default function BodyAnnotationTool({ userId, onDataChange }: BodyAnnotat
 
               <div className="h-6 w-px bg-border" />
 
-              {/* Line width */}
               {tool === "draw" && (
                 <div className="flex items-center gap-1">
                   {LINE_WIDTHS.map(w => (
@@ -366,6 +462,12 @@ export default function BodyAnnotationTool({ userId, onDataChange }: BodyAnnotat
               <Button variant="outline" size="sm" onClick={downloadAnnotated}>
                 <Download className="h-3.5 w-3.5 mr-1" /> Download
               </Button>
+              {userId && (
+                <Button size="sm" onClick={handleSave} disabled={saving}>
+                  {saving ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+                  {saving ? "Saving…" : "Save"}
+                </Button>
+              )}
             </div>
 
             <p className="text-xs text-muted-foreground">
@@ -402,6 +504,12 @@ export default function BodyAnnotationTool({ userId, onDataChange }: BodyAnnotat
           onChange={(e) => setNotes(e.target.value)}
           className="mt-2 min-h-[100px]"
         />
+        {userId && savedData && (
+          <Button size="sm" variant="outline" className="mt-2" onClick={handleSaveNotes} disabled={saving}>
+            {saving ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+            Save Notes
+          </Button>
+        )}
       </div>
     </div>
   );
