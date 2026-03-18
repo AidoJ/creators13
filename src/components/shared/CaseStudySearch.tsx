@@ -137,7 +137,9 @@ export default function CaseStudySearch({ onSelectCaseStudy, onSelectClient }: C
   function handleSelect(result: SearchResult) {
     if (result.type === "case_study" && result.caseStudyId && onSelectCaseStudy) {
       onSelectCaseStudy(result.caseStudyId);
-    } else if (result.type === "client" && result.clientId && onSelectClient) {
+    }
+    // Also navigate to client detail if the result has a clientId
+    if (result.clientId && onSelectClient) {
       onSelectClient(result.clientId);
     }
     setQuery("");
