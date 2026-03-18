@@ -91,6 +91,10 @@ export default function Details() {
       toast({ title: "Please sign in first", variant: "destructive" });
       return;
     }
+    if (!gender) {
+      toast({ title: "Please select your gender", variant: "destructive" });
+      return;
+    }
 
     setLoading(true);
 
