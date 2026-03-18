@@ -98,11 +98,27 @@ export default function ClientDetail({ clientId, onClientNameLoaded }: ClientDet
             <h2 className="text-xl font-display font-bold text-foreground">{fullName}</h2>
             <p className="text-sm text-muted-foreground">{profile.email}</p>
             <div className="flex flex-wrap gap-2 mt-2">
-              {profile.enrollment_step && (
-                <Badge variant="outline" className="text-xs capitalize">
-                  {profile.enrollment_step.replace(/_/g, " ")}
-                </Badge>
-              )}
+              {profile.enrollment_step && (() => {
+                const types = [creatorType?.primary_type, creatorType?.secondary_type, creatorType?.type_3, creatorType?.type_4].filter(Boolean) as string[];
+                const isCaseStudy = !!profile.case_study_consent_at;
+                const label = profile.enrollment_step === "complete"
+                  ? isCaseStudy
+                    ? "Case Study Complete"
+                    : types.length >= 4
+                      ? "Creator Blueprint Complete"
+                      : "Partially Complete"
+                  : profile.enrollment_step.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
+                const color = profile.enrollment_step === "complete"
+                  ? "bg-green-500/10 text-green-600 border-green-500/20"
+                  : (profile.enrollment_step === "photos_uploaded" || profile.enrollment_step === "booking_made")
+                    ? "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                    : "bg-muted/50 text-muted-foreground border-border";
+                return (
+                  <Badge variant="outline" className={`text-xs ${color}`}>
+                    {label}
+                  </Badge>
+                );
+              })()}
               {sortCreatorTypes(
                 [creatorType?.primary_type, creatorType?.secondary_type, creatorType?.type_3, creatorType?.type_4]
                   .filter(Boolean) as string[]
