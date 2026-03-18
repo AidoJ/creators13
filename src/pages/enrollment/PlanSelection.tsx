@@ -60,6 +60,30 @@ export default function PlanSelection() {
     }
   }, [signupPath]);
 
+  // Look up practitioner name when code changes
+  useEffect(() => {
+    const code = practitionerCode.trim();
+    if (!code) {
+      setPractitionerName(null);
+      return;
+    }
+    setLookingUpCode(true);
+    const timeout = setTimeout(async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("first_name, last_name")
+        .eq("practitioner_code", code)
+        .maybeSingle();
+      if (data) {
+        setPractitionerName(`${data.first_name || ""} ${data.last_name || ""}`.trim() || null);
+      } else {
+        setPractitionerName(null);
+      }
+      setLookingUpCode(false);
+    }, 400);
+    return () => clearTimeout(timeout);
+  }, [practitionerCode]);
+
   const handleContinue = async () => {
     if (!selectedTier || !signupPath) return;
     if (isCaseStudy && !practitionerCode.trim()) return;
