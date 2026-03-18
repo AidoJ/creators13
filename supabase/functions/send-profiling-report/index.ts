@@ -180,13 +180,24 @@ function buildDefaultHtml(data: ReportData): string {
           <h2 style="font-size:18px;color:#5a3a28;font-family:'Cormorant Garamond',Georgia,serif;margin:0 0 16px;border-bottom:2px solid #e8ddd4;padding-bottom:8px;">
             Face Symmetry Analysis
           </h2>
-          <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
-            <tr>
-              ${imageTd(image_urls?.leftMirrored, "Left Mirrored")}
-              ${imageTd(image_urls?.original, "Original")}
-              ${imageTd(image_urls?.rightMirrored, "Right Mirrored")}
-            </tr>
-          </table>
+          <div style="background:#faf7f4;border:2px solid #e8ddd4;border-radius:16px;padding:16px 8px;margin-bottom:8px;">
+            <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:collapse;">
+              <tr>
+                ${image_urls?.leftMirrored ? `<td width="33%" style="padding:4px;text-align:center;vertical-align:top;">
+                  <p style="font-size:11px;color:#8b6f5e;margin:0 0 6px;text-transform:uppercase;letter-spacing:1px;">Left Mirrored</p>
+                  <img src="${image_urls.leftMirrored}" alt="Left Mirrored" width="160" style="max-width:160px;width:100%;height:auto;border-radius:10px;border:1px solid #d4c8be;display:block;margin:0 auto;" />
+                </td>` : ""}
+                ${image_urls?.original ? `<td width="34%" style="padding:4px;text-align:center;vertical-align:top;">
+                  <p style="font-size:11px;color:#8b6f5e;margin:0 0 6px;text-transform:uppercase;letter-spacing:1px;">Original</p>
+                  <img src="${image_urls.original}" alt="Original" width="160" style="max-width:160px;width:100%;height:auto;border-radius:10px;border:1px solid #d4c8be;display:block;margin:0 auto;" />
+                </td>` : ""}
+                ${image_urls?.rightMirrored ? `<td width="33%" style="padding:4px;text-align:center;vertical-align:top;">
+                  <p style="font-size:11px;color:#8b6f5e;margin:0 0 6px;text-transform:uppercase;letter-spacing:1px;">Right Mirrored</p>
+                  <img src="${image_urls.rightMirrored}" alt="Right Mirrored" width="160" style="max-width:160px;width:100%;height:auto;border-radius:10px;border:1px solid #d4c8be;display:block;margin:0 auto;" />
+                </td>` : ""}
+              </tr>
+            </table>
+          </div>
           ` : ""}
 
           ${notesSection("Face Symmetry Notes", face_split_notes)}
