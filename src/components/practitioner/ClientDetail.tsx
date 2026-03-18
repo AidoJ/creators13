@@ -63,7 +63,12 @@ export default function ClientDetail({ clientId, onClientNameLoaded }: ClientDet
   const [isCertified, setIsCertified] = useState(false);
   const [clientIsPaidSubscriber, setClientIsPaidSubscriber] = useState(false);
   const [isCaseStudySubject, setIsCaseStudySubject] = useState(false);
+  const [faceSplitData, setFaceSplitData] = useState<FaceSplitData | null>(null);
+  const [bodyAnnotationData, setBodyAnnotationData] = useState<BodyAnnotationData | null>(null);
   const { toast } = useToast();
+
+  const handleFaceSplitChange = useCallback((data: FaceSplitData) => setFaceSplitData(data), []);
+  const handleBodyAnnotationChange = useCallback((data: BodyAnnotationData) => setBodyAnnotationData(data), []);
 
   // Fetch practitioner certification status
   useEffect(() => {
