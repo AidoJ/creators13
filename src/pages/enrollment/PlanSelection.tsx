@@ -40,6 +40,8 @@ export default function PlanSelection() {
   const [selectedTier, setSelectedTier] = useState<TierKey | null>(urlCaseStudy ? "wren" : urlTier);
   const [annual, setAnnual] = useState(searchParams.get("billing") === "annual");
   const [practitionerCode, setPractitionerCode] = useState(urlPractitionerCode);
+  const [practitionerName, setPractitionerName] = useState<string | null>(null);
+  const [lookingUpCode, setLookingUpCode] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
   const isCaseStudy = signupPath === "case_study";
