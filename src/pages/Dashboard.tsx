@@ -98,7 +98,7 @@ export default function Dashboard() {
 
   const step = profile?.enrollment_step || null;
   const isComplete = step === "complete";
-  const photosUploaded = step === "photos_uploaded" || step === "booking_made" || isComplete;
+  const photosUploaded = step === "photos_uploaded" || step === "awaiting_profiling" || step === "booking_made" || isComplete;
   const bookingMade = step === "booking_made" || isComplete;
   const hasDetails = !!(profile?.first_name && profile?.date_of_birth && profile?.gender && profile?.height_cm);
 
