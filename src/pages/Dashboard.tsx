@@ -100,9 +100,10 @@ export default function Dashboard() {
   }, [user]);
 
   const step = profile?.enrollment_step || null;
-  const isComplete = step === "complete";
-  const photosUploaded = step === "photos_uploaded" || step === "awaiting_profiling" || step === "booking_made" || isComplete;
-  const bookingMade = step === "booking_made" || isComplete;
+  // Derive progress from actual data, not just enrollment_step
+  const isComplete = step === "complete" || creatorTypes.length >= 4;
+  const photosUploaded = photoCount > 0 || step === "photos_uploaded" || step === "awaiting_profiling" || step === "booking_made" || isComplete;
+  const bookingMade = step === "booking_made" || (isComplete && !!booking);
   const hasDetails = !!(profile?.first_name && profile?.date_of_birth && profile?.gender && profile?.height_cm);
 
   const showStatusBadge = photosUploaded && !isComplete;
