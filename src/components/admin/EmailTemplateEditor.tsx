@@ -150,6 +150,40 @@ export default function EmailTemplateEditor() {
                 <Input value={subject} onChange={e => setSubject(e.target.value)} />
               </div>
 
+              {/* Colour Palette Reference */}
+              <details className="border border-border rounded-lg">
+                <summary className="flex items-center gap-1.5 px-3 py-2 cursor-pointer text-sm font-medium text-foreground select-none">
+                  <Palette className="h-3.5 w-3.5 text-primary" /> Brand Colour Palette
+                </summary>
+                <div className="px-3 pb-3 pt-1">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                    {EMAIL_PALETTE.map(c => (
+                      <button
+                        key={c.hex}
+                        type="button"
+                        className="flex items-center gap-2 rounded-md border border-border px-2 py-1.5 text-left hover:bg-muted/50 transition-colors group"
+                        onClick={() => {
+                          navigator.clipboard.writeText(c.hex);
+                          toast({ title: `Copied ${c.hex}`, description: c.name });
+                        }}
+                        title={`Click to copy ${c.hex}`}
+                      >
+                        <span
+                          className="h-5 w-5 rounded border border-border flex-shrink-0"
+                          style={{ backgroundColor: c.hex }}
+                        />
+                        <span className="min-w-0">
+                          <span className="block text-[10px] font-medium text-foreground truncate">{c.name}</span>
+                          <span className="block text-[9px] text-muted-foreground font-mono">{c.hex}</span>
+                        </span>
+                        <Copy className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 flex-shrink-0 ml-auto" />
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-2">Click any swatch to copy its hex code. Use these colours in your email HTML for consistent branding.</p>
+                </div>
+              </details>
+
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="text-sm font-medium text-foreground">Email HTML</label>
