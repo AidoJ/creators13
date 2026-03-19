@@ -45,7 +45,7 @@ const BRANDED_FOOTER_HTML = `<!-- 13 Creators Branded Footer -->
   </td></tr>
 </table>`;
 
-
+interface EmailTemplate {
   id: string;
   template_key: string;
   subject: string;
