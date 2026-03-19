@@ -4,7 +4,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
-import { Save, Eye, EyeOff, RefreshCw } from "lucide-react";
+import { Save, Eye, EyeOff, RefreshCw, Copy, Palette } from "lucide-react";
+
+/** Logo-derived colour palette for consistent email branding */
+const EMAIL_PALETTE = [
+  { name: "Magenta (Primary)", hex: "#BB1B56", usage: "Buttons, headings, links" },
+  { name: "Gold", hex: "#C8922A", usage: "Accents, highlights, borders" },
+  { name: "Ocean Blue", hex: "#2B6CB0", usage: "Secondary buttons, links" },
+  { name: "Forest Green", hex: "#3D8B37", usage: "Success states, accents" },
+  { name: "Terracotta", hex: "#D4652A", usage: "Warm accents, icons" },
+  { name: "Earth Brown", hex: "#5A3A28", usage: "Dark text, headings" },
+  { name: "Cream (Page BG)", hex: "#FDF6F0", usage: "Email body background" },
+  { name: "Warm Linen (Section BG)", hex: "#FAF7F4", usage: "Section backgrounds" },
+  { name: "Sand Border", hex: "#E8DDD4", usage: "Dividers, card borders" },
+  { name: "Body Text", hex: "#555555", usage: "Paragraph text" },
+  { name: "Muted Text", hex: "#8B6F5E", usage: "Captions, footers" },
+  { name: "White", hex: "#FFFFFF", usage: "Card backgrounds, button text" },
+] as const;
 
 interface EmailTemplate {
   id: string;
