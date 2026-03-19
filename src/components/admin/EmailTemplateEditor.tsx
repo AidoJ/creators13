@@ -4,7 +4,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
-import { Save, Eye, EyeOff, RefreshCw } from "lucide-react";
+import { Save, Eye, EyeOff, RefreshCw, Copy, Palette } from "lucide-react";
+
+/** Logo-derived colour palette for consistent email branding */
+const EMAIL_PALETTE = [
+  { name: "Magenta (Primary)", hex: "#BB1B56", usage: "Buttons, headings, links" },
+  { name: "Gold", hex: "#C8922A", usage: "Accents, highlights, borders" },
+  { name: "Ocean Blue", hex: "#2B6CB0", usage: "Secondary buttons, links" },
+  { name: "Forest Green", hex: "#3D8B37", usage: "Success states, accents" },
+  { name: "Terracotta", hex: "#D4652A", usage: "Warm accents, icons" },
+  { name: "Earth Brown", hex: "#5A3A28", usage: "Dark text, headings" },
+  { name: "Cream (Page BG)", hex: "#FDF6F0", usage: "Email body background" },
+  { name: "Warm Linen (Section BG)", hex: "#FAF7F4", usage: "Section backgrounds" },
+  { name: "Sand Border", hex: "#E8DDD4", usage: "Dividers, card borders" },
+  { name: "Body Text", hex: "#555555", usage: "Paragraph text" },
+  { name: "Muted Text", hex: "#8B6F5E", usage: "Captions, footers" },
+  { name: "White", hex: "#FFFFFF", usage: "Card backgrounds, button text" },
+] as const;
 
 interface EmailTemplate {
   id: string;
@@ -133,6 +149,40 @@ export default function EmailTemplateEditor() {
                 <label className="text-sm font-medium text-foreground">Subject Line</label>
                 <Input value={subject} onChange={e => setSubject(e.target.value)} />
               </div>
+
+              {/* Colour Palette Reference */}
+              <details className="border border-border rounded-lg">
+                <summary className="flex items-center gap-1.5 px-3 py-2 cursor-pointer text-sm font-medium text-foreground select-none">
+                  <Palette className="h-3.5 w-3.5 text-primary" /> Brand Colour Palette
+                </summary>
+                <div className="px-3 pb-3 pt-1">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                    {EMAIL_PALETTE.map(c => (
+                      <button
+                        key={c.hex}
+                        type="button"
+                        className="flex items-center gap-2 rounded-md border border-border px-2 py-1.5 text-left hover:bg-muted/50 transition-colors group"
+                        onClick={() => {
+                          navigator.clipboard.writeText(c.hex);
+                          toast({ title: `Copied ${c.hex}`, description: c.name });
+                        }}
+                        title={`Click to copy ${c.hex}`}
+                      >
+                        <span
+                          className="h-5 w-5 rounded border border-border flex-shrink-0"
+                          style={{ backgroundColor: c.hex }}
+                        />
+                        <span className="min-w-0">
+                          <span className="block text-[10px] font-medium text-foreground truncate">{c.name}</span>
+                          <span className="block text-[9px] text-muted-foreground font-mono">{c.hex}</span>
+                        </span>
+                        <Copy className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 flex-shrink-0 ml-auto" />
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-2">Click any swatch to copy its hex code. Use these colours in your email HTML for consistent branding.</p>
+                </div>
+              </details>
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
