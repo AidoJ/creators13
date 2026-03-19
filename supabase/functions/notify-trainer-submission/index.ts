@@ -125,19 +125,31 @@ serve(async (req) => {
 });
 
 function getDefaultHtml(): string {
+  const logoUrl = "https://iifgrxnkiejfvltzlvkd.supabase.co/storage/v1/object/public/email-assets/13creators-logo.png";
   return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"/></head>
-<body style="margin:0;padding:0;background:#ffffff;font-family:Arial,sans-serif;">
-<div style="max-width:520px;margin:40px auto;padding:32px;border:1px solid #e5e5e5;border-radius:12px;">
-<h1 style="font-size:20px;color:#1a1a1a;margin:0 0 16px 0;">Case Study Submitted for Review</h1>
-<p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 16px 0;">Hi A'Hara,</p>
-<p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 8px 0;"><strong>{{practitionerName}}</strong> has submitted a case study assessment for review:</p>
-<p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 4px 0;">📋 <strong>{{caseStudyTitle}}</strong></p>
-<p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 24px 0;">👤 Client: <strong>{{clientName}}</strong></p>
+<body style="margin:0;padding:0;background:#FDF6F0;font-family:'Questrial',Arial,sans-serif;">
+<div style="max-width:520px;margin:40px auto;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(90,58,40,0.08);">
+<div style="padding:32px 24px;">
+<h1 style="font-size:22px;color:#5A3A28;margin:0 0 16px 0;">Case Study Submitted for Review</h1>
+<p style="color:#555555;font-size:14px;line-height:1.6;margin:0 0 16px 0;">Hi A'Hara,</p>
+<p style="color:#555555;font-size:14px;line-height:1.6;margin:0 0 8px 0;"><strong>{{practitionerName}}</strong> has submitted a case study assessment for review:</p>
+<p style="color:#555555;font-size:14px;line-height:1.6;margin:0 0 4px 0;">📋 <strong>{{caseStudyTitle}}</strong></p>
+<p style="color:#555555;font-size:14px;line-height:1.6;margin:0 0 24px 0;">👤 Client: <strong>{{clientName}}</strong></p>
 <div style="text-align:center;margin:24px 0;">
 <a href="{{viewLink}}" style="display:inline-block;background:#BB1B56;color:#ffffff;padding:14px 36px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;">Review Case Study →</a>
 </div>
-<p style="color:#999;font-size:12px;margin:24px 0 0 0;">— 13 Creators</p>
+</div>
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:collapse;border-top:2px solid #E8DDD4;">
+  <tr><td style="padding:28px 24px;text-align:center;background:#FAF7F4;">
+    <a href="https://www.13creators.com" target="_blank" rel="noopener noreferrer" style="text-decoration:none;">
+      <img src="${logoUrl}" alt="13 Creators" width="48" height="48" style="display:inline-block;width:48px;height:auto;border:0;" />
+    </a>
+    <p style="margin:12px 0 0 0;font-size:13px;color:#5A3A28;font-family:'Questrial',Arial,sans-serif;">Create &amp; Come Alive with Creator Types</p>
+    <p style="margin:10px 0 0 0;"><a href="https://www.13creators.com" target="_blank" rel="noopener noreferrer" style="font-size:12px;color:#BB1B56;text-decoration:none;font-weight:600;">www.13creators.com</a></p>
+    <p style="margin:16px 0 0 0;font-size:11px;color:#8B6F5E;">© ${new Date().getFullYear()} 13 Creators · All rights reserved</p>
+  </td></tr>
+</table>
 </div>
 </body></html>`;
 }
