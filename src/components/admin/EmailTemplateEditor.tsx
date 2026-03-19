@@ -181,6 +181,19 @@ export default function EmailTemplateEditor() {
                     ))}
                   </div>
                   <p className="text-[10px] text-muted-foreground mt-2">Click any swatch to copy its hex code. Use these colours in your email HTML for consistent branding.</p>
+                  <div className="mt-3 pt-3 border-t border-border">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-xs"
+                      onClick={() => {
+                        navigator.clipboard.writeText(BRANDED_FOOTER_HTML);
+                        toast({ title: "Footer HTML copied", description: "Paste it at the end of your email template." });
+                      }}
+                    >
+                      <Copy className="h-3 w-3 mr-1" /> Copy Branded Footer HTML
+                    </Button>
+                  </div>
                 </div>
               </details>
 
