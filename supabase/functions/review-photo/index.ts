@@ -8,9 +8,9 @@ const corsHeaders = {
 
 const PHOTO_REQUIREMENTS: Record<string, string> = {
   face_front_closed:
-    "A front-facing photo of the person's face with mouth closed and a neutral expression. The entire face must be visible including forehead, ears, and jawline. No glasses, no makeup, hair tied back.",
+    "A front-facing photo of the person's face with mouth closed and a neutral expression. The entire face must be visible including forehead, ears, and jawline. No glasses, hair tied back. Permanent cosmetic features like tattooed eyebrows, microbladed brows, eyelash extensions, and permanent eyeliner are acceptable and must not cause a rejection.",
   face_front_smiling:
-    "A front-facing photo of the person's face smiling with teeth showing. The face should be mostly visible including forehead and jawline. No glasses, no makeup, hair tied back. The photo can be in portrait or landscape orientation — do not fail based on orientation alone.",
+    "A front-facing photo of the person's face smiling with teeth showing. The face should be mostly visible including forehead and jawline. No glasses, hair tied back. The photo can be in portrait or landscape orientation — do not fail based on orientation alone. Permanent cosmetic features like tattooed eyebrows, microbladed brows, eyelash extensions, and permanent eyeliner are acceptable and must not cause a rejection.",
   face_side:
     "A clear side profile of the person's face. The ear, jawline, and nose profile should be clearly visible. No glasses, hair tied back behind the ear.",
   body_front:
@@ -62,8 +62,11 @@ HARD FAIL rules — these MUST cause a fail:
 3. **Severely blurry**: If the subject is so blurry that facial features or body contours cannot be distinguished, FAIL.
 4. **Only one hand**: For hand photos, BOTH hands must be visible. If only one hand is shown, FAIL. The hands must be placed flat (palm-down) on a table or floor surface.
 5. **Only one foot**: For feet photos, BOTH feet must be visible. If only one foot is shown, FAIL. The person must be STANDING upright — if they are sitting or lying down with feet in the air, FAIL.
+6. **Removable obstructions on face**: For face photos, FAIL if the face is obscured by REMOVABLE items such as glasses, sunglasses, loose hair hanging over the face, hats, scarves, or face masks. Hair should be tied back so the forehead, ears, and jawline are visible.
 
-Things that are OK (do NOT fail for these):
+Things that are OK and must NOT cause a fail:
+- **Permanent or semi-permanent cosmetic features**: Tattooed eyebrows, microbladed brows, eyelash extensions, permanent eyeliner, lip tattoos, or any other cosmetic tattoo. These are permanent features that cannot be removed and must NEVER be a reason to reject a photo.
+- **Natural makeup that does not obscure facial structure**: Light foundation, lip colour, or similar minimal makeup is acceptable as long as facial features and bone structure remain clearly visible.
 - Photo orientation (portrait vs landscape) — either is fine
 - Slight variations in expression or posture
 - Minor lighting issues if the subject is still clearly visible
@@ -73,7 +76,8 @@ Focus your assessment on:
 1. Does the photo match the expected type (face/body/feet/hands)?
 2. Is this a selfie? (arm extended, phone in hand, mirror selfie)
 3. Is the full body visible head-to-toe for body shots?
-4. Is the photo clear enough for a practitioner to assess?
+4. For face photos: are there REMOVABLE obstructions (glasses, loose hair, hats)? Permanent cosmetics like tattooed eyebrows or lash extensions are NOT obstructions.
+5. Is the photo clear enough for a practitioner to assess?
 
 When providing feedback for a fail, be specific about what needs to change (e.g. "This appears to be a selfie — please use a timer or ask someone to take the photo" or "Your feet are cut off — please step back or have the photographer angle down to include your full body").`;
 
