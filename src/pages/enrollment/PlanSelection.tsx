@@ -162,7 +162,7 @@ export default function PlanSelection() {
                 <GraduationCap className="h-7 w-7" />
               </div>
               <div>
-                <h3 className="text-base font-display font-bold text-foreground mb-1">Case Study Subject</h3>
+                <h3 className="text-base font-display font-bold text-foreground mb-1">Case Study Volunteer</h3>
                 <p className="text-xs text-muted-foreground leading-relaxed">
                   A practitioner or trainee has invited you to be profiled as part of their training. <strong>Free.</strong>
                 </p>
