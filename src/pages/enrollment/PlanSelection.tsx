@@ -151,8 +151,8 @@ export default function PlanSelection() {
               className={cn(
                 "relative flex flex-col items-center gap-3 rounded-2xl border-2 p-6 text-center transition-all duration-200",
                 signupPath === "case_study"
-                  ? "border-primary bg-primary/5 ring-2 ring-primary/30 shadow-lg"
-                  : "border-border bg-card hover:border-primary/40 hover:shadow-md"
+                  ? "border-primary bg-primary/10 ring-2 ring-primary/30 shadow-lg"
+                  : "border-border bg-accent/40 hover:border-primary/40 hover:shadow-md"
               )}
             >
               <div className={cn(
