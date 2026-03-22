@@ -66,6 +66,7 @@ export default {
         magenta: "hsl(var(--magenta))",
         ocean: "hsl(var(--ocean))",
         terracotta: "hsl(var(--terracotta))",
+        lemon: "hsl(var(--lemon))",
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
