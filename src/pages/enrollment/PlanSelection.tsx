@@ -179,8 +179,8 @@ export default function PlanSelection() {
               className={cn(
                 "relative flex flex-col items-center gap-3 rounded-2xl border-2 p-6 text-center transition-all duration-200",
                 signupPath === "paying"
-                  ? "border-primary bg-primary/10 ring-2 ring-primary/30 shadow-lg"
-                  : "border-border bg-secondary/40 hover:border-primary/40 hover:shadow-md"
+                  ? "border-primary bg-gradient-to-br from-primary/15 via-primary/5 to-[hsl(55,75%,65%)]/15 ring-2 ring-primary/30 shadow-lg"
+                  : "border-border bg-gradient-to-br from-[hsl(55,75%,65%)]/15 via-[hsl(55,75%,75%)]/10 to-card hover:border-primary/40 hover:shadow-md"
               )}
             >
               <div className={cn(
