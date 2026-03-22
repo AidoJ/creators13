@@ -8,9 +8,9 @@ const corsHeaders = {
 
 const PHOTO_REQUIREMENTS: Record<string, string> = {
   face_front_closed:
-    "A front-facing photo of the person's face with mouth closed and a neutral expression. The entire face must be visible including forehead, ears, and jawline. No glasses, no makeup, hair tied back.",
+    "A front-facing photo of the person's face with mouth closed and a neutral expression. The entire face must be visible including forehead, ears, and jawline. No glasses, hair tied back. Permanent cosmetic features like tattooed eyebrows, microbladed brows, eyelash extensions, and permanent eyeliner are acceptable and must not cause a rejection.",
   face_front_smiling:
-    "A front-facing photo of the person's face smiling with teeth showing. The face should be mostly visible including forehead and jawline. No glasses, no makeup, hair tied back. The photo can be in portrait or landscape orientation — do not fail based on orientation alone.",
+    "A front-facing photo of the person's face smiling with teeth showing. The face should be mostly visible including forehead and jawline. No glasses, hair tied back. The photo can be in portrait or landscape orientation — do not fail based on orientation alone. Permanent cosmetic features like tattooed eyebrows, microbladed brows, eyelash extensions, and permanent eyeliner are acceptable and must not cause a rejection.",
   face_side:
     "A clear side profile of the person's face. The ear, jawline, and nose profile should be clearly visible. No glasses, hair tied back behind the ear.",
   body_front:
