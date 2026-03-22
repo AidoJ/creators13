@@ -151,8 +151,8 @@ export default function PlanSelection() {
               className={cn(
                 "relative flex flex-col items-center gap-3 rounded-2xl border-2 p-6 text-center transition-all duration-200",
                 signupPath === "case_study"
-                  ? "border-primary bg-primary/5 ring-2 ring-primary/30 shadow-lg"
-                  : "border-border bg-card hover:border-primary/40 hover:shadow-md"
+                  ? "border-primary bg-primary/10 ring-2 ring-primary/30 shadow-lg"
+                  : "border-border bg-accent/40 hover:border-primary/40 hover:shadow-md"
               )}
             >
               <div className={cn(
@@ -162,7 +162,7 @@ export default function PlanSelection() {
                 <GraduationCap className="h-7 w-7" />
               </div>
               <div>
-                <h3 className="text-base font-display font-bold text-foreground mb-1">Case Study Subject</h3>
+                <h3 className="text-base font-display font-bold text-foreground mb-1">Case Study Volunteer</h3>
                 <p className="text-xs text-muted-foreground leading-relaxed">
                   A practitioner or trainee has invited you to be profiled as part of their training. <strong>Free.</strong>
                 </p>
@@ -179,8 +179,8 @@ export default function PlanSelection() {
               className={cn(
                 "relative flex flex-col items-center gap-3 rounded-2xl border-2 p-6 text-center transition-all duration-200",
                 signupPath === "paying"
-                  ? "border-primary bg-primary/5 ring-2 ring-primary/30 shadow-lg"
-                  : "border-border bg-card hover:border-primary/40 hover:shadow-md"
+                  ? "border-primary bg-primary/10 ring-2 ring-primary/30 shadow-lg"
+                  : "border-border bg-secondary/40 hover:border-primary/40 hover:shadow-md"
               )}
             >
               <div className={cn(
