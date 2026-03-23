@@ -165,12 +165,12 @@ export default function TrainerDashboard() {
           }
           // Notify practitioner that their case study was approved (include feedback)
           try {
-            const csDetail = caseStudies.find(c => c.id === id);
+            const csLocal = caseStudies.find(c => c.id === id);
             await supabase.functions.invoke("notify-practitioner-approved", {
               body: {
-                practitioner_id: csDetail?.practitioner_id || cs.practitioner_id,
-                client_name: csDetail?.subject_name || "Client",
-                case_study_title: csDetail?.title || "Case Study",
+                practitioner_id: cs.practitioner_id,
+                client_name: csLocal?.subject_name || "Client",
+                case_study_title: cs.title || "Case Study",
                 creator_types: types,
                 reviewer_notes: notes || "",
               },
