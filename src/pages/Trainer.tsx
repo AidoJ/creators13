@@ -163,6 +163,21 @@ export default function TrainerDashboard() {
           } catch (e) {
             console.error("Failed to notify client of approval:", e);
           }
+          // Notify practitioner that their case study was approved (include feedback)
+          try {
+            const csDetail = caseStudies.find(c => c.id === id);
+            await supabase.functions.invoke("notify-practitioner-approved", {
+              body: {
+                practitioner_id: csDetail?.practitioner_id || cs.practitioner_id,
+                client_name: csDetail?.subject_name || "Client",
+                case_study_title: csDetail?.title || "Case Study",
+                creator_types: types,
+                reviewer_notes: notes || "",
+              },
+            });
+          } catch (e) {
+            console.error("Failed to notify practitioner of approval:", e);
+          }
         }
       }
       toast({ title: action === "approved" ? "Case study approved" : "Revision requested with notes" });
