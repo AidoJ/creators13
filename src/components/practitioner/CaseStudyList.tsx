@@ -167,14 +167,16 @@ export default function CaseStudyList({ practitionerId, onEditCaseStudy, filterC
             {isExpanded && (
               <div className="border-t border-border bg-muted/20 p-4 space-y-4">
                 {hasRevisionNotes && (
-                  <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
-                    <p className="text-xs font-semibold text-destructive uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                      <MessageSquare className="h-3.5 w-3.5" /> Trainer Revision Notes
+                  <div className={`rounded-lg border p-3 ${cs.status === "approved" ? "border-green-500/30 bg-green-500/5" : "border-destructive/30 bg-destructive/5"}`}>
+                    <p className={`text-xs font-semibold uppercase tracking-wider mb-1.5 flex items-center gap-1.5 ${cs.status === "approved" ? "text-green-600" : "text-destructive"}`}>
+                      <MessageSquare className="h-3.5 w-3.5" /> {cs.status === "approved" ? "Trainer Feedback" : "Trainer Revision Notes"}
                     </p>
                     <p className="text-sm text-foreground whitespace-pre-wrap">{cs.reviewer_notes}</p>
-                    <p className="text-xs text-muted-foreground mt-2 italic">
-                      Please review the feedback above and submit a new assessment form addressing the noted areas.
-                    </p>
+                    {cs.status === "revision_requested" && (
+                      <p className="text-xs text-muted-foreground mt-2 italic">
+                        Please review the feedback above and submit a new assessment form addressing the noted areas.
+                      </p>
+                    )}
                   </div>
                 )}
                 {cs.description && (
