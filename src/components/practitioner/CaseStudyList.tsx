@@ -110,7 +110,7 @@ export default function CaseStudyList({ practitionerId, onEditCaseStudy, filterC
         const sc = statusConfig[cs.status];
         const StatusIcon = sc.icon;
         const isExpanded = expandedId === cs.id;
-        const hasRevisionNotes = cs.status === "revision_requested" && cs.reviewer_notes;
+        const hasRevisionNotes = (cs.status === "revision_requested" || cs.status === "approved") && cs.reviewer_notes;
 
         return (
           <div key={cs.id} className="rounded-xl border border-border bg-card overflow-hidden">
