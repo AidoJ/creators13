@@ -110,7 +110,7 @@ export default function CaseStudyList({ practitionerId, onEditCaseStudy, filterC
         const sc = statusConfig[cs.status];
         const StatusIcon = sc.icon;
         const isExpanded = expandedId === cs.id;
-        const hasRevisionNotes = cs.status === "revision_requested" && cs.reviewer_notes;
+        const hasRevisionNotes = (cs.status === "revision_requested" || cs.status === "approved") && cs.reviewer_notes;
 
         return (
           <div key={cs.id} className="rounded-xl border border-border bg-card overflow-hidden">
@@ -139,9 +139,11 @@ export default function CaseStudyList({ practitionerId, onEditCaseStudy, filterC
                     </div>
                   )}
                   {hasRevisionNotes && !isExpanded && (
-                    <div className="flex items-center gap-1.5 mt-2 text-destructive">
+                    <div className={`flex items-center gap-1.5 mt-2 ${cs.status === "approved" ? "text-green-600" : "text-destructive"}`}>
                       <MessageSquare className="h-3 w-3" />
-                      <span className="text-xs font-medium">Trainer feedback available — view to read notes</span>
+                      <span className="text-xs font-medium">
+                        {cs.status === "approved" ? "Trainer feedback available — view to read notes" : "Trainer feedback available — view to read notes"}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -165,14 +167,16 @@ export default function CaseStudyList({ practitionerId, onEditCaseStudy, filterC
             {isExpanded && (
               <div className="border-t border-border bg-muted/20 p-4 space-y-4">
                 {hasRevisionNotes && (
-                  <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
-                    <p className="text-xs font-semibold text-destructive uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                      <MessageSquare className="h-3.5 w-3.5" /> Trainer Revision Notes
+                  <div className={`rounded-lg border p-3 ${cs.status === "approved" ? "border-green-500/30 bg-green-500/5" : "border-destructive/30 bg-destructive/5"}`}>
+                    <p className={`text-xs font-semibold uppercase tracking-wider mb-1.5 flex items-center gap-1.5 ${cs.status === "approved" ? "text-green-600" : "text-destructive"}`}>
+                      <MessageSquare className="h-3.5 w-3.5" /> {cs.status === "approved" ? "Trainer Feedback" : "Trainer Revision Notes"}
                     </p>
                     <p className="text-sm text-foreground whitespace-pre-wrap">{cs.reviewer_notes}</p>
-                    <p className="text-xs text-muted-foreground mt-2 italic">
-                      Please review the feedback above and submit a new assessment form addressing the noted areas.
-                    </p>
+                    {cs.status === "revision_requested" && (
+                      <p className="text-xs text-muted-foreground mt-2 italic">
+                        Please review the feedback above and submit a new assessment form addressing the noted areas.
+                      </p>
+                    )}
                   </div>
                 )}
                 {cs.description && (
