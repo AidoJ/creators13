@@ -132,7 +132,7 @@ export default function TrainerDashboard() {
     } else {
       // Auto-sync creator types to client profile on approval
       if (action === "approved") {
-        const { data: cs } = await supabase.from("case_studies").select("subject_user_id, creator_types_identified").eq("id", id).maybeSingle();
+        const { data: cs } = await supabase.from("case_studies").select("subject_user_id, creator_types_identified, practitioner_id, title").eq("id", id).maybeSingle();
         if (cs?.subject_user_id && cs.creator_types_identified && cs.creator_types_identified.length > 0) {
           const types = cs.creator_types_identified.map(capitaliseTypeName);
           const { error: upsertErr } = await supabase.from("creator_type_profiles").upsert({
@@ -162,6 +162,21 @@ export default function TrainerDashboard() {
             });
           } catch (e) {
             console.error("Failed to notify client of approval:", e);
+          }
+          // Notify practitioner that their case study was approved (include feedback)
+          try {
+            const csLocal = caseStudies.find(c => c.id === id);
+            await supabase.functions.invoke("notify-practitioner-approved", {
+              body: {
+                practitioner_id: cs.practitioner_id,
+                client_name: csLocal?.subject_name || "Client",
+                case_study_title: cs.title || "Case Study",
+                creator_types: types,
+                reviewer_notes: notes || "",
+              },
+            });
+          } catch (e) {
+            console.error("Failed to notify practitioner of approval:", e);
           }
         }
       }
