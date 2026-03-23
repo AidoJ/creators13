@@ -132,7 +132,7 @@ export default function TrainerDashboard() {
     } else {
       // Auto-sync creator types to client profile on approval
       if (action === "approved") {
-        const { data: cs } = await supabase.from("case_studies").select("subject_user_id, creator_types_identified").eq("id", id).maybeSingle();
+        const { data: cs } = await supabase.from("case_studies").select("subject_user_id, creator_types_identified, practitioner_id, title").eq("id", id).maybeSingle();
         if (cs?.subject_user_id && cs.creator_types_identified && cs.creator_types_identified.length > 0) {
           const types = cs.creator_types_identified.map(capitaliseTypeName);
           const { error: upsertErr } = await supabase.from("creator_type_profiles").upsert({
