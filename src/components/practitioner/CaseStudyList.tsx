@@ -139,9 +139,11 @@ export default function CaseStudyList({ practitionerId, onEditCaseStudy, filterC
                     </div>
                   )}
                   {hasRevisionNotes && !isExpanded && (
-                    <div className="flex items-center gap-1.5 mt-2 text-destructive">
+                    <div className={`flex items-center gap-1.5 mt-2 ${cs.status === "approved" ? "text-green-600" : "text-destructive"}`}>
                       <MessageSquare className="h-3 w-3" />
-                      <span className="text-xs font-medium">Trainer feedback available — view to read notes</span>
+                      <span className="text-xs font-medium">
+                        {cs.status === "approved" ? "Trainer feedback available — view to read notes" : "Trainer feedback available — view to read notes"}
+                      </span>
                     </div>
                   )}
                 </div>
