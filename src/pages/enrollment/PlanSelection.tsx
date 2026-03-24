@@ -284,12 +284,19 @@ export default function PlanSelection() {
                 const isSelected = selectedTier === key;
                 const price = annual ? Math.round(tier.annualPrice / 12) : tier.monthlyPrice;
 
+                const tierBg: Record<string, string> = {
+                  robin: "bg-gradient-to-b from-pink-100/60 via-pink-50/40 to-white",
+                  falcon: "bg-gradient-to-b from-blue-100/40 via-pink-50/30 to-white",
+                  owl: "bg-gradient-to-b from-purple-100/40 via-pink-50/20 to-white",
+                };
+
                 return (
                   <button
                     key={key}
                     onClick={() => setSelectedTier(key)}
                     className={cn(
-                      "relative flex flex-col rounded-2xl overflow-hidden border bg-card text-left transition-all duration-200 hover:shadow-lg focus:outline-none",
+                      "relative flex flex-col rounded-2xl overflow-hidden border text-left transition-all duration-200 hover:shadow-lg focus:outline-none",
+                      tierBg[key] || "bg-card",
                       isSelected
                         ? "border-primary ring-2 ring-primary/30 shadow-lg"
                         : "border-border hover:border-primary/40"
