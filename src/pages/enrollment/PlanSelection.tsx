@@ -307,6 +307,11 @@ export default function PlanSelection() {
                         Popular
                       </span>
                     )}
+                    {key === "owl" && (
+                      <span className="absolute top-3 right-3 z-10 bg-amber-500 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                        For Certified Practitioners
+                      </span>
+                    )}
 
                     <div className="flex items-center justify-center p-6 pb-2">
                       <img src={birdImages[key]} alt={tier.name} className="h-28 w-auto object-contain" />
