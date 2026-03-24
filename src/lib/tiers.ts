@@ -54,11 +54,10 @@ export const TIERS = {
     },
     features: [
       "Everything in Falcon",
-      "For Certified Practitioners",
       "Client Management Tools",
       "Private Group + Live Mentoring",
       "Practitioner-only Resources",
-      "5% Affiliate Commissions",
+      "Community Builder Bonus",
     ],
   },
 } as const;
