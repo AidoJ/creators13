@@ -63,11 +63,10 @@ const tiers = [
     annualPrice: 440,
     features: [
       "Everything in Falcon",
-      "For Certified Practitioners",
       "Client Management Tools",
       "Private Group + Live Mentoring",
       "Practitioner-only Resources",
-      "5% Affiliate Commissions",
+      "Community Builder Bonus",
     ],
     cta: "Apply Now",
     popular: false,
