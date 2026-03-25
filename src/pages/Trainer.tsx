@@ -414,20 +414,8 @@ function CaseStudyList({ caseStudies, emptyMessage, expandedCaseStudy, setExpand
         return (
           <div key={cs.id} className="rounded-xl border border-border bg-card overflow-hidden">
             <div className="p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-medium text-foreground truncate">{cs.subject_name !== "—" ? cs.subject_name : cs.title}</h4>
-                  <p className="text-xs text-muted-foreground mt-0.5">By {cs.practitioner_name} · {new Date(cs.created_at).toLocaleDateString("en-AU")}</p>
-                  {cs.creator_types_identified && cs.creator_types_identified.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-1.5">
-                      {sortCreatorTypes(cs.creator_types_identified).map(t => {
-                        const c = getCreatorTypeColor(t);
-                        return <span key={t} className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold capitalize" style={{ backgroundColor: `${c}22`, color: c, border: `1px solid ${c}44` }}>{t}</span>;
-                      })}
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <CaseStudyStatusBadge status={cs.status} />
                   <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setExpandedCaseStudy(isExpanded ? null : cs.id)}>
                     {isExpanded ? <EyeOff className="h-3 w-3 mr-1" /> : <Eye className="h-3 w-3 mr-1" />}
@@ -442,6 +430,18 @@ function CaseStudyList({ caseStudies, emptyMessage, expandedCaseStudy, setExpand
                         <XCircle className="h-3 w-3 mr-1" />Revise
                       </Button>
                     </>
+                  )}
+                </div>
+                <div>
+                  <h4 className="font-medium text-foreground">{cs.subject_name !== "—" ? cs.subject_name : cs.title}</h4>
+                  <p className="text-xs text-muted-foreground mt-0.5">By {cs.practitioner_name} · {new Date(cs.created_at).toLocaleDateString("en-AU")}</p>
+                  {cs.creator_types_identified && cs.creator_types_identified.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {sortCreatorTypes(cs.creator_types_identified).map(t => {
+                        const c = getCreatorTypeColor(t);
+                        return <span key={t} className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold capitalize" style={{ backgroundColor: `${c}22`, color: c, border: `1px solid ${c}44` }}>{t}</span>;
+                      })}
+                    </div>
                   )}
                 </div>
               </div>
