@@ -92,8 +92,10 @@ export default function CaseStudyFormDataView({ formData }: CaseStudyFormDataVie
       {hasP4 && (
         <Section title="Page 4 — Feedback Reflection">
           <DynamicFields data={p4} knownLabels={{
-            light_bulb_moments: "Light Bulb Moments", what_learned: "What You Learned",
-            what_went_well: "What Went Well", potential_follow_up: "Potential Follow-Up",
+            light_bulb_moments: "Light bulb moments for your case study…",
+            what_learned: "What you learned from this body or how it shifted you…",
+            what_went_well: "What went well + what you would do differently next time…",
+            potential_follow_up: "POTENTIAL FOLLOW-UP With Your Case Study",
             notes: "Notes",
           }} />
         </Section>
