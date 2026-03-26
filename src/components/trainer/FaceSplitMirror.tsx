@@ -458,10 +458,27 @@ export default function FaceSplitMirror({ userId, onDataChange }: FaceSplitMirro
   }, [image, topPoint, bottomPoint, getScaledSize]);
 
   const downloadImage = (dataUrl: string, name: string) => {
-    const a = document.createElement("a");
-    a.href = dataUrl;
-    a.download = name;
-    a.click();
+    try {
+      const byteString = atob(dataUrl.split(",")[1]);
+      const mimeString = dataUrl.split(",")[0].split(":")[1].split(";")[0];
+      const ab = new ArrayBuffer(byteString.length);
+      const ia = new Uint8Array(ab);
+      for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+      }
+      const blob = new Blob([ab], { type: mimeString });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error("Download failed:", e);
+      toast({ title: "Download failed", description: "Could not download the image.", variant: "destructive" });
+    }
   };
 
   const reset = () => {
