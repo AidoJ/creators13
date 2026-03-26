@@ -83,9 +83,8 @@ export default function CaseStudyFormDataView({ formData }: CaseStudyFormDataVie
       {hasP3 && (
         <Section title="Page 3 — Feedback Preparation">
           <DynamicFields data={p3} knownLabels={{
-            key_features_ct1: "Key Features — CT1", key_features_ct2: "Key Features — CT2",
-            key_features_other: "Key Features — Other", key_questions: "Key Questions",
-            ailments: "Ailments / Comments",
+            key_features_ct1: "CT1", key_features_ct2: "CT2",
+            key_features_other: "Other notable features", key_questions: "KEY QUESTIONS To Ask Your Case Study",
           }} />
         </Section>
       )}
