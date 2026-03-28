@@ -677,6 +677,11 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
                 <h3 className="text-sm font-bold text-foreground">POTENTIAL FOLLOW-UP With Your Case Study</h3>
                 <Textarea value={potentialFollowUp} onChange={e => setPotentialFollowUp(e.target.value)} rows={3} placeholder="Planned follow-up actions…" className="mt-1" />
               </div>
+
+              <div>
+                <h3 className="text-sm font-bold text-foreground">Other comments</h3>
+                <Textarea value={otherComments} onChange={e => setOtherComments(e.target.value)} rows={3} placeholder="Any other comments…" className="mt-1" />
+              </div>
             </TabsContent>
           </Tabs>
 
