@@ -388,13 +388,16 @@ export default function TrainingCalendar({ compact = false, refreshKey = 0 }: Tr
                           <p className="text-xs text-muted-foreground mt-1">{call.description}</p>
                         )}
                       </div>
-                      {call.zoom_link && (
-                        <a href={call.zoom_link} target="_blank" rel="noopener noreferrer">
-                          <Button size="sm" className="rounded-full h-8 text-xs bg-[hsl(var(--zoom-blue))] text-primary-foreground hover:bg-[hsl(var(--zoom-blue))]/90">
-                            <Video className="h-3 w-3 mr-1" />Join Zoom
-                          </Button>
-                        </a>
-                      )}
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <AddToCalendarButton call={call} />
+                        {call.zoom_link && (
+                          <a href={call.zoom_link} target="_blank" rel="noopener noreferrer">
+                            <Button size="sm" className="rounded-full h-8 text-xs bg-[hsl(var(--zoom-blue))] text-primary-foreground hover:bg-[hsl(var(--zoom-blue))]/90">
+                              <Video className="h-3 w-3 mr-1" />Join Zoom
+                            </Button>
+                          </a>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
