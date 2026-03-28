@@ -116,6 +116,7 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
   const [whatLearned, setWhatLearned] = useState(p4.what_learned || "");
   const [whatWentWell, setWhatWentWell] = useState(p4.what_went_well || "");
   const [potentialFollowUp, setPotentialFollowUp] = useState(p4.potential_follow_up || "");
+  const [otherComments, setOtherComments] = useState(p4.other_comments || "");
 
   function addCreatorType(type: string) {
     if (type && !possibleCreatorTypes.includes(type)) {
