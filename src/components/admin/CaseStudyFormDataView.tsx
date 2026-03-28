@@ -96,6 +96,7 @@ export default function CaseStudyFormDataView({ formData }: CaseStudyFormDataVie
             what_learned: "What you learned from this body or how it shifted you…",
             what_went_well: "What went well + what you would do differently next time…",
             potential_follow_up: "POTENTIAL FOLLOW-UP With Your Case Study",
+            other_comments: "Other comments",
             notes: "Notes",
           }} />
         </Section>

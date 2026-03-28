@@ -116,6 +116,7 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
   const [whatLearned, setWhatLearned] = useState(p4.what_learned || "");
   const [whatWentWell, setWhatWentWell] = useState(p4.what_went_well || "");
   const [potentialFollowUp, setPotentialFollowUp] = useState(p4.potential_follow_up || "");
+  const [otherComments, setOtherComments] = useState(p4.other_comments || "");
 
   function addCreatorType(type: string) {
     if (type && !possibleCreatorTypes.includes(type)) {
@@ -252,7 +253,7 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
       page1: { head_neck: headNeck, chest_arms: chestArms, belly_waist: bellyWaist, upper_thighs_hips_buttocks: upperThighs, legs_feet: legsFeet },
       page2: { prominent_features_face: prominentFace, prominent_features_body: prominentBody, prominent_features_hands_feet: prominentHandsFeet, concentration_of_tissue: concentrationOfTissue, other_ailments: otherAilments },
       page3: { key_features_ct1: keyFeaturesCT1, key_features_ct2: keyFeaturesCT2, key_features_other: keyFeaturesOther, key_questions: keyQuestions },
-      page4: { light_bulb_moments: lightBulbMoments, what_learned: whatLearned, what_went_well: whatWentWell, potential_follow_up: potentialFollowUp },
+      page4: { light_bulb_moments: lightBulbMoments, what_learned: whatLearned, what_went_well: whatWentWell, potential_follow_up: potentialFollowUp, other_comments: otherComments },
       assessment_date: assessmentDate,
       mode: "online",
     };
@@ -675,6 +676,11 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
               <div>
                 <h3 className="text-sm font-bold text-foreground">POTENTIAL FOLLOW-UP With Your Case Study</h3>
                 <Textarea value={potentialFollowUp} onChange={e => setPotentialFollowUp(e.target.value)} rows={3} placeholder="Planned follow-up actions…" className="mt-1" />
+              </div>
+
+              <div>
+                <h3 className="text-sm font-bold text-foreground">Other comments</h3>
+                <Textarea value={otherComments} onChange={e => setOtherComments(e.target.value)} rows={3} placeholder="Any other comments…" className="mt-1" />
               </div>
             </TabsContent>
           </Tabs>
