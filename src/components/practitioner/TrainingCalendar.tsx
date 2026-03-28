@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Calendar, Video, Clock, Repeat, Globe, ChevronLeft, ChevronRight, List, CalendarDays } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar, Video, Clock, Repeat, Globe, ChevronLeft, ChevronRight, List, CalendarDays, CalendarPlus } from "lucide-react";
 import { CREATOR_TYPE_NAMES, getCreatorTypeColor } from "@/lib/creatorTypes";
 
 /** Returns {bg, text} style for a call title based on naming conventions. */
