@@ -257,13 +257,16 @@ export default function TrainingCalendar({ compact = false, refreshKey = 0 }: Tr
                     <p className="text-sm font-medium truncate rounded px-1.5 py-0.5 inline-block" style={getCallColorStyle(call.title)}>{call.title}</p>
                     <p className="text-xs text-muted-foreground">{date} · {time} · {call.duration_minutes}min</p>
                   </div>
-                  {call.zoom_link && (
-                    <a href={call.zoom_link} target="_blank" rel="noopener noreferrer">
-                      <Button size="sm" className="h-6 text-[10px] rounded-full bg-[hsl(var(--zoom-blue))] text-primary-foreground hover:bg-[hsl(var(--zoom-blue))]/90">
-                        <Video className="h-2.5 w-2.5 mr-0.5" />Join
-                      </Button>
-                    </a>
-                  )}
+                  <div className="flex items-center gap-1">
+                    <AddToCalendarButton call={call} />
+                    {call.zoom_link && (
+                      <a href={call.zoom_link} target="_blank" rel="noopener noreferrer">
+                        <Button size="sm" className="h-6 text-[10px] rounded-full bg-[hsl(var(--zoom-blue))] text-primary-foreground hover:bg-[hsl(var(--zoom-blue))]/90">
+                          <Video className="h-2.5 w-2.5 mr-0.5" />Join
+                        </Button>
+                      </a>
+                    )}
+                  </div>
                 </div>
               );
             })}
