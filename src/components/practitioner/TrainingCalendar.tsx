@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Calendar, Video, Clock, Repeat, Globe, ChevronLeft, ChevronRight, List, CalendarDays } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar, Video, Clock, Repeat, Globe, ChevronLeft, ChevronRight, List, CalendarDays, CalendarPlus } from "lucide-react";
 import { CREATOR_TYPE_NAMES, getCreatorTypeColor } from "@/lib/creatorTypes";
 
 /** Returns {bg, text} style for a call title based on naming conventions. */
@@ -53,6 +54,90 @@ const TIMEZONE_OPTIONS = [
   "America/Los_Angeles",
   "UTC",
 ];
+
+/** Formats a Date to ICS-compatible UTC string e.g. 20260401T090000Z */
+function formatICSDate(d: Date): string {
+  return d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+}
+
+function buildGoogleCalendarUrl(title: string, scheduledAt: string, durationMinutes: number, description?: string | null, zoomLink?: string | null): string {
+  const start = new Date(scheduledAt);
+  const end = new Date(start.getTime() + durationMinutes * 60000);
+  const details = [description, zoomLink ? `Join: ${zoomLink}` : ""].filter(Boolean).join("\n");
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: title,
+    dates: `${formatICSDate(start)}/${formatICSDate(end)}`,
+    details,
+  });
+  return `https://www.google.com/calendar/render?${params.toString()}`;
+}
+
+function buildOutlookCalendarUrl(title: string, scheduledAt: string, durationMinutes: number, description?: string | null, zoomLink?: string | null): string {
+  const start = new Date(scheduledAt);
+  const end = new Date(start.getTime() + durationMinutes * 60000);
+  const body = [description, zoomLink ? `Join: ${zoomLink}` : ""].filter(Boolean).join("\n");
+  const params = new URLSearchParams({
+    path: "/calendar/action/compose",
+    rru: "addevent",
+    subject: title,
+    startdt: start.toISOString(),
+    enddt: end.toISOString(),
+    body,
+  });
+  return `https://outlook.live.com/calendar/0/deeplink/compose?${params.toString()}`;
+}
+
+function downloadICS(title: string, scheduledAt: string, durationMinutes: number, description?: string | null, zoomLink?: string | null) {
+  const start = new Date(scheduledAt);
+  const end = new Date(start.getTime() + durationMinutes * 60000);
+  const desc = [description, zoomLink ? `Join: ${zoomLink}` : ""].filter(Boolean).join("\\n");
+  const ics = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//13Creators//Training//EN",
+    "BEGIN:VEVENT",
+    `DTSTART:${formatICSDate(start)}`,
+    `DTEND:${formatICSDate(end)}`,
+    `SUMMARY:${title}`,
+    `DESCRIPTION:${desc}`,
+    zoomLink ? `URL:${zoomLink}` : "",
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ].filter(Boolean).join("\r\n");
+  const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${title.replace(/[^a-zA-Z0-9]/g, "_")}.ics`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function AddToCalendarButton({ call }: { call: TrainingCall }) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="ghost" size="sm" className="h-7 px-2 text-[10px] text-muted-foreground hover:text-foreground">
+          <CalendarPlus className="h-3 w-3 mr-1" />Add
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-44 p-2 space-y-1" align="end">
+        <a href={buildGoogleCalendarUrl(call.title, call.scheduled_at, call.duration_minutes, call.description, call.zoom_link)} target="_blank" rel="noopener noreferrer">
+          <Button variant="ghost" size="sm" className="w-full justify-start text-xs h-8">Google Calendar</Button>
+        </a>
+        <a href={buildOutlookCalendarUrl(call.title, call.scheduled_at, call.duration_minutes, call.description, call.zoom_link)} target="_blank" rel="noopener noreferrer">
+          <Button variant="ghost" size="sm" className="w-full justify-start text-xs h-8">Outlook</Button>
+        </a>
+        <Button variant="ghost" size="sm" className="w-full justify-start text-xs h-8" onClick={() => downloadICS(call.title, call.scheduled_at, call.duration_minutes, call.description, call.zoom_link)}>
+          Apple / .ics file
+        </Button>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 interface TrainingCalendarProps {
   compact?: boolean;
@@ -172,13 +257,16 @@ export default function TrainingCalendar({ compact = false, refreshKey = 0 }: Tr
                     <p className="text-sm font-medium truncate rounded px-1.5 py-0.5 inline-block" style={getCallColorStyle(call.title)}>{call.title}</p>
                     <p className="text-xs text-muted-foreground">{date} · {time} · {call.duration_minutes}min</p>
                   </div>
-                  {call.zoom_link && (
-                    <a href={call.zoom_link} target="_blank" rel="noopener noreferrer">
-                      <Button size="sm" className="h-6 text-[10px] rounded-full bg-[hsl(var(--zoom-blue))] text-primary-foreground hover:bg-[hsl(var(--zoom-blue))]/90">
-                        <Video className="h-2.5 w-2.5 mr-0.5" />Join
-                      </Button>
-                    </a>
-                  )}
+                  <div className="flex items-center gap-1">
+                    <AddToCalendarButton call={call} />
+                    {call.zoom_link && (
+                      <a href={call.zoom_link} target="_blank" rel="noopener noreferrer">
+                        <Button size="sm" className="h-6 text-[10px] rounded-full bg-[hsl(var(--zoom-blue))] text-primary-foreground hover:bg-[hsl(var(--zoom-blue))]/90">
+                          <Video className="h-2.5 w-2.5 mr-0.5" />Join
+                        </Button>
+                      </a>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -300,13 +388,16 @@ export default function TrainingCalendar({ compact = false, refreshKey = 0 }: Tr
                           <p className="text-xs text-muted-foreground mt-1">{call.description}</p>
                         )}
                       </div>
-                      {call.zoom_link && (
-                        <a href={call.zoom_link} target="_blank" rel="noopener noreferrer">
-                          <Button size="sm" className="rounded-full h-8 text-xs bg-[hsl(var(--zoom-blue))] text-primary-foreground hover:bg-[hsl(var(--zoom-blue))]/90">
-                            <Video className="h-3 w-3 mr-1" />Join Zoom
-                          </Button>
-                        </a>
-                      )}
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <AddToCalendarButton call={call} />
+                        {call.zoom_link && (
+                          <a href={call.zoom_link} target="_blank" rel="noopener noreferrer">
+                            <Button size="sm" className="rounded-full h-8 text-xs bg-[hsl(var(--zoom-blue))] text-primary-foreground hover:bg-[hsl(var(--zoom-blue))]/90">
+                              <Video className="h-3 w-3 mr-1" />Join Zoom
+                            </Button>
+                          </a>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
