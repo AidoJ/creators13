@@ -183,7 +183,13 @@ serve(async (req) => {
     }
 
     const icsContent = generateICS(title, description || "", scheduledAt, durationMinutes, zoomLink);
-    const icsBase64 = btoa(icsContent);
+    const icsBytes = new TextEncoder().encode(icsContent);
+    let icsBase64 = "";
+    const CHUNK = 0x8000;
+    for (let i = 0; i < icsBytes.length; i += CHUNK) {
+      icsBase64 += String.fromCharCode(...icsBytes.subarray(i, i + CHUNK));
+    }
+    icsBase64 = btoa(icsBase64);
 
     // Build reusable template fragments
     const descriptionHtml = description
