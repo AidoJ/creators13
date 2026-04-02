@@ -1143,7 +1143,69 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      client_subscription_summary: {
+        Row: {
+          billing_period: string | null
+          current_period_end: string | null
+          current_period_start: string | null
+          status: Database["public"]["Enums"]["subscription_status"] | null
+          tier: Database["public"]["Enums"]["subscription_tier"] | null
+          user_id: string | null
+        }
+        Insert: {
+          billing_period?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          status?: Database["public"]["Enums"]["subscription_status"] | null
+          tier?: Database["public"]["Enums"]["subscription_tier"] | null
+          user_id?: string | null
+        }
+        Update: {
+          billing_period?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          status?: Database["public"]["Enums"]["subscription_status"] | null
+          tier?: Database["public"]["Enums"]["subscription_tier"] | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      practitioner_directory: {
+        Row: {
+          avatar_url: string | null
+          display_name: string | null
+          first_name: string | null
+          last_name: string | null
+          practitioner_code: string | null
+          practitioner_status:
+            | Database["public"]["Enums"]["practitioner_status"]
+            | null
+          user_id: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          display_name?: string | null
+          first_name?: string | null
+          last_name?: string | null
+          practitioner_code?: string | null
+          practitioner_status?:
+            | Database["public"]["Enums"]["practitioner_status"]
+            | null
+          user_id?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          display_name?: string | null
+          first_name?: string | null
+          last_name?: string | null
+          practitioner_code?: string | null
+          practitioner_status?:
+            | Database["public"]["Enums"]["practitioner_status"]
+            | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       generate_practitioner_code:
