@@ -94,7 +94,7 @@ export default function PractitionerSelection() {
           .map(r => r.user_id)
       );
 
-      const eligible = profiles.filter(p => {
+      const eligible = typedProfiles.filter((p: PractitionerOption) => {
         if (!practitionerUserIds.has(p.user_id)) return false;
         if (p.user_id === user!.id) return false;
 

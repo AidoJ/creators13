@@ -22,13 +22,13 @@ export default function ClientSubscriptionCard({ clientId }: ClientSubscriptionC
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase
+    (supabase
       .from("client_subscription_summary" as any)
       .select("tier, status, billing_period, current_period_end, current_period_start")
       .eq("user_id", clientId)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data) setSub(data as SubData);
+      .maybeSingle() as any)
+      .then(({ data }: { data: SubData | null }) => {
+        if (data) setSub(data);
         setLoading(false);
       });
   }, [clientId]);
