@@ -72,12 +72,10 @@ export default function PlanSelection() {
     setLookingUpCode(true);
     const timeout = setTimeout(async () => {
       const { data } = await supabase
-        .from("profiles")
-        .select("first_name, last_name")
-        .eq("practitioner_code", code)
-        .maybeSingle();
-      if (data) {
-        setPractitionerName(`${data.first_name || ""} ${data.last_name || ""}`.trim() || null);
+        .rpc("lookup_practitioner_by_code", { _code: code });
+      const row = data?.[0];
+      if (row) {
+        setPractitionerName(`${row.first_name || ""} ${row.last_name || ""}`.trim() || null);
       } else {
         setPractitionerName(null);
       }
