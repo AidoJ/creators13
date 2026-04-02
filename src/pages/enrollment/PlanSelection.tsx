@@ -3,6 +3,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Check, ArrowRight, Users, GraduationCap } from "lucide-react";
+import landscapeLeaf from "@/assets/landscape-leaf.png";
+import landscapeWater from "@/assets/landscape-water.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
