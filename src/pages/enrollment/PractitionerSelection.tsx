@@ -77,7 +77,7 @@ export default function PractitionerSelection() {
 
       // Fetch practitioners with appropriate status
       const { data: profiles } = await supabase
-        .from("profiles")
+        .from("practitioner_directory" as any)
         .select("user_id, first_name, last_name, practitioner_code, practitioner_status");
 
       if (!profiles) { setLoading(false); return; }

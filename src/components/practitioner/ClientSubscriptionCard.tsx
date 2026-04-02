@@ -23,7 +23,7 @@ export default function ClientSubscriptionCard({ clientId }: ClientSubscriptionC
 
   useEffect(() => {
     supabase
-      .from("subscriptions")
+      .from("client_subscription_summary" as any)
       .select("tier, status, billing_period, current_period_end, current_period_start")
       .eq("user_id", clientId)
       .maybeSingle()
