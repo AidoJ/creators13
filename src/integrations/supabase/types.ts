@@ -1218,6 +1218,13 @@ export type Database = {
         }
         Returns: boolean
       }
+      lookup_practitioner_by_code: {
+        Args: { _code: string }
+        Returns: {
+          first_name: string
+          last_name: string
+        }[]
+      }
     }
     Enums: {
       app_role:
