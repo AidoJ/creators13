@@ -85,7 +85,7 @@ export default function ClientDetail({ clientId, onClientNameLoaded }: ClientDet
         supabase.from("profiles").select("first_name, last_name, email, enrollment_step, date_of_birth, gender, height_cm, shoe_size, city, state, country, case_study_consent_at").eq("user_id", clientId).maybeSingle(),
         supabase.from("bookings").select("id, scheduled_at, status, zoom_link").eq("client_id", clientId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("creator_type_profiles").select("primary_type, secondary_type, type_3, type_4, profiled_at").eq("user_id", clientId).maybeSingle(),
-        supabase.from("subscriptions").select("tier").eq("user_id", clientId).maybeSingle(),
+        (supabase.from("client_subscription_summary" as any).select("tier").eq("user_id", clientId).maybeSingle() as any),
         supabase.from("case_studies").select("id").eq("subject_user_id", clientId).limit(1),
       ]);
       if (profileRes.data) {
