@@ -57,7 +57,7 @@ export default function CreatorTypeAssignmentForm({ clientId, clientName }: Crea
       const [typesRes, profileRes, subRes, caseStudyRes, practitionerProfileRes] = await Promise.all([
         supabase.from("creator_types").select("name, family, element, color_hex").order("sort_order"),
         supabase.from("creator_type_profiles").select("id, primary_type, secondary_type, type_3, type_4, profiling_data").eq("user_id", clientId).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
-        supabase.from("subscriptions").select("tier").eq("user_id", clientId).maybeSingle(),
+        (supabase.from("client_subscription_summary" as any).select("tier").eq("user_id", clientId).maybeSingle() as any),
         supabase.from("case_studies").select("id").eq("subject_user_id", clientId).limit(1),
         user ? supabase.from("profiles").select("practitioner_status").eq("user_id", user.id).maybeSingle() : Promise.resolve({ data: null }),
       ]);

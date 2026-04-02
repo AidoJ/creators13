@@ -75,12 +75,13 @@ export default function PractitionerSelection() {
         setSelectedId(assignment.practitioner_id);
       }
 
-      // Fetch practitioners with appropriate status
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, first_name, last_name, practitioner_code, practitioner_status");
+      // Fetch practitioners from safe directory view (no PII exposed)
+      const { data: profiles } = await (supabase
+        .from("practitioner_directory" as any)
+        .select("user_id, first_name, last_name, practitioner_code, practitioner_status") as any);
 
       if (!profiles) { setLoading(false); return; }
+      const typedProfiles = profiles as PractitionerOption[];
 
       // Get users with practitioner/trainee roles
       const { data: roles } = await supabase
@@ -93,7 +94,7 @@ export default function PractitionerSelection() {
           .map(r => r.user_id)
       );
 
-      const eligible = profiles.filter(p => {
+      const eligible = typedProfiles.filter((p: PractitionerOption) => {
         if (!practitionerUserIds.has(p.user_id)) return false;
         if (p.user_id === user!.id) return false;
 
