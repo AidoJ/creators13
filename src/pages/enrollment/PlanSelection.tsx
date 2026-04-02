@@ -3,6 +3,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Check, ArrowRight, Users, GraduationCap } from "lucide-react";
+import landscapeLeaf from "@/assets/landscape-leaf.png";
+import landscapeWater from "@/assets/landscape-water.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -149,26 +151,28 @@ export default function PlanSelection() {
             <button
               onClick={() => setSignupPath("case_study")}
               className={cn(
-                "relative flex flex-col items-center gap-3 rounded-2xl border-2 p-6 text-center transition-all duration-200",
+                "relative flex flex-col items-center gap-3 rounded-2xl border-2 p-6 text-center transition-all duration-200 overflow-hidden",
                 signupPath === "case_study"
-                  ? "border-primary bg-gradient-to-br from-primary/15 via-primary/5 to-accent/10 ring-2 ring-primary/30 shadow-lg"
-                  : "border-border bg-gradient-to-br from-accent/10 via-accent/5 to-card hover:border-primary/40 hover:shadow-md"
+                  ? "border-primary ring-2 ring-primary/30 shadow-lg"
+                  : "border-border hover:border-primary/40 hover:shadow-md"
               )}
             >
+              <img src={landscapeLeaf} alt="" className="absolute inset-0 w-full h-full object-cover" loading="lazy" decoding="async" />
+              <div className="absolute inset-0 bg-card/60" />
               <div className={cn(
-                "w-14 h-14 rounded-full flex items-center justify-center transition-colors",
+                "relative w-14 h-14 rounded-full flex items-center justify-center transition-colors",
                 signupPath === "case_study" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
               )}>
                 <GraduationCap className="h-7 w-7" />
               </div>
-              <div>
+              <div className="relative">
                 <h3 className="text-base font-display font-bold text-foreground mb-1">Case Study Volunteer</h3>
                 <p className="text-xs text-muted-foreground leading-relaxed">
                   A practitioner or trainee has invited you to be profiled as part of their training. <strong>Free.</strong>
                 </p>
               </div>
               {signupPath === "case_study" && (
-                <div className="absolute top-3 right-3 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+                <div className="absolute top-3 right-3 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center z-10">
                   <Check className="h-4 w-4" />
                 </div>
               )}
@@ -177,26 +181,28 @@ export default function PlanSelection() {
             <button
               onClick={() => setSignupPath("paying")}
               className={cn(
-                "relative flex flex-col items-center gap-3 rounded-2xl border-2 p-6 text-center transition-all duration-200",
+                "relative flex flex-col items-center gap-3 rounded-2xl border-2 p-6 text-center transition-all duration-200 overflow-hidden",
                 signupPath === "paying"
-                  ? "border-primary bg-gradient-to-br from-primary/15 via-primary/5 to-lemon/15 ring-2 ring-primary/30 shadow-lg"
-                  : "border-border bg-gradient-to-br from-lemon/15 via-lemon/10 to-card hover:border-primary/40 hover:shadow-md"
+                  ? "border-primary ring-2 ring-primary/30 shadow-lg"
+                  : "border-border hover:border-primary/40 hover:shadow-md"
               )}
             >
+              <img src={landscapeWater} alt="" className="absolute inset-0 w-full h-full object-cover" loading="lazy" decoding="async" />
+              <div className="absolute inset-0 bg-card/60" />
               <div className={cn(
-                "w-14 h-14 rounded-full flex items-center justify-center transition-colors",
+                "relative w-14 h-14 rounded-full flex items-center justify-center transition-colors",
                 signupPath === "paying" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
               )}>
                 <Users className="h-7 w-7" />
               </div>
-              <div>
+              <div className="relative">
                 <h3 className="text-base font-display font-bold text-foreground mb-1">Paying Client</h3>
                 <p className="text-xs text-muted-foreground leading-relaxed">
                   I'd like to discover my Creator Types with a certified practitioner. Choose a plan below.
                 </p>
               </div>
               {signupPath === "paying" && (
-                <div className="absolute top-3 right-3 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+                <div className="absolute top-3 right-3 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center z-10">
                   <Check className="h-4 w-4" />
                 </div>
               )}
