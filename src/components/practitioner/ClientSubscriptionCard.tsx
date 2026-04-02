@@ -11,7 +11,6 @@ interface SubData {
   billing_period: string | null;
   current_period_end: string | null;
   current_period_start: string | null;
-  stripe_subscription_id: string | null;
 }
 
 interface ClientSubscriptionCardProps {
