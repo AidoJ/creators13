@@ -60,6 +60,9 @@ export default function PlanSelection() {
   useEffect(() => {
     if (signupPath === "case_study") {
       setSelectedTier("wren");
+      setTimeout(() => {
+        caseStudyRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 100);
     }
   }, [signupPath]);
 
