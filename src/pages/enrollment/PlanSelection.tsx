@@ -214,7 +214,7 @@ export default function PlanSelection() {
 
         {/* ── Case Study: practitioner code input ── */}
         {isCaseStudy && (
-          <div className="max-w-md mx-auto mb-10">
+          <div ref={caseStudyRef} className="max-w-md mx-auto mb-10">
             <div className="bg-primary/5 border-2 border-primary rounded-2xl p-6 shadow-md">
               <div className="flex items-center gap-2 mb-4">
                 <img src={birdWren} alt="Wren" className="h-10 w-auto" />
