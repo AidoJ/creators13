@@ -45,6 +45,7 @@ export default function PlanSelection() {
   const [practitionerName, setPractitionerName] = useState<string | null>(null);
   const [lookingUpCode, setLookingUpCode] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const caseStudyRef = useRef<HTMLDivElement>(null);
 
   const isCaseStudy = signupPath === "case_study";
 
