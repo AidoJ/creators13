@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -45,6 +45,7 @@ export default function PlanSelection() {
   const [practitionerName, setPractitionerName] = useState<string | null>(null);
   const [lookingUpCode, setLookingUpCode] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const caseStudyRef = useRef<HTMLDivElement>(null);
 
   const isCaseStudy = signupPath === "case_study";
 
@@ -59,6 +60,9 @@ export default function PlanSelection() {
   useEffect(() => {
     if (signupPath === "case_study") {
       setSelectedTier("wren");
+      setTimeout(() => {
+        caseStudyRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 100);
     }
   }, [signupPath]);
 
@@ -210,7 +214,7 @@ export default function PlanSelection() {
 
         {/* ── Case Study: practitioner code input ── */}
         {isCaseStudy && (
-          <div className="max-w-md mx-auto mb-10">
+          <div ref={caseStudyRef} className="max-w-md mx-auto mb-10">
             <div className="bg-primary/5 border-2 border-primary rounded-2xl p-6 shadow-md">
               <div className="flex items-center gap-2 mb-4">
                 <img src={birdWren} alt="Wren" className="h-10 w-auto" />
