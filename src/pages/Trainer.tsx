@@ -341,6 +341,7 @@ export default function TrainerDashboard() {
             )}
           </TabsContent>
 
+          <TabsContent value="cases-pr" className="space-y-4">
             {searchFilterId && (
               <Button variant="ghost" size="sm" className="text-xs mb-2" onClick={() => { setSearchFilterId(null); setExpandedCaseStudy(null); }}>
                 <ArrowLeft className="h-3 w-3 mr-1" /> Show all pending reviews
