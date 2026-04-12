@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
-import { FileText, Save, Loader2, ChevronRight, ChevronLeft, AlertTriangle, Upload, X, FileImage } from "lucide-react";
+import { FileText, Save, Loader2, ChevronRight, ChevronLeft, AlertTriangle, Upload, X, FileImage, Send } from "lucide-react";
 import BodyDrawingCanvas from "./BodyDrawingCanvas";
 import AttachmentGallery from "./AttachmentGallery";
 import type { Database } from "@/integrations/supabase/types";
