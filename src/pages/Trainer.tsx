@@ -308,7 +308,39 @@ export default function TrainerDashboard() {
             <TrainingCallManager onCallsChanged={() => setTrainingRefreshKey((current) => current + 1)} />
           </TabsContent>
 
-          <TabsContent value="cases-pr" className="space-y-4">
+          <TabsContent value="cases-profile" className="space-y-4">
+            {caseStudies.filter(c => c.status === "profiling_submitted").length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-border bg-card/50 p-12 text-center">
+                <FileText className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
+                <p className="text-muted-foreground">No case studies awaiting profiling.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {caseStudies.filter(c => c.status === "profiling_submitted").map(cs => (
+                  <div key={cs.id} className="rounded-xl border border-border bg-card overflow-hidden">
+                    <div className="p-4 flex items-center justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-foreground">{cs.title}</h4>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Practitioner: {cs.practitioner_name} · Subject: {cs.subject_name} · {new Date(cs.created_at).toLocaleDateString("en-AU")}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <CaseStudyStatusBadge status={cs.status} />
+                        <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => { setExpandedCaseStudy(expandedCaseStudy === cs.id ? null : cs.id); setSearchFilterId(cs.id); setActiveTab("cases-filtered"); }}>
+                          <Eye className="h-3 w-3 mr-1" /> View
+                        </Button>
+                        <Button size="sm" className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white" onClick={() => handleMarkProfiled(cs.id)}>
+                          <CheckCircle className="h-3 w-3 mr-1" /> Profiled
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
             {searchFilterId && (
               <Button variant="ghost" size="sm" className="text-xs mb-2" onClick={() => { setSearchFilterId(null); setExpandedCaseStudy(null); }}>
                 <ArrowLeft className="h-3 w-3 mr-1" /> Show all pending reviews
