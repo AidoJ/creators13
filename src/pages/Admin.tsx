@@ -579,8 +579,12 @@ function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, 
   }
 
   async function handleResetPassword() {
-    if (!newPassword || newPassword.length < 6) {
-      toast({ title: "Password too short", description: "Must be at least 6 characters.", variant: "destructive" });
+    if (!newPassword || newPassword.length < 8) {
+      toast({ title: "Password too short", description: "Must be at least 8 characters.", variant: "destructive" });
+      return;
+    }
+    if (!/[A-Z]/.test(newPassword) || !/[a-z]/.test(newPassword) || !/[0-9]/.test(newPassword) || !/[^A-Za-z0-9]/.test(newPassword)) {
+      toast({ title: "Password too weak", description: "Must include uppercase, lowercase, a number, and a special character (e.g. !@#$%).", variant: "destructive" });
       return;
     }
     setSavingPassword(true);
@@ -589,7 +593,12 @@ function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, 
     });
     setSavingPassword(false);
     if (error || data?.error) {
-      toast({ title: "Error", description: data?.error || error?.message, variant: "destructive" });
+      const msg = data?.error || error?.message || "";
+      const isHibp = /password/.test(msg.toLowerCase()) || /hibp|breach|leaked|pwned/.test(msg.toLowerCase());
+      const description = isHibp
+        ? "This password has been found in a data breach and cannot be used. Please choose a stronger, unique password with uppercase, lowercase, numbers, and special characters."
+        : msg;
+      toast({ title: "Password reset failed", description, variant: "destructive" });
     } else {
       toast({ title: "Password reset successfully" });
       setNewPassword("");
