@@ -514,6 +514,15 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
               {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />}
               Save Draft
             </Button>
+            <Button
+              variant="outline"
+              onClick={() => handleSave("profiling_submitted")}
+              disabled={saving || (paperFiles.length === 0 && existingAttachments.length === 0)}
+              className="text-blue-600 border-blue-500/30 hover:bg-blue-500/10"
+            >
+              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Send className="h-4 w-4 mr-1" />}
+              Submit for Profiling
+            </Button>
             <Button onClick={() => handleSave("submitted")} disabled={saving || (paperFiles.length === 0 && existingAttachments.length === 0)}>
               {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
               Submit for Review
@@ -560,6 +569,19 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
                   <label className="text-xs font-bold text-foreground">LEGS/FEET</label>
                   <Textarea value={legsFeet} onChange={e => setLegsFeet(e.target.value)} rows={2} placeholder="Observations for legs and feet…" className="mt-1" />
                 </div>
+              </div>
+
+              {/* Submit for Profiling button at bottom of page 1 */}
+              <div className="flex items-center justify-end pt-2 border-t border-border">
+                <Button
+                  variant="outline"
+                  onClick={() => handleSave("profiling_submitted")}
+                  disabled={saving || !hasDrawing || !allPage1Filled}
+                  className="text-blue-600 border-blue-500/30 hover:bg-blue-500/10"
+                >
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Send className="h-4 w-4 mr-1" />}
+                  Submit for Profiling
+                </Button>
               </div>
             </TabsContent>
 
