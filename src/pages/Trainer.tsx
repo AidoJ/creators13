@@ -278,8 +278,8 @@ export default function TrainerDashboard() {
             <TabsTrigger value="pipeline"><GitBranch className="h-3.5 w-3.5 mr-1" />Pipeline</TabsTrigger>
             <TabsTrigger value="training-calls"><Calendar className="h-3.5 w-3.5 mr-1" />Training Calls</TabsTrigger>
             <TabsTrigger value="cases-profile"><FileText className="h-3.5 w-3.5 mr-1" />CS (Profile) {profilingCaseStudies > 0 && <Badge className="ml-1 h-5 text-[10px]" variant="secondary">{profilingCaseStudies}</Badge>}</TabsTrigger>
-            <TabsTrigger value="cases-pr"><FileText className="h-3.5 w-3.5 mr-1" />CS (PR) {pendingCaseStudies > 0 && <Badge className="ml-1 h-5 text-[10px]" variant="destructive">{pendingCaseStudies}</Badge>}</TabsTrigger>
-            <TabsTrigger value="cases-dt"><FileText className="h-3.5 w-3.5 mr-1" />CS (Dt) {draftCaseStudies > 0 && <Badge className="ml-1 h-5 text-[10px]" variant="outline">{draftCaseStudies}</Badge>}</TabsTrigger>
+            <TabsTrigger value="cases-pr"><FileText className="h-3.5 w-3.5 mr-1" />CS (Approve) {pendingCaseStudies > 0 && <Badge className="ml-1 h-5 text-[10px]" variant="destructive">{pendingCaseStudies}</Badge>}</TabsTrigger>
+            <TabsTrigger value="cases-dt"><FileText className="h-3.5 w-3.5 mr-1" />CS (Draft) {draftCaseStudies > 0 && <Badge className="ml-1 h-5 text-[10px]" variant="outline">{draftCaseStudies}</Badge>}</TabsTrigger>
             <TabsTrigger value="invitations"><Mail className="h-3.5 w-3.5 mr-1" />Invitations</TabsTrigger>
             <TabsTrigger value="face-split"><Scissors className="h-3.5 w-3.5 mr-1" />Face Split</TabsTrigger>
           </TabsList>
