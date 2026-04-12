@@ -189,6 +189,7 @@ export default function TrainerDashboard() {
   const totalUsers = users.length;
   const byStep: Record<string, number> = {};
   users.forEach(u => { const s = u.enrollment_step || "none"; byStep[s] = (byStep[s] || 0) + 1; });
+  const profilingCaseStudies = caseStudies.filter(c => c.status === "profiling_submitted").length;
   const pendingCaseStudies = caseStudies.filter(c => c.status === "submitted").length;
   const draftCaseStudies = caseStudies.filter(c => c.status === "draft").length;
   const totalCaseStudies = caseStudies.length;
@@ -266,8 +267,9 @@ export default function TrainerDashboard() {
           <TabsList className="mb-4 flex-wrap">
             <TabsTrigger value="pipeline"><GitBranch className="h-3.5 w-3.5 mr-1" />Pipeline</TabsTrigger>
             <TabsTrigger value="training-calls"><Calendar className="h-3.5 w-3.5 mr-1" />Training Calls</TabsTrigger>
-            <TabsTrigger value="cases-pr"><FileText className="h-3.5 w-3.5 mr-1" />Case Studies (PR) {pendingCaseStudies > 0 && <Badge className="ml-1 h-5 text-[10px]" variant="destructive">{pendingCaseStudies}</Badge>}</TabsTrigger>
-            <TabsTrigger value="cases-dt"><FileText className="h-3.5 w-3.5 mr-1" />Case Studies (Dt) {draftCaseStudies > 0 && <Badge className="ml-1 h-5 text-[10px]" variant="outline">{draftCaseStudies}</Badge>}</TabsTrigger>
+            <TabsTrigger value="cases-profile"><FileText className="h-3.5 w-3.5 mr-1" />CS (Profile) {profilingCaseStudies > 0 && <Badge className="ml-1 h-5 text-[10px]" variant="secondary">{profilingCaseStudies}</Badge>}</TabsTrigger>
+            <TabsTrigger value="cases-pr"><FileText className="h-3.5 w-3.5 mr-1" />CS (PR) {pendingCaseStudies > 0 && <Badge className="ml-1 h-5 text-[10px]" variant="destructive">{pendingCaseStudies}</Badge>}</TabsTrigger>
+            <TabsTrigger value="cases-dt"><FileText className="h-3.5 w-3.5 mr-1" />CS (Dt) {draftCaseStudies > 0 && <Badge className="ml-1 h-5 text-[10px]" variant="outline">{draftCaseStudies}</Badge>}</TabsTrigger>
             <TabsTrigger value="invitations"><Mail className="h-3.5 w-3.5 mr-1" />Invitations</TabsTrigger>
             <TabsTrigger value="face-split"><Scissors className="h-3.5 w-3.5 mr-1" />Face Split</TabsTrigger>
           </TabsList>
