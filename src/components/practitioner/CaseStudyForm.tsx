@@ -236,7 +236,7 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
           status,
         } as any);
         if (error) toast({ title: "Error saving", description: error.message, variant: "destructive" });
-        else { toast({ title: "Case study saved", description: status === "submitted" ? "Submitted for review." : "Saved as draft." }); if (status === "submitted") notifyTrainerSubmission(); onSaved?.(); }
+        else { toast({ title: "Case study saved", description: status === "submitted" ? "Submitted for review." : status === "profiling_submitted" ? "Submitted for profiling." : "Saved as draft." }); if (status === "submitted") notifyTrainerSubmission(); onSaved?.(); }
       }
       setSaving(false);
       return;
@@ -290,7 +290,7 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
       if (error) {
         toast({ title: "Error saving", description: error.message, variant: "destructive" });
       } else {
-        toast({ title: "Case study updated", description: status === "submitted" ? "Re-submitted for review." : "Saved as draft." });
+        toast({ title: "Case study updated", description: status === "submitted" ? "Re-submitted for review." : status === "profiling_submitted" ? "Submitted for profiling." : "Saved as draft." });
         if (status === "submitted") notifyTrainerSubmission();
         onSaved?.();
       }
@@ -329,7 +329,7 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
       if (error) {
         toast({ title: "Error saving", description: error.message, variant: "destructive" });
       } else {
-        toast({ title: "Case study saved", description: status === "submitted" ? "Submitted for review." : "Saved as draft." });
+        toast({ title: "Case study saved", description: status === "submitted" ? "Submitted for review." : status === "profiling_submitted" ? "Submitted for profiling." : "Saved as draft." });
         if (status === "submitted") notifyTrainerSubmission();
         onSaved?.();
       }
