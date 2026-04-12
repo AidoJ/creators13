@@ -186,6 +186,16 @@ export default function TrainerDashboard() {
     }
   }
 
+  async function handleMarkProfiled(id: string) {
+    const { error } = await supabase.from("case_studies").update({ status: "draft" as any }).eq("id", id);
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Case study marked as profiled", description: "Returned to practitioner's drafts." });
+      await fetchCaseStudies();
+    }
+  }
+
   const totalUsers = users.length;
   const byStep: Record<string, number> = {};
   users.forEach(u => { const s = u.enrollment_step || "none"; byStep[s] = (byStep[s] || 0) + 1; });
