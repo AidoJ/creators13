@@ -186,9 +186,20 @@ export default function TrainerDashboard() {
     }
   }
 
+  async function handleMarkProfiled(id: string) {
+    const { error } = await supabase.from("case_studies").update({ status: "draft" as any }).eq("id", id);
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Case study marked as profiled", description: "Returned to practitioner's drafts." });
+      await fetchCaseStudies();
+    }
+  }
+
   const totalUsers = users.length;
   const byStep: Record<string, number> = {};
   users.forEach(u => { const s = u.enrollment_step || "none"; byStep[s] = (byStep[s] || 0) + 1; });
+  const profilingCaseStudies = caseStudies.filter(c => c.status === "profiling_submitted").length;
   const pendingCaseStudies = caseStudies.filter(c => c.status === "submitted").length;
   const draftCaseStudies = caseStudies.filter(c => c.status === "draft").length;
   const totalCaseStudies = caseStudies.length;
@@ -266,8 +277,9 @@ export default function TrainerDashboard() {
           <TabsList className="mb-4 flex-wrap">
             <TabsTrigger value="pipeline"><GitBranch className="h-3.5 w-3.5 mr-1" />Pipeline</TabsTrigger>
             <TabsTrigger value="training-calls"><Calendar className="h-3.5 w-3.5 mr-1" />Training Calls</TabsTrigger>
-            <TabsTrigger value="cases-pr"><FileText className="h-3.5 w-3.5 mr-1" />Case Studies (PR) {pendingCaseStudies > 0 && <Badge className="ml-1 h-5 text-[10px]" variant="destructive">{pendingCaseStudies}</Badge>}</TabsTrigger>
-            <TabsTrigger value="cases-dt"><FileText className="h-3.5 w-3.5 mr-1" />Case Studies (Dt) {draftCaseStudies > 0 && <Badge className="ml-1 h-5 text-[10px]" variant="outline">{draftCaseStudies}</Badge>}</TabsTrigger>
+            <TabsTrigger value="cases-profile"><FileText className="h-3.5 w-3.5 mr-1" />CS (Profile) {profilingCaseStudies > 0 && <Badge className="ml-1 h-5 text-[10px]" variant="secondary">{profilingCaseStudies}</Badge>}</TabsTrigger>
+            <TabsTrigger value="cases-pr"><FileText className="h-3.5 w-3.5 mr-1" />CS (PR) {pendingCaseStudies > 0 && <Badge className="ml-1 h-5 text-[10px]" variant="destructive">{pendingCaseStudies}</Badge>}</TabsTrigger>
+            <TabsTrigger value="cases-dt"><FileText className="h-3.5 w-3.5 mr-1" />CS (Dt) {draftCaseStudies > 0 && <Badge className="ml-1 h-5 text-[10px]" variant="outline">{draftCaseStudies}</Badge>}</TabsTrigger>
             <TabsTrigger value="invitations"><Mail className="h-3.5 w-3.5 mr-1" />Invitations</TabsTrigger>
             <TabsTrigger value="face-split"><Scissors className="h-3.5 w-3.5 mr-1" />Face Split</TabsTrigger>
           </TabsList>
@@ -294,6 +306,39 @@ export default function TrainerDashboard() {
           <TabsContent value="training-calls" className="space-y-6">
             <TrainingCalendar refreshKey={trainingRefreshKey} />
             <TrainingCallManager onCallsChanged={() => setTrainingRefreshKey((current) => current + 1)} />
+          </TabsContent>
+
+          <TabsContent value="cases-profile" className="space-y-4">
+            {caseStudies.filter(c => c.status === "profiling_submitted").length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-border bg-card/50 p-12 text-center">
+                <FileText className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
+                <p className="text-muted-foreground">No case studies awaiting profiling.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {caseStudies.filter(c => c.status === "profiling_submitted").map(cs => (
+                  <div key={cs.id} className="rounded-xl border border-border bg-card overflow-hidden">
+                    <div className="p-4 flex items-center justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-foreground">{cs.title}</h4>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Practitioner: {cs.practitioner_name} · Subject: {cs.subject_name} · {new Date(cs.created_at).toLocaleDateString("en-AU")}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <CaseStudyStatusBadge status={cs.status} />
+                        <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => { setExpandedCaseStudy(expandedCaseStudy === cs.id ? null : cs.id); setSearchFilterId(cs.id); setActiveTab("cases-filtered"); }}>
+                          <Eye className="h-3 w-3 mr-1" /> View
+                        </Button>
+                        <Button size="sm" className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white" onClick={() => handleMarkProfiled(cs.id)}>
+                          <CheckCircle className="h-3 w-3 mr-1" /> Profiled
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="cases-pr" className="space-y-4">
@@ -382,6 +427,7 @@ export default function TrainerDashboard() {
 function CaseStudyStatusBadge({ status }: { status: CaseStudyStatus }) {
   const map: Record<CaseStudyStatus, { label: string; class: string }> = {
     draft: { label: "Draft", class: "bg-muted/50 text-muted-foreground border-border" },
+    profiling_submitted: { label: "Awaiting Profiling", class: "bg-blue-500/10 text-blue-600 border-blue-500/20" },
     submitted: { label: "Pending Review", class: "bg-amber-500/10 text-amber-600 border-amber-500/20" },
     approved: { label: "Approved", class: "bg-green-500/10 text-green-600 border-green-500/20" },
     revision_requested: { label: "Revision Needed", class: "bg-red-500/10 text-red-600 border-red-500/20" },

@@ -1238,6 +1238,7 @@ export type Database = {
       assessment_type: "quiz" | "test" | "practical"
       case_study_status:
         | "draft"
+        | "profiling_submitted"
         | "submitted"
         | "approved"
         | "revision_requested"
@@ -1405,6 +1406,7 @@ export const Constants = {
       assessment_type: ["quiz", "test", "practical"],
       case_study_status: [
         "draft",
+        "profiling_submitted",
         "submitted",
         "approved",
         "revision_requested",

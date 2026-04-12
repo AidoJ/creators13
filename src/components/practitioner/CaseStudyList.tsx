@@ -94,6 +94,7 @@ export default function CaseStudyList({ practitionerId, onEditCaseStudy, filterC
 
   const statusConfig: Record<CaseStudyStatus, { icon: typeof Clock; label: string; className: string }> = {
     draft: { icon: Clock, label: "Draft", className: "bg-muted/50 text-muted-foreground border-border" },
+    profiling_submitted: { icon: AlertCircle, label: "Awaiting Profiling", className: "bg-blue-500/10 text-blue-600 border-blue-500/20" },
     submitted: { icon: AlertCircle, label: "Pending Review", className: "bg-amber-500/10 text-amber-600 border-amber-500/20" },
     approved: { icon: CheckCircle, label: "Approved", className: "bg-green-500/10 text-green-600 border-green-500/20" },
     revision_requested: { icon: AlertCircle, label: "Needs Revision", className: "bg-red-500/10 text-red-600 border-red-500/20" },
