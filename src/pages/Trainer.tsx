@@ -382,6 +382,7 @@ export default function TrainerDashboard() {
 function CaseStudyStatusBadge({ status }: { status: CaseStudyStatus }) {
   const map: Record<CaseStudyStatus, { label: string; class: string }> = {
     draft: { label: "Draft", class: "bg-muted/50 text-muted-foreground border-border" },
+    profiling_submitted: { label: "Awaiting Profiling", class: "bg-blue-500/10 text-blue-600 border-blue-500/20" },
     submitted: { label: "Pending Review", class: "bg-amber-500/10 text-amber-600 border-amber-500/20" },
     approved: { label: "Approved", class: "bg-green-500/10 text-green-600 border-green-500/20" },
     revision_requested: { label: "Revision Needed", class: "bg-red-500/10 text-red-600 border-red-500/20" },

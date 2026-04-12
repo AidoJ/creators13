@@ -49,6 +49,14 @@ const PIPELINE_STAGES = [
     dotColor: "bg-accent",
   },
   {
+    key: "profiling_submitted" as const,
+    label: "Profiling",
+    description: "Awaiting trainer profiling",
+    icon: Send,
+    color: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+    dotColor: "bg-blue-500",
+  },
+  {
     key: "submitted" as const,
     label: "Submitted",
     description: "Awaiting trainer review",
