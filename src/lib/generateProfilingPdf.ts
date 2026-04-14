@@ -39,17 +39,16 @@ function drawCroppedImage(
   y: number,
   boxW: number,
   boxH: number,
-  fit: "cover" | "contain" | "contain-top" = "cover"
+  fit: "cover" | "contain" | "cover-width" = "cover"
 ) {
   const canvas = document.createElement("canvas");
-  canvas.width = Math.round(boxW * 4);
-  canvas.height = Math.round(boxH * 4);
-  const ctx = canvas.getContext("2d")!;
-
   const imgRatio = img.naturalWidth / img.naturalHeight;
   const boxRatio = boxW / boxH;
 
   if (fit === "cover") {
+    canvas.width = Math.round(boxW * 4);
+    canvas.height = Math.round(boxH * 4);
+    const ctx = canvas.getContext("2d")!;
     let sx = 0, sy = 0, sw = img.naturalWidth, sh = img.naturalHeight;
     if (imgRatio > boxRatio) {
       sw = img.naturalHeight * boxRatio;
@@ -61,8 +60,27 @@ function drawCroppedImage(
     ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
     const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
     doc.addImage(dataUrl, "JPEG", x, y, boxW, boxH);
+  } else if (fit === "cover-width") {
+    // Crop sides to fill column width, but show full height from top.
+    // Scale so image width = boxW. Resulting height may exceed boxH — clip at boxH.
+    const drawH = Math.min(boxW / imgRatio, boxH);
+    const drawW = boxW;
+    // Source: crop sides to center horizontally, take full height
+    // If scaled height > boxH, we only take the top portion of the image
+    const visibleFraction = drawH / (boxW / imgRatio); // fraction of image height visible
+    const sh = img.naturalHeight * visibleFraction;
+    const sy = 0; // anchor to top
+    const sw = img.naturalWidth;
+    const sx = 0;
+
+    canvas.width = Math.round(drawW * 4);
+    canvas.height = Math.round(drawH * 4);
+    const ctx = canvas.getContext("2d")!;
+    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+    doc.addImage(dataUrl, "JPEG", x, y, drawW, drawH);
   } else {
-    // contain or contain-top: fit image inside box with whitespace
+    // contain: fit image inside box, centred, with whitespace
     let drawW: number, drawH: number;
     if (imgRatio > boxRatio) {
       drawW = boxW;
@@ -72,11 +90,11 @@ function drawCroppedImage(
       drawW = boxH * imgRatio;
     }
     const offsetX = x + (boxW - drawW) / 2;
-    // contain-top anchors to top; contain centres vertically
-    const offsetY = fit === "contain-top" ? y : y + (boxH - drawH) / 2;
+    const offsetY = y + (boxH - drawH) / 2;
 
     canvas.width = Math.round(drawW * 4);
     canvas.height = Math.round(drawH * 4);
+    const ctx = canvas.getContext("2d")!;
     ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight, 0, 0, canvas.width, canvas.height);
     const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
     doc.addImage(dataUrl, "JPEG", offsetX, offsetY, drawW, drawH);
