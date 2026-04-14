@@ -126,7 +126,7 @@ export async function generateProfilingPdf(
   faceKeys.forEach((key, i) => {
     if (images[key]) {
       const x = margin + i * (facePhotoW + gap);
-      drawCroppedImage(doc, images[key], x, topY, facePhotoW, faceRowH, "cover");
+      drawCroppedImage(doc, images[key], x, topY, facePhotoW, faceRowH, "contain");
     }
   });
 
@@ -136,7 +136,7 @@ export async function generateProfilingPdf(
   bottomKeys.forEach((key, i) => {
     if (images[key]) {
       const x = margin + i * (bottomPhotoW + gap);
-      drawCroppedImage(doc, images[key], x, topY + faceRowH + gap, bottomPhotoW, bottomRowH, "cover");
+      drawCroppedImage(doc, images[key], x, topY + faceRowH + gap, bottomPhotoW, bottomRowH, "contain");
     }
   });
 
