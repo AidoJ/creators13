@@ -164,18 +164,32 @@ export default function CompositePhotoLayout({ userId, subjectName, className, s
         {subjectName && (
           <h3 className="text-lg font-display font-bold text-foreground">{subjectName}</h3>
         )}
-        {showReclassify && Object.keys(photos).length > 0 && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-xs h-7 gap-1.5"
-            onClick={handleReclassify}
-            disabled={reclassifying}
-          >
-            {reclassifying ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-            {reclassifying ? "Classifying…" : "AI Re-classify"}
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {Object.keys(photos).length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs h-7 gap-1.5"
+              onClick={handleDownloadPdf}
+              disabled={generatingPdf}
+            >
+              {generatingPdf ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
+              {generatingPdf ? "Generating…" : "Download PDF"}
+            </Button>
+          )}
+          {showReclassify && Object.keys(photos).length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs h-7 gap-1.5"
+              onClick={handleReclassify}
+              disabled={reclassifying}
+            >
+              {reclassifying ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+              {reclassifying ? "Classifying…" : "AI Re-classify"}
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Composite grid matching reference layout:
