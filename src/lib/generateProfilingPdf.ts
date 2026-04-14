@@ -11,6 +11,10 @@ const PHOTO_ORDER = [
   { key: "hands", label: "Hands" },
 ] as const;
 
+const FACE_KEYS = ["face_front_closed", "face_front_smiling", "face_side"] as const;
+const DETAIL_KEYS = ["feet", "hands"] as const;
+const BODY_KEYS = ["body_front", "body_back", "body_side"] as const;
+
 const GENERIC_FALLBACK: Record<string, string> = {
   face_front_closed: "photo_1",
   face_front_smiling: "photo_2",
@@ -22,6 +26,10 @@ const GENERIC_FALLBACK: Record<string, string> = {
   hands: "photo_8",
 };
 
+type PhotoKey = (typeof PHOTO_ORDER)[number]["key"];
+type SubjectBounds = { left: number; right: number; top: number; bottom: number };
+type CropRect = { left: number; top: number; width: number; height: number };
+
 async function loadImage(url: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -31,10 +39,6 @@ async function loadImage(url: string): Promise<HTMLImageElement> {
     img.src = url;
   });
 }
-
-type FitMode = "cover" | "contain" | "subject-cover";
-
-type SubjectBounds = { left: number; right: number; top: number; bottom: number };
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
@@ -46,12 +50,16 @@ function colorDistance(a: [number, number, number], b: [number, number, number])
 
 function percentile(values: number[], q: number) {
   if (!values.length) return 0;
-  const index = Math.min(values.length - 1, Math.max(0, Math.floor(values.length * q)));
+  const index = Math.min(values.length - 1, Math.max(0, Math.round((values.length - 1) * q)));
   return values[index];
 }
 
+function getPhotoLabel(key: PhotoKey) {
+  return PHOTO_ORDER.find((photo) => photo.key === key)?.label ?? key;
+}
+
 function detectSubjectBounds(img: HTMLImageElement): SubjectBounds | null {
-  const scale = Math.min(1, 800 / img.naturalHeight);
+  const scale = Math.min(1, 900 / img.naturalHeight);
   const width = Math.max(1, Math.round(img.naturalWidth * scale));
   const height = Math.max(1, Math.round(img.naturalHeight * scale));
   const canvas = document.createElement("canvas");
@@ -65,15 +73,15 @@ function detectSubjectBounds(img: HTMLImageElement): SubjectBounds | null {
   const pixels = ctx.getImageData(0, 0, width, height).data;
   const edgeSampleW = Math.max(4, Math.round(width * 0.04));
   const edgeSampleH = Math.max(4, Math.round(height * 0.04));
-  const startY = Math.max(2, Math.round(height * 0.04));
-  const endY = Math.min(height - 2, Math.round(height * 0.96));
-  const startX = Math.max(2, Math.round(width * 0.16));
-  const endX = Math.min(width - 2, Math.round(width * 0.84));
-  const stepY = Math.max(1, Math.round(height / 260));
-  const stepX = Math.max(1, Math.round(width / 220));
-  const threshold = 42;
-  const minRowSpan = width * 0.1;
-  const minColSpan = height * 0.45;
+  const startY = Math.max(2, Math.round(height * 0.03));
+  const endY = Math.min(height - 2, Math.round(height * 0.97));
+  const startX = Math.max(2, Math.round(width * 0.14));
+  const endX = Math.min(width - 2, Math.round(width * 0.86));
+  const stepY = Math.max(1, Math.round(height / 280));
+  const stepX = Math.max(1, Math.round(width / 240));
+  const threshold = 38;
+  const minRowSpan = width * 0.08;
+  const minColSpan = height * 0.38;
   const lefts: number[] = [];
   const rights: number[] = [];
   const tops: number[] = [];
@@ -90,7 +98,7 @@ function detectSubjectBounds(img: HTMLImageElement): SubjectBounds | null {
     let blue = 0;
     let count = 0;
 
-    for (let x = start; x < end; x++) {
+    for (let x = start; x < end; x += 1) {
       const [r, g, b, alpha] = pixelAt(x, y);
       if (alpha < 10) continue;
       red += r;
@@ -109,7 +117,7 @@ function detectSubjectBounds(img: HTMLImageElement): SubjectBounds | null {
     let blue = 0;
     let count = 0;
 
-    for (let y = start; y < end; y++) {
+    for (let y = start; y < end; y += 1) {
       const [r, g, b, alpha] = pixelAt(x, y);
       if (alpha < 10) continue;
       red += r;
@@ -177,10 +185,12 @@ function detectSubjectBounds(img: HTMLImageElement): SubjectBounds | null {
   tops.sort((a, b) => a - b);
   bottoms.sort((a, b) => a - b);
 
-  const left = percentile(lefts, 0.03);
-  const right = percentile(rights, 0.97);
-  const top = percentile(tops, 0.03);
-  const bottom = percentile(bottoms, 0.97);
+  const left = percentile(lefts, 0.02);
+  const right = percentile(rights, 0.98);
+  const top = percentile(tops, 0.02);
+  const bottom = percentile(bottoms, 0.98);
+
+  if (right <= left || bottom <= top) return null;
 
   return {
     left: left / scale,
@@ -190,145 +200,141 @@ function detectSubjectBounds(img: HTMLImageElement): SubjectBounds | null {
   };
 }
 
-function fitBoundsToAspect(
-  bounds: SubjectBounds,
-  imageWidth: number,
-  imageHeight: number,
-  targetRatio: number
-): { left: number; top: number; width: number; height: number } | null {
-  const boundsWidth = Math.max(1, bounds.right - bounds.left);
-  const boundsHeight = Math.max(1, bounds.bottom - bounds.top);
-
-  let cropWidth = boundsWidth;
-  let cropHeight = boundsHeight;
-
-  if (boundsWidth / boundsHeight > targetRatio) {
-    cropHeight = boundsWidth / targetRatio;
-  } else {
-    cropWidth = boundsHeight * targetRatio;
-  }
-
-  if (cropWidth > imageWidth || cropHeight > imageHeight) return null;
-
-  const left = clamp(bounds.left - (cropWidth - boundsWidth) / 2, 0, imageWidth - cropWidth);
-  const top = clamp(bounds.top - (cropHeight - boundsHeight) / 2, 0, imageHeight - cropHeight);
-
-  return {
-    left,
-    top,
-    width: cropWidth,
-    height: cropHeight,
-  };
-}
-
-function getAspectLockedSubjectCrop(
-  img: HTMLImageElement,
-  boxRatio: number
-): { left: number; top: number; width: number; height: number } | null {
+function getTrimmedSubjectCrop(img: HTMLImageElement): CropRect | null {
   const bounds = detectSubjectBounds(img);
   if (!bounds) return null;
 
   const spanW = Math.max(1, bounds.right - bounds.left);
   const spanH = Math.max(1, bounds.bottom - bounds.top);
-  const paddedBounds: SubjectBounds = {
-    left: clamp(bounds.left - Math.max(24, spanW * 0.08), 0, img.naturalWidth),
-    right: clamp(bounds.right + Math.max(24, spanW * 0.08), 0, img.naturalWidth),
-    top: clamp(bounds.top - Math.max(20, spanH * 0.05), 0, img.naturalHeight),
-    bottom: clamp(bounds.bottom + Math.max(28, spanH * 0.04), 0, img.naturalHeight),
-  };
+  const paddingX = Math.max(40, spanW * 0.14);
+  const paddingTop = Math.max(24, spanH * 0.06);
+  const paddingBottom = Math.max(40, spanH * 0.1);
 
-  return (
-    fitBoundsToAspect(paddedBounds, img.naturalWidth, img.naturalHeight, boxRatio) ??
-    fitBoundsToAspect(bounds, img.naturalWidth, img.naturalHeight, boxRatio)
-  );
+  const left = clamp(bounds.left - paddingX, 0, img.naturalWidth);
+  const right = clamp(bounds.right + paddingX, 0, img.naturalWidth);
+  const top = clamp(bounds.top - paddingTop, 0, img.naturalHeight);
+  const bottom = clamp(bounds.bottom + paddingBottom, 0, img.naturalHeight);
+
+  return {
+    left,
+    top,
+    width: Math.max(1, right - left),
+    height: Math.max(1, bottom - top),
+  };
 }
 
-function drawCroppedImage(
+function drawContainedImage(
   doc: jsPDF,
   img: HTMLImageElement,
   x: number,
   y: number,
   boxW: number,
   boxH: number,
-  fit: FitMode = "cover"
+  sourceRect?: CropRect | null
 ) {
+  const crop = sourceRect ?? {
+    left: 0,
+    top: 0,
+    width: img.naturalWidth,
+    height: img.naturalHeight,
+  };
+
+  const scale = Math.min(boxW / crop.width, boxH / crop.height);
+  const drawW = crop.width * scale;
+  const drawH = crop.height * scale;
+  const offsetX = x + (boxW - drawW) / 2;
+  const offsetY = y + (boxH - drawH) / 2;
   const canvas = document.createElement("canvas");
-  const imgRatio = img.naturalWidth / img.naturalHeight;
-  const boxRatio = boxW / boxH;
+  canvas.width = Math.max(1, Math.round(drawW * 4));
+  canvas.height = Math.max(1, Math.round(drawH * 4));
 
-  if (fit === "cover") {
-    canvas.width = Math.round(boxW * 4);
-    canvas.height = Math.round(boxH * 4);
-    const ctx = canvas.getContext("2d")!;
-    let sx = 0, sy = 0, sw = img.naturalWidth, sh = img.naturalHeight;
-    if (imgRatio > boxRatio) {
-      sw = img.naturalHeight * boxRatio;
-      sx = (img.naturalWidth - sw) / 2;
-    } else {
-      sh = img.naturalWidth / boxRatio;
-      sy = (img.naturalHeight - sh) / 2;
-    }
-    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
-    doc.addImage(dataUrl, "JPEG", x, y, boxW, boxH);
-  } else if (fit === "subject-cover") {
-    const crop = getAspectLockedSubjectCrop(img, boxRatio);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
 
-    if (crop) {
-      canvas.width = Math.round(boxW * 4);
-      canvas.height = Math.round(boxH * 4);
-      const ctx = canvas.getContext("2d")!;
-      ctx.drawImage(img, crop.left, crop.top, crop.width, crop.height, 0, 0, canvas.width, canvas.height);
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
-      doc.addImage(dataUrl, "JPEG", x, y, boxW, boxH);
-    } else {
-      // Safe fallback when the detected subject is wider than the slot ratio.
-      let drawW: number, drawH: number;
-      if (imgRatio > boxRatio) {
-        drawW = boxW;
-        drawH = boxW / imgRatio;
-      } else {
-        drawH = boxH;
-        drawW = boxH * imgRatio;
-      }
-      const offsetX = x + (boxW - drawW) / 2;
-      const offsetY = y + (boxH - drawH) / 2;
-
-      canvas.width = Math.round(drawW * 4);
-      canvas.height = Math.round(drawH * 4);
-      const ctx = canvas.getContext("2d")!;
-      ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight, 0, 0, canvas.width, canvas.height);
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
-      doc.addImage(dataUrl, "JPEG", offsetX, offsetY, drawW, drawH);
-    }
-  } else {
-    // contain: fit image inside box, centred, with whitespace
-    let drawW: number, drawH: number;
-    if (imgRatio > boxRatio) {
-      drawW = boxW;
-      drawH = boxW / imgRatio;
-    } else {
-      drawH = boxH;
-      drawW = boxH * imgRatio;
-    }
-    const offsetX = x + (boxW - drawW) / 2;
-    const offsetY = y + (boxH - drawH) / 2;
-
-    canvas.width = Math.round(drawW * 4);
-    canvas.height = Math.round(drawH * 4);
-    const ctx = canvas.getContext("2d")!;
-    ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight, 0, 0, canvas.width, canvas.height);
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
-    doc.addImage(dataUrl, "JPEG", offsetX, offsetY, drawW, drawH);
-  }
+  ctx.drawImage(img, crop.left, crop.top, crop.width, crop.height, 0, 0, canvas.width, canvas.height);
+  const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
+  doc.addImage(dataUrl, "JPEG", offsetX, offsetY, drawW, drawH);
 }
 
 function formatUploadDate(date: Date): string {
   const day = date.getDate();
-  const suffix = (day > 3 && day < 21) ? "th" : ["th","st","nd","rd"][day % 10] || "th";
+  const suffix = day > 3 && day < 21 ? "th" : ["th", "st", "nd", "rd"][day % 10] || "th";
   const month = date.toLocaleString("en-AU", { month: "long" });
   const year = date.getFullYear();
   return `${day}${suffix} ${month} ${year}`;
+}
+
+function buildHeaderText(subjectName?: string, uploadDate?: Date, pageLabel?: string) {
+  const parts: string[] = [];
+  if (subjectName) parts.push(subjectName);
+  if (uploadDate) parts.push(formatUploadDate(uploadDate));
+  if (pageLabel) parts.push(pageLabel);
+  return parts.join("  —  ");
+}
+
+function drawHeader(doc: jsPDF, margin: number, subjectName?: string, uploadDate?: Date, pageLabel?: string) {
+  const headerText = buildHeaderText(subjectName, uploadDate, pageLabel);
+  if (!headerText) return margin;
+
+  doc.setFontSize(12);
+  doc.setTextColor(60, 60, 60);
+  doc.text(headerText, margin, margin + 5);
+  return margin + 10;
+}
+
+function drawOverviewPage(
+  doc: jsPDF,
+  images: Partial<Record<PhotoKey, HTMLImageElement>>,
+  subjectName?: string,
+  uploadDate?: Date
+) {
+  const pageW = 210;
+  const pageH = 297;
+  const margin = 12;
+  const gap = 4;
+  const topY = drawHeader(doc, margin, subjectName, uploadDate, "Reference photos");
+  const contentW = pageW - margin * 2;
+  const contentH = pageH - margin - topY;
+  const faceRowH = contentH * 0.42;
+  const detailRowH = contentH - faceRowH - gap;
+  const facePhotoW = (contentW - gap * 2) / 3;
+  const detailPhotoW = (contentW - gap) / 2;
+
+  FACE_KEYS.forEach((key, index) => {
+    const image = images[key];
+    if (!image) return;
+    const x = margin + index * (facePhotoW + gap);
+    drawContainedImage(doc, image, x, topY, facePhotoW, faceRowH);
+  });
+
+  DETAIL_KEYS.forEach((key, index) => {
+    const image = images[key];
+    if (!image) return;
+    const x = margin + index * (detailPhotoW + gap);
+    drawContainedImage(doc, image, x, topY + faceRowH + gap, detailPhotoW, detailRowH);
+  });
+}
+
+function drawBodyPhotoContent(
+  doc: jsPDF,
+  key: (typeof BODY_KEYS)[number],
+  img: HTMLImageElement,
+  subjectName?: string,
+  uploadDate?: Date
+) {
+  const pageW = 210;
+  const pageH = 297;
+  const margin = 12;
+  const topY = drawHeader(doc, margin, subjectName, uploadDate, getPhotoLabel(key));
+  drawContainedImage(
+    doc,
+    img,
+    margin,
+    topY,
+    pageW - margin * 2,
+    pageH - margin - topY,
+    getTrimmedSubjectCrop(img)
+  );
 }
 
 export async function generateProfilingPdf(
@@ -336,85 +342,52 @@ export async function generateProfilingPdf(
   subjectName?: string,
   uploadDate?: Date
 ): Promise<Blob> {
-  // Landscape A4: 297 x 210 mm
-  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
-  const pageW = 297;
-  const pageH = 210;
-  const margin = 8;
-  const gap = 3;
+  const resolve = (key: PhotoKey) => photoMap[key] || photoMap[GENERIC_FALLBACK[key]] || null;
 
-  const hasHeader = !!(subjectName || uploadDate);
-  const contentW = pageW - margin * 2;
-  const contentH = pageH - margin * 2 - (hasHeader ? 8 : 0);
-  const topY = margin + (hasHeader ? 8 : 0);
-
-  // Title + date
-  if (hasHeader) {
-    doc.setFontSize(12);
-    doc.setTextColor(60, 60, 60);
-    const parts: string[] = [];
-    if (subjectName) parts.push(subjectName);
-    if (uploadDate) parts.push(formatUploadDate(uploadDate));
-    doc.text(parts.join("  —  "), margin, margin + 5);
+  const loadTasks: { key: PhotoKey; url: string }[] = [];
+  for (const photo of PHOTO_ORDER) {
+    const url = resolve(photo.key);
+    if (url) loadTasks.push({ key: photo.key, url });
   }
 
-  // Right side: 3 body photos take ~55% of width
-  const bodyZoneW = contentW * 0.6;
-  const leftZoneW = contentW - bodyZoneW - gap;
-
-  // Body photos: 3 equal columns, full height
-  const bodyPhotoW = (bodyZoneW - gap * 2) / 3;
-  const bodyPhotoH = contentH;
-  const bodyStartX = margin + leftZoneW + gap;
-
-  // Left zone: row 1 = 3 face photos, row 2 = feet + hands
-  const faceRowH = contentH * 0.55;
-  const bottomRowH = contentH - faceRowH - gap;
-  const facePhotoW = (leftZoneW - gap * 2) / 3;
-
-  const resolve = (key: string) => photoMap[key] || photoMap[GENERIC_FALLBACK[key]] || null;
-
-  const loadTasks: { key: string; url: string }[] = [];
-  for (const p of PHOTO_ORDER) {
-    const url = resolve(p.key);
-    if (url) loadTasks.push({ key: p.key, url });
-  }
-
-  const images: Record<string, HTMLImageElement> = {};
+  const images: Partial<Record<PhotoKey, HTMLImageElement>> = {};
   await Promise.allSettled(
-    loadTasks.map(async (t) => {
-      const img = await loadImage(t.url);
-      images[t.key] = img;
+    loadTasks.map(async ({ key, url }) => {
+      const img = await loadImage(url);
+      images[key] = img;
     })
   );
 
-  // Draw face row (top-left)
-  const faceKeys = ["face_front_closed", "face_front_smiling", "face_side"];
-  faceKeys.forEach((key, i) => {
-    if (images[key]) {
-      const x = margin + i * (facePhotoW + gap);
-      drawCroppedImage(doc, images[key], x, topY, facePhotoW, faceRowH, "contain");
-    }
-  });
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const hasOverviewPhotos = [...FACE_KEYS, ...DETAIL_KEYS].some((key) => Boolean(images[key]));
+  const bodyKeysWithImages = BODY_KEYS.filter((key) => Boolean(images[key]));
 
-  // Draw feet & hands (bottom-left)
-  const bottomKeys = ["feet", "hands"];
-  const bottomPhotoW = (leftZoneW - gap) / 2;
-  bottomKeys.forEach((key, i) => {
-    if (images[key]) {
-      const x = margin + i * (bottomPhotoW + gap);
-      drawCroppedImage(doc, images[key], x, topY + faceRowH + gap, bottomPhotoW, bottomRowH, "contain");
-    }
-  });
+  if (hasOverviewPhotos || bodyKeysWithImages.length === 0) {
+    drawOverviewPage(doc, images, subjectName, uploadDate);
+  }
 
-  // Draw body photos (right side) — crop background while keeping the full subject visible at full column size
-  const bodyKeys = ["body_front", "body_back", "body_side"];
-  bodyKeys.forEach((key, i) => {
-    if (images[key]) {
-      const x = bodyStartX + i * (bodyPhotoW + gap);
-      drawCroppedImage(doc, images[key], x, topY, bodyPhotoW, bodyPhotoH, "subject-cover");
+  if (!hasOverviewPhotos && bodyKeysWithImages.length > 0) {
+    const [firstBodyKey, ...remainingBodyKeys] = bodyKeysWithImages;
+    const firstBodyImage = images[firstBodyKey];
+
+    if (firstBodyImage) {
+      drawBodyPhotoContent(doc, firstBodyKey, firstBodyImage, subjectName, uploadDate);
     }
-  });
+
+    remainingBodyKeys.forEach((key) => {
+      const image = images[key];
+      if (!image) return;
+      doc.addPage("a4", "portrait");
+      drawBodyPhotoContent(doc, key, image, subjectName, uploadDate);
+    });
+  } else {
+    bodyKeysWithImages.forEach((key) => {
+      const image = images[key];
+      if (!image) return;
+      doc.addPage("a4", "portrait");
+      drawBodyPhotoContent(doc, key, image, subjectName, uploadDate);
+    });
+  }
 
   return doc.output("blob");
 }
