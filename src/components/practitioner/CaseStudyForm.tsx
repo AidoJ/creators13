@@ -24,6 +24,7 @@ interface ExistingCaseStudy {
   creator_types_identified: string[] | null;
   reviewer_notes: string | null;
   status: CaseStudyStatus;
+  profiling_complete?: boolean;
 }
 
 interface CaseStudyFormProps {
