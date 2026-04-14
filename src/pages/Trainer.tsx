@@ -420,7 +420,7 @@ function CaseStudyStatusBadge({ status }: { status: CaseStudyStatus }) {
   return <Badge variant="outline" className={`text-[10px] ${s.class}`}>{s.label}</Badge>;
 }
 
-function CaseStudyList({ caseStudies, emptyMessage, expandedCaseStudy, setExpandedCaseStudy, revisionNotes, setRevisionNotes, handleCaseStudyAction, setCaseStudies, fetchCaseStudies, userId, showActions }: {
+function CaseStudyList({ caseStudies, emptyMessage, expandedCaseStudy, setExpandedCaseStudy, revisionNotes, setRevisionNotes, handleCaseStudyAction, setCaseStudies, fetchCaseStudies, userId, showActions, onMarkProfiled }: {
   caseStudies: CaseStudyRow[];
   emptyMessage: string;
   expandedCaseStudy: string | null;
@@ -432,6 +432,7 @@ function CaseStudyList({ caseStudies, emptyMessage, expandedCaseStudy, setExpand
   fetchCaseStudies: () => Promise<void>;
   userId?: string;
   showActions: boolean;
+  onMarkProfiled?: (id: string) => void;
 }) {
   if (caseStudies.length === 0) {
     return <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground text-sm">{emptyMessage}</div>;
