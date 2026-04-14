@@ -49,9 +49,8 @@ function drawCroppedImage(
   const imgRatio = img.naturalWidth / img.naturalHeight;
   const boxRatio = boxW / boxH;
 
-  let sx = 0, sy = 0, sw = img.naturalWidth, sh = img.naturalHeight;
-
   if (fit === "cover") {
+    let sx = 0, sy = 0, sw = img.naturalWidth, sh = img.naturalHeight;
     if (imgRatio > boxRatio) {
       sw = img.naturalHeight * boxRatio;
       sx = (img.naturalWidth - sw) / 2;
@@ -59,11 +58,29 @@ function drawCroppedImage(
       sh = img.naturalWidth / boxRatio;
       sy = (img.naturalHeight - sh) / 2;
     }
-  }
+    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+    doc.addImage(dataUrl, "JPEG", x, y, boxW, boxH);
+  } else {
+    // contain: fit image inside box, centred, with whitespace
+    let drawW: number, drawH: number;
+    if (imgRatio > boxRatio) {
+      drawW = boxW;
+      drawH = boxW / imgRatio;
+    } else {
+      drawH = boxH;
+      drawW = boxH * imgRatio;
+    }
+    const offsetX = x + (boxW - drawW) / 2;
+    const offsetY = y + (boxH - drawH) / 2;
 
-  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
-  const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
-  doc.addImage(dataUrl, "JPEG", x, y, boxW, boxH);
+    // render at high res then place
+    canvas.width = Math.round(drawW * 4);
+    canvas.height = Math.round(drawH * 4);
+    ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight, 0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+    doc.addImage(dataUrl, "JPEG", offsetX, offsetY, drawW, drawH);
+  }
 }
 
 export async function generateProfilingPdf(
@@ -126,7 +143,7 @@ export async function generateProfilingPdf(
   faceKeys.forEach((key, i) => {
     if (images[key]) {
       const x = margin + i * (facePhotoW + gap);
-      drawCroppedImage(doc, images[key], x, topY, facePhotoW, faceRowH, "cover");
+      drawCroppedImage(doc, images[key], x, topY, facePhotoW, faceRowH, "contain");
     }
   });
 
@@ -136,7 +153,7 @@ export async function generateProfilingPdf(
   bottomKeys.forEach((key, i) => {
     if (images[key]) {
       const x = margin + i * (bottomPhotoW + gap);
-      drawCroppedImage(doc, images[key], x, topY + faceRowH + gap, bottomPhotoW, bottomRowH, "cover");
+      drawCroppedImage(doc, images[key], x, topY + faceRowH + gap, bottomPhotoW, bottomRowH, "contain");
     }
   });
 
