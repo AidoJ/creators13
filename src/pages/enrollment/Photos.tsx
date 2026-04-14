@@ -97,6 +97,25 @@ export default function Photos() {
   const allReviewsPassed = PHOTO_SLOTS.every((s) => photos[s.key].review?.pass === true);
   const uploadedCount = PHOTO_SLOTS.filter((s) => photos[s.key].uploaded || photos[s.key].existingPath !== null).length;
 
+  // Guard: redirect if no practitioner assigned
+  useEffect(() => {
+    if (!user) return;
+    const checkPractitioner = async () => {
+      const { data: assignment } = await supabase
+        .from("client_practitioner")
+        .select("id")
+        .eq("client_id", user.id)
+        .eq("active", true)
+        .maybeSingle();
+      if (!assignment) {
+        toast({ title: "Practitioner required", description: "Please select a practitioner before uploading photos.", variant: "destructive" });
+        const nextParams = new URLSearchParams({ tier, billing });
+        navigate(`/enroll/practitioner?${nextParams.toString()}`, { replace: true });
+      }
+    };
+    checkPractitioner();
+  }, [user, navigate, tier, billing, toast]);
+
   // Guard: redirect case study subjects who haven't given consent
   useEffect(() => {
     if (!user) return;
