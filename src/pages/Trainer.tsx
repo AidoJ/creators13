@@ -187,7 +187,7 @@ export default function TrainerDashboard() {
   }
 
   async function handleMarkProfiled(id: string) {
-    const { error } = await supabase.from("case_studies").update({ status: "draft" as any }).eq("id", id);
+    const { error } = await supabase.from("case_studies").update({ status: "draft" as any, profiling_complete: true } as any).eq("id", id);
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
