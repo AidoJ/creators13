@@ -519,14 +519,21 @@ function CaseStudyList({ caseStudies, emptyMessage, expandedCaseStudy, setExpand
                       </>
                     )}
                     {cs.status !== "submitted" && (
-                      <Button size="sm" variant="outline" disabled={!revisionNotes[cs.id]?.trim()} onClick={async () => {
-                        const { error } = await supabase.from("case_studies").update({ reviewer_notes: revisionNotes[cs.id], reviewed_by: userId, reviewed_at: new Date().toISOString() }).eq("id", cs.id);
-                        if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); } else {
-                          toast({ title: "Feedback saved" }); setRevisionNotes(prev => { const n = { ...prev }; delete n[cs.id]; return n; }); await fetchCaseStudies();
-                        }
-                      }}>
-                        <Save className="h-3 w-3 mr-1" />Save Feedback
-                      </Button>
+                      <>
+                        <Button size="sm" variant="outline" disabled={!revisionNotes[cs.id]?.trim()} onClick={async () => {
+                          const { error } = await supabase.from("case_studies").update({ reviewer_notes: revisionNotes[cs.id], reviewed_by: userId, reviewed_at: new Date().toISOString() }).eq("id", cs.id);
+                          if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); } else {
+                            toast({ title: "Feedback saved" }); setRevisionNotes(prev => { const n = { ...prev }; delete n[cs.id]; return n; }); await fetchCaseStudies();
+                          }
+                        }}>
+                          <Save className="h-3 w-3 mr-1" />Save Feedback
+                        </Button>
+                        {cs.status === "profiling_submitted" && onMarkProfiled && (
+                          <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => onMarkProfiled(cs.id)}>
+                            <CheckCircle className="h-3 w-3 mr-1" />Profiled
+                          </Button>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
