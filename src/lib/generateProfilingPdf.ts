@@ -32,7 +32,9 @@ async function loadImage(url: string): Promise<HTMLImageElement> {
   });
 }
 
-type FitMode = "cover" | "contain" | "trim-contain";
+type FitMode = "cover" | "contain" | "subject-cover";
+
+type SubjectBounds = { left: number; right: number; top: number; bottom: number };
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
@@ -48,7 +50,7 @@ function percentile(values: number[], q: number) {
   return values[index];
 }
 
-function detectSubjectBounds(img: HTMLImageElement): { left: number; right: number; top: number; bottom: number } | null {
+function detectSubjectBounds(img: HTMLImageElement): SubjectBounds | null {
   const scale = Math.min(1, 800 / img.naturalHeight);
   const width = Math.max(1, Math.round(img.naturalWidth * scale));
   const height = Math.max(1, Math.round(img.naturalHeight * scale));
@@ -175,10 +177,10 @@ function detectSubjectBounds(img: HTMLImageElement): { left: number; right: numb
   tops.sort((a, b) => a - b);
   bottoms.sort((a, b) => a - b);
 
-  const left = percentile(lefts, 0.08);
-  const right = percentile(rights, 0.92);
-  const top = percentile(tops, 0.08);
-  const bottom = percentile(bottoms, 0.92);
+  const left = percentile(lefts, 0.03);
+  const right = percentile(rights, 0.97);
+  const top = percentile(tops, 0.03);
+  const bottom = percentile(bottoms, 0.97);
 
   return {
     left: left / scale,
@@ -186,6 +188,59 @@ function detectSubjectBounds(img: HTMLImageElement): { left: number; right: numb
     top: top / scale,
     bottom: bottom / scale,
   };
+}
+
+function fitBoundsToAspect(
+  bounds: SubjectBounds,
+  imageWidth: number,
+  imageHeight: number,
+  targetRatio: number
+): { left: number; top: number; width: number; height: number } | null {
+  const boundsWidth = Math.max(1, bounds.right - bounds.left);
+  const boundsHeight = Math.max(1, bounds.bottom - bounds.top);
+
+  let cropWidth = boundsWidth;
+  let cropHeight = boundsHeight;
+
+  if (boundsWidth / boundsHeight > targetRatio) {
+    cropHeight = boundsWidth / targetRatio;
+  } else {
+    cropWidth = boundsHeight * targetRatio;
+  }
+
+  if (cropWidth > imageWidth || cropHeight > imageHeight) return null;
+
+  const left = clamp(bounds.left - (cropWidth - boundsWidth) / 2, 0, imageWidth - cropWidth);
+  const top = clamp(bounds.top - (cropHeight - boundsHeight) / 2, 0, imageHeight - cropHeight);
+
+  return {
+    left,
+    top,
+    width: cropWidth,
+    height: cropHeight,
+  };
+}
+
+function getAspectLockedSubjectCrop(
+  img: HTMLImageElement,
+  boxRatio: number
+): { left: number; top: number; width: number; height: number } | null {
+  const bounds = detectSubjectBounds(img);
+  if (!bounds) return null;
+
+  const spanW = Math.max(1, bounds.right - bounds.left);
+  const spanH = Math.max(1, bounds.bottom - bounds.top);
+  const paddedBounds: SubjectBounds = {
+    left: clamp(bounds.left - Math.max(24, spanW * 0.08), 0, img.naturalWidth),
+    right: clamp(bounds.right + Math.max(24, spanW * 0.08), 0, img.naturalWidth),
+    top: clamp(bounds.top - Math.max(20, spanH * 0.05), 0, img.naturalHeight),
+    bottom: clamp(bounds.bottom + Math.max(28, spanH * 0.04), 0, img.naturalHeight),
+  };
+
+  return (
+    fitBoundsToAspect(paddedBounds, img.naturalWidth, img.naturalHeight, boxRatio) ??
+    fitBoundsToAspect(bounds, img.naturalWidth, img.naturalHeight, boxRatio)
+  );
 }
 
 function drawCroppedImage(
@@ -216,43 +271,36 @@ function drawCroppedImage(
     ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
     const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
     doc.addImage(dataUrl, "JPEG", x, y, boxW, boxH);
-  } else if (fit === "trim-contain") {
-    const bounds = detectSubjectBounds(img);
-    const cropLeft = bounds
-      ? clamp(bounds.left - Math.max(24, (bounds.right - bounds.left) * 0.08), 0, img.naturalWidth)
-      : 0;
-    const cropRight = bounds
-      ? clamp(bounds.right + Math.max(24, (bounds.right - bounds.left) * 0.08), 0, img.naturalWidth)
-      : img.naturalWidth;
-    const cropTop = bounds
-      ? clamp(bounds.top - Math.max(20, (bounds.bottom - bounds.top) * 0.04), 0, img.naturalHeight)
-      : 0;
-    const cropBottom = bounds
-      ? clamp(bounds.bottom + Math.max(28, (bounds.bottom - bounds.top) * 0.03), 0, img.naturalHeight)
-      : img.naturalHeight;
+  } else if (fit === "subject-cover") {
+    const crop = getAspectLockedSubjectCrop(img, boxRatio);
 
-    const cropW = Math.max(1, cropRight - cropLeft);
-    const cropH = Math.max(1, cropBottom - cropTop);
-    const cropRatio = cropW / cropH;
-
-    let drawW: number, drawH: number;
-    if (cropRatio > boxRatio) {
-      drawW = boxW;
-      drawH = boxW / cropRatio;
+    if (crop) {
+      canvas.width = Math.round(boxW * 4);
+      canvas.height = Math.round(boxH * 4);
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, crop.left, crop.top, crop.width, crop.height, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+      doc.addImage(dataUrl, "JPEG", x, y, boxW, boxH);
     } else {
-      drawH = boxH;
-      drawW = boxH * cropRatio;
+      // Safe fallback when the detected subject is wider than the slot ratio.
+      let drawW: number, drawH: number;
+      if (imgRatio > boxRatio) {
+        drawW = boxW;
+        drawH = boxW / imgRatio;
+      } else {
+        drawH = boxH;
+        drawW = boxH * imgRatio;
+      }
+      const offsetX = x + (boxW - drawW) / 2;
+      const offsetY = y + (boxH - drawH) / 2;
+
+      canvas.width = Math.round(drawW * 4);
+      canvas.height = Math.round(drawH * 4);
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+      doc.addImage(dataUrl, "JPEG", offsetX, offsetY, drawW, drawH);
     }
-
-    const offsetX = x + (boxW - drawW) / 2;
-    const offsetY = y;
-
-    canvas.width = Math.round(drawW * 4);
-    canvas.height = Math.round(drawH * 4);
-    const ctx = canvas.getContext("2d")!;
-    ctx.drawImage(img, cropLeft, cropTop, cropW, cropH, 0, 0, canvas.width, canvas.height);
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
-    doc.addImage(dataUrl, "JPEG", offsetX, offsetY, drawW, drawH);
   } else {
     // contain: fit image inside box, centred, with whitespace
     let drawW: number, drawH: number;
@@ -359,12 +407,12 @@ export async function generateProfilingPdf(
     }
   });
 
-  // Draw body photos (right side) — trim background while keeping the full subject visible
+  // Draw body photos (right side) — crop background while keeping the full subject visible at full column size
   const bodyKeys = ["body_front", "body_back", "body_side"];
   bodyKeys.forEach((key, i) => {
     if (images[key]) {
       const x = bodyStartX + i * (bodyPhotoW + gap);
-      drawCroppedImage(doc, images[key], x, topY, bodyPhotoW, bodyPhotoH, "trim-contain");
+      drawCroppedImage(doc, images[key], x, topY, bodyPhotoW, bodyPhotoH, "subject-cover");
     }
   });
 
