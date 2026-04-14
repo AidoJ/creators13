@@ -172,7 +172,7 @@ export async function generateProfilingPdf(
   bodyKeys.forEach((key, i) => {
     if (images[key]) {
       const x = bodyStartX + i * (bodyPhotoW + gap);
-      drawCroppedImage(doc, images[key], x, topY, bodyPhotoW, bodyPhotoH, "contain");
+      drawCroppedImage(doc, images[key], x, topY, bodyPhotoW, bodyPhotoH, "cover");
     }
   });
 
