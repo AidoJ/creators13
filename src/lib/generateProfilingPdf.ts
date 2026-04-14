@@ -39,7 +39,7 @@ function drawCroppedImage(
   y: number,
   boxW: number,
   boxH: number,
-  fit: "cover" | "contain" = "cover"
+  fit: "cover" | "contain" | "contain-top" = "cover"
 ) {
   const canvas = document.createElement("canvas");
   canvas.width = Math.round(boxW * 4);
@@ -62,7 +62,7 @@ function drawCroppedImage(
     const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
     doc.addImage(dataUrl, "JPEG", x, y, boxW, boxH);
   } else {
-    // contain: fit image inside box, centred, with whitespace
+    // contain or contain-top: fit image inside box with whitespace
     let drawW: number, drawH: number;
     if (imgRatio > boxRatio) {
       drawW = boxW;
@@ -72,9 +72,9 @@ function drawCroppedImage(
       drawW = boxH * imgRatio;
     }
     const offsetX = x + (boxW - drawW) / 2;
-    const offsetY = y + (boxH - drawH) / 2;
+    // contain-top anchors to top; contain centres vertically
+    const offsetY = fit === "contain-top" ? y : y + (boxH - drawH) / 2;
 
-    // render at high res then place
     canvas.width = Math.round(drawW * 4);
     canvas.height = Math.round(drawH * 4);
     ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight, 0, 0, canvas.width, canvas.height);
@@ -172,7 +172,7 @@ export async function generateProfilingPdf(
   bodyKeys.forEach((key, i) => {
     if (images[key]) {
       const x = bodyStartX + i * (bodyPhotoW + gap);
-      drawCroppedImage(doc, images[key], x, topY, bodyPhotoW, bodyPhotoH, "cover");
+      drawCroppedImage(doc, images[key], x, topY, bodyPhotoW, bodyPhotoH, "contain-top");
     }
   });
 
