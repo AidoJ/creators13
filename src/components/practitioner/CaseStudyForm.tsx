@@ -50,6 +50,7 @@ const PAGE_LABELS = {
 export default function CaseStudyForm({ clientId, clientName, onSaved, existingCaseStudy }: CaseStudyFormProps) {
   const { user } = useAuth();
   const isEditing = !!existingCaseStudy;
+  const profilingDone = !!existingCaseStudy?.profiling_complete;
   const existingAttachments = (existingCaseStudy?.form_data?.attachments as string[] | undefined) || [];
   const hasPaperAttachments = existingAttachments.length > 0;
   
@@ -524,10 +525,13 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
               {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Send className="h-4 w-4 mr-1" />}
               Submit for Profiling
             </Button>
-            <Button onClick={() => handleSave("submitted")} disabled={saving || (paperFiles.length === 0 && existingAttachments.length === 0)}>
+            <Button onClick={() => handleSave("submitted")} disabled={saving || (paperFiles.length === 0 && existingAttachments.length === 0) || !profilingDone} title={!profilingDone ? "Must be profiled by a trainer first" : undefined}>
               {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
               Submit for Review
             </Button>
+            {!profilingDone && (
+              <p className="text-[10px] text-muted-foreground mt-1">Submit for Profiling first</p>
+            )}
           </div>
         </div>
       )}
@@ -726,15 +730,19 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
               </Button>
               {pageIdx === PAGES.length - 1 && (
                 <div className="flex flex-col items-end gap-1">
-                  <Button onClick={() => handleSave("submitted")} disabled={saving || !canSubmitOnline}>
+                  <Button onClick={() => handleSave("submitted")} disabled={saving || !canSubmitOnline || !profilingDone} title={!profilingDone ? "Must be profiled by a trainer first" : undefined}>
                     {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
                     Submit for Review
                   </Button>
-                  {!canSubmitOnline && (
+                  {!profilingDone ? (
+                    <p className="text-[10px] text-muted-foreground">
+                      Submit for Profiling first
+                    </p>
+                  ) : !canSubmitOnline ? (
                     <p className="text-[10px] text-destructive">
                       Missing: {missingItems.join(", ")}
                     </p>
-                  )}
+                  ) : null}
                 </div>
               )}
             </div>
