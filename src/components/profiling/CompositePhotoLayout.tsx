@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, User, X, ZoomIn, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, User, X, ZoomIn, RefreshCw, ChevronLeft, ChevronRight, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { generateProfilingPdf } from "@/lib/generateProfilingPdf";
 
 const PHOTO_ORDER = [
   { key: "face_front_closed", label: "Face Front" },
