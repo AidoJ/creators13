@@ -32,6 +32,100 @@ async function loadImage(url: string): Promise<HTMLImageElement> {
   });
 }
 
+type FitMode = "cover" | "contain" | "cover-subject";
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function colorDistance(a: [number, number, number], b: [number, number, number]) {
+  return Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]) + Math.abs(a[2] - b[2]);
+}
+
+function detectHorizontalSubjectBounds(img: HTMLImageElement): { left: number; right: number } | null {
+  const scale = Math.min(1, 800 / img.naturalHeight);
+  const width = Math.max(1, Math.round(img.naturalWidth * scale));
+  const height = Math.max(1, Math.round(img.naturalHeight * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  if (!ctx) return null;
+
+  ctx.drawImage(img, 0, 0, width, height);
+  const pixels = ctx.getImageData(0, 0, width, height).data;
+  const edgeSample = Math.max(4, Math.round(width * 0.04));
+  const startY = Math.max(2, Math.round(height * 0.04));
+  const endY = Math.min(height - 2, Math.round(height * 0.94));
+  const stepY = Math.max(1, Math.round(height / 260));
+  const threshold = 42;
+  const minRowSpan = width * 0.1;
+  const lefts: number[] = [];
+  const rights: number[] = [];
+
+  const pixelAt = (x: number, y: number) => {
+    const index = (y * width + x) * 4;
+    return [pixels[index], pixels[index + 1], pixels[index + 2], pixels[index + 3]] as const;
+  };
+
+  const averageEdge = (startX: number, endX: number, y: number): [number, number, number] => {
+    let red = 0;
+    let green = 0;
+    let blue = 0;
+    let count = 0;
+
+    for (let x = startX; x < endX; x++) {
+      const [r, g, b, alpha] = pixelAt(x, y);
+      if (alpha < 10) continue;
+      red += r;
+      green += g;
+      blue += b;
+      count += 1;
+    }
+
+    if (!count) return [0, 0, 0];
+    return [red / count, green / count, blue / count];
+  };
+
+  for (let y = startY; y < endY; y += stepY) {
+    const leftBg = averageEdge(0, edgeSample, y);
+    const rightBg = averageEdge(width - edgeSample, width, y);
+
+    let left = 0;
+    while (left < width / 2) {
+      const [r, g, b, alpha] = pixelAt(left, y);
+      if (alpha > 10 && colorDistance([r, g, b], leftBg) > threshold) break;
+      left += 1;
+    }
+
+    let right = width - 1;
+    while (right > width / 2) {
+      const [r, g, b, alpha] = pixelAt(right, y);
+      if (alpha > 10 && colorDistance([r, g, b], rightBg) > threshold) break;
+      right -= 1;
+    }
+
+    if (right - left > minRowSpan) {
+      lefts.push(left);
+      rights.push(right);
+    }
+  }
+
+  if (!lefts.length || !rights.length) return null;
+
+  lefts.sort((a, b) => a - b);
+  rights.sort((a, b) => a - b);
+
+  const left = lefts[Math.floor(lefts.length * 0.08)];
+  const right = rights[Math.floor(rights.length * 0.92)];
+
+  return {
+    left: left / scale,
+    right: right / scale,
+  };
+}
+
 function drawCroppedImage(
   doc: jsPDF,
   img: HTMLImageElement,
@@ -39,20 +133,42 @@ function drawCroppedImage(
   y: number,
   boxW: number,
   boxH: number,
-  fit: "cover" | "contain" | "cover-width" = "cover"
+  fit: FitMode = "cover"
 ) {
   const canvas = document.createElement("canvas");
   const imgRatio = img.naturalWidth / img.naturalHeight;
   const boxRatio = boxW / boxH;
 
-  if (fit === "cover") {
+  if (fit === "cover" || fit === "cover-subject") {
     canvas.width = Math.round(boxW * 4);
     canvas.height = Math.round(boxH * 4);
     const ctx = canvas.getContext("2d")!;
     let sx = 0, sy = 0, sw = img.naturalWidth, sh = img.naturalHeight;
     if (imgRatio > boxRatio) {
       sw = img.naturalHeight * boxRatio;
-      sx = (img.naturalWidth - sw) / 2;
+      if (fit === "cover-subject") {
+        const bounds = detectHorizontalSubjectBounds(img);
+        if (bounds) {
+          const padding = Math.max(24, (bounds.right - bounds.left) * 0.06);
+          const safeLeft = clamp(bounds.left - padding, 0, img.naturalWidth);
+          const safeRight = clamp(bounds.right + padding, 0, img.naturalWidth);
+          const centered = (safeLeft + safeRight - sw) / 2;
+
+          if (safeRight - safeLeft <= sw) {
+            const minSx = safeRight - sw;
+            const maxSx = safeLeft;
+            sx = clamp(centered, minSx, maxSx);
+          } else {
+            sx = centered;
+          }
+
+          sx = clamp(sx, 0, img.naturalWidth - sw);
+        } else {
+          sx = (img.naturalWidth - sw) / 2;
+        }
+      } else {
+        sx = (img.naturalWidth - sw) / 2;
+      }
     } else {
       sh = img.naturalWidth / boxRatio;
       sy = (img.naturalHeight - sh) / 2;
@@ -60,25 +176,6 @@ function drawCroppedImage(
     ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
     const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
     doc.addImage(dataUrl, "JPEG", x, y, boxW, boxH);
-  } else if (fit === "cover-width") {
-    // Crop sides to fill column width, but show full height from top.
-    // Scale so image width = boxW. Resulting height may exceed boxH — clip at boxH.
-    const drawH = Math.min(boxW / imgRatio, boxH);
-    const drawW = boxW;
-    // Source: crop sides to center horizontally, take full height
-    // If scaled height > boxH, we only take the top portion of the image
-    const visibleFraction = drawH / (boxW / imgRatio); // fraction of image height visible
-    const sh = img.naturalHeight * visibleFraction;
-    const sy = 0; // anchor to top
-    const sw = img.naturalWidth;
-    const sx = 0;
-
-    canvas.width = Math.round(drawW * 4);
-    canvas.height = Math.round(drawH * 4);
-    const ctx = canvas.getContext("2d")!;
-    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
-    doc.addImage(dataUrl, "JPEG", x, y, drawW, drawH);
   } else {
     // contain: fit image inside box, centred, with whitespace
     let drawW: number, drawH: number;
@@ -190,7 +287,7 @@ export async function generateProfilingPdf(
   bodyKeys.forEach((key, i) => {
     if (images[key]) {
       const x = bodyStartX + i * (bodyPhotoW + gap);
-      drawCroppedImage(doc, images[key], x, topY, bodyPhotoW, bodyPhotoH, "cover");
+      drawCroppedImage(doc, images[key], x, topY, bodyPhotoW, bodyPhotoH, "cover-subject");
     }
   });
 
