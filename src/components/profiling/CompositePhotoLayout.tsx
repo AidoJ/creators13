@@ -41,6 +41,7 @@ export default function CompositePhotoLayout({ userId, subjectName, className, s
   const [photos, setPhotos] = useState<Record<string, { thumb: string; full: string } | null>>({});
   const [loading, setLoading] = useState(true);
   const [reclassifying, setReclassifying] = useState(false);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
   const [zoomedPhoto, setZoomedPhoto] = useState<{ url: string; label: string } | null>(null);
   const { toast } = useToast();
 
