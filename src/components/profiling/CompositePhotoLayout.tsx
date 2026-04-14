@@ -78,7 +78,27 @@ export default function CompositePhotoLayout({ userId, subjectName, className, s
 
   useEffect(() => { fetchPhotos(); }, [userId]);
 
-  const handleReclassify = async () => {
+  const handleDownloadPdf = async () => {
+    setGeneratingPdf(true);
+    try {
+      const fullUrlMap: Record<string, string> = {};
+      for (const [key, entry] of Object.entries(photos)) {
+        if (entry?.full) fullUrlMap[key] = entry.full;
+      }
+      const blob = await generateProfilingPdf(fullUrlMap, subjectName);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${(subjectName || "client").replace(/\s+/g, "_")}_photos.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      toast({ title: "PDF generation failed", description: e.message, variant: "destructive" });
+    } finally {
+      setGeneratingPdf(false);
+    }
+  };
+
     setReclassifying(true);
     try {
       const { data, error } = await supabase.functions.invoke("classify-photos", {
