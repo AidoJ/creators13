@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, User, X, ZoomIn, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, User, X, ZoomIn, RefreshCw, ChevronLeft, ChevronRight, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { generateProfilingPdf } from "@/lib/generateProfilingPdf";
 
 const PHOTO_ORDER = [
   { key: "face_front_closed", label: "Face Front" },
@@ -40,6 +41,7 @@ export default function CompositePhotoLayout({ userId, subjectName, className, s
   const [photos, setPhotos] = useState<Record<string, { thumb: string; full: string } | null>>({});
   const [loading, setLoading] = useState(true);
   const [reclassifying, setReclassifying] = useState(false);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
   const [zoomedPhoto, setZoomedPhoto] = useState<{ url: string; label: string } | null>(null);
   const { toast } = useToast();
 
@@ -76,6 +78,26 @@ export default function CompositePhotoLayout({ userId, subjectName, className, s
 
   useEffect(() => { fetchPhotos(); }, [userId]);
 
+  const handleDownloadPdf = async () => {
+    setGeneratingPdf(true);
+    try {
+      const fullUrlMap: Record<string, string> = {};
+      for (const [key, entry] of Object.entries(photos)) {
+        if (entry?.full) fullUrlMap[key] = entry.full;
+      }
+      const blob = await generateProfilingPdf(fullUrlMap, subjectName);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${(subjectName || "client").replace(/\s+/g, "_")}_photos.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      toast({ title: "PDF generation failed", description: e.message, variant: "destructive" });
+    } finally {
+      setGeneratingPdf(false);
+    }
+  };
   const handleReclassify = async () => {
     setReclassifying(true);
     try {
@@ -142,18 +164,32 @@ export default function CompositePhotoLayout({ userId, subjectName, className, s
         {subjectName && (
           <h3 className="text-lg font-display font-bold text-foreground">{subjectName}</h3>
         )}
-        {showReclassify && Object.keys(photos).length > 0 && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-xs h-7 gap-1.5"
-            onClick={handleReclassify}
-            disabled={reclassifying}
-          >
-            {reclassifying ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-            {reclassifying ? "Classifying…" : "AI Re-classify"}
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {Object.keys(photos).length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs h-7 gap-1.5"
+              onClick={handleDownloadPdf}
+              disabled={generatingPdf}
+            >
+              {generatingPdf ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
+              {generatingPdf ? "Generating…" : "Download PDF"}
+            </Button>
+          )}
+          {showReclassify && Object.keys(photos).length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs h-7 gap-1.5"
+              onClick={handleReclassify}
+              disabled={reclassifying}
+            >
+              {reclassifying ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+              {reclassifying ? "Classifying…" : "AI Re-classify"}
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Composite grid matching reference layout:
