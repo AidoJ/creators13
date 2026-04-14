@@ -151,6 +151,7 @@ export type Database = {
           form_data: Json | null
           id: string
           practitioner_id: string
+          profiling_complete: boolean
           profiling_notes: string | null
           reviewed_at: string | null
           reviewed_by: string | null
@@ -168,6 +169,7 @@ export type Database = {
           form_data?: Json | null
           id?: string
           practitioner_id: string
+          profiling_complete?: boolean
           profiling_notes?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -185,6 +187,7 @@ export type Database = {
           form_data?: Json | null
           id?: string
           practitioner_id?: string
+          profiling_complete?: boolean
           profiling_notes?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
