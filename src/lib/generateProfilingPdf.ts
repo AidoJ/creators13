@@ -83,9 +83,18 @@ function drawCroppedImage(
   }
 }
 
+function formatUploadDate(date: Date): string {
+  const day = date.getDate();
+  const suffix = (day > 3 && day < 21) ? "th" : ["th","st","nd","rd"][day % 10] || "th";
+  const month = date.toLocaleString("en-AU", { month: "long" });
+  const year = date.getFullYear();
+  return `${day}${suffix} ${month} ${year}`;
+}
+
 export async function generateProfilingPdf(
   photoMap: Record<string, string>,
-  subjectName?: string
+  subjectName?: string,
+  uploadDate?: Date
 ): Promise<Blob> {
   // Landscape A4: 297 x 210 mm
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
@@ -94,18 +103,19 @@ export async function generateProfilingPdf(
   const margin = 8;
   const gap = 3;
 
-  // Layout matching reference image:
-  // Left half: 3 face photos (row 1), feet + hands (row 2)
-  // Right half: 3 body photos (full height)
+  const hasHeader = !!(subjectName || uploadDate);
   const contentW = pageW - margin * 2;
-  const contentH = pageH - margin * 2 - (subjectName ? 8 : 0);
-  const topY = margin + (subjectName ? 8 : 0);
+  const contentH = pageH - margin * 2 - (hasHeader ? 8 : 0);
+  const topY = margin + (hasHeader ? 8 : 0);
 
-  // Title
-  if (subjectName) {
+  // Title + date
+  if (hasHeader) {
     doc.setFontSize(12);
     doc.setTextColor(60, 60, 60);
-    doc.text(subjectName, margin, margin + 5);
+    const parts: string[] = [];
+    if (subjectName) parts.push(subjectName);
+    if (uploadDate) parts.push(formatUploadDate(uploadDate));
+    doc.text(parts.join("  —  "), margin, margin + 5);
   }
 
   // Right side: 3 body photos take ~55% of width
@@ -131,7 +141,7 @@ export async function generateProfilingPdf(
   }
 
   const images: Record<string, HTMLImageElement> = {};
-  const results = await Promise.allSettled(
+  await Promise.allSettled(
     loadTasks.map(async (t) => {
       const img = await loadImage(t.url);
       images[t.key] = img;
@@ -157,12 +167,12 @@ export async function generateProfilingPdf(
     }
   });
 
-  // Draw body photos (right side)
+  // Draw body photos (right side) — use contain so nothing is cropped
   const bodyKeys = ["body_front", "body_back", "body_side"];
   bodyKeys.forEach((key, i) => {
     if (images[key]) {
       const x = bodyStartX + i * (bodyPhotoW + gap);
-      drawCroppedImage(doc, images[key], x, topY, bodyPhotoW, bodyPhotoH, "cover");
+      drawCroppedImage(doc, images[key], x, topY, bodyPhotoW, bodyPhotoH, "contain");
     }
   });
 

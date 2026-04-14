@@ -39,6 +39,7 @@ interface CompositePhotoLayoutProps {
 
 export default function CompositePhotoLayout({ userId, subjectName, className, showReclassify = false }: CompositePhotoLayoutProps) {
   const [photos, setPhotos] = useState<Record<string, { thumb: string; full: string } | null>>({});
+  const [uploadDate, setUploadDate] = useState<Date | null>(null);
   const [loading, setLoading] = useState(true);
   const [reclassifying, setReclassifying] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
@@ -49,8 +50,9 @@ export default function CompositePhotoLayout({ userId, subjectName, className, s
     setLoading(true);
     const { data, error } = await supabase
       .from("profiling_photos")
-      .select("photo_type, storage_path")
-      .eq("user_id", userId);
+      .select("photo_type, storage_path, uploaded_at")
+      .eq("user_id", userId)
+      .order("uploaded_at", { ascending: true });
 
     if (error || !data) {
       setLoading(false);
@@ -58,6 +60,7 @@ export default function CompositePhotoLayout({ userId, subjectName, className, s
     }
 
     const photoMap: Record<string, { thumb: string; full: string } | null> = {};
+    let earliestDate: string | null = null;
     for (const row of data) {
       const { data: urlData } = supabase.storage
         .from("profiling-photos")
@@ -71,8 +74,12 @@ export default function CompositePhotoLayout({ userId, subjectName, className, s
       } else {
         photoMap[row.photo_type] = null;
       }
+      if (row.uploaded_at && (!earliestDate || row.uploaded_at < earliestDate)) {
+        earliestDate = row.uploaded_at;
+      }
     }
     setPhotos(photoMap);
+    setUploadDate(earliestDate ? new Date(earliestDate) : null);
     setLoading(false);
   };
 
@@ -85,7 +92,7 @@ export default function CompositePhotoLayout({ userId, subjectName, className, s
       for (const [key, entry] of Object.entries(photos)) {
         if (entry?.full) fullUrlMap[key] = entry.full;
       }
-      const blob = await generateProfilingPdf(fullUrlMap, subjectName);
+      const blob = await generateProfilingPdf(fullUrlMap, subjectName, uploadDate || undefined);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
