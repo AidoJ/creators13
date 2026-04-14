@@ -26,6 +26,7 @@ interface CaseStudy {
   body_drawing_path: string | null;
   created_at: string;
   updated_at: string;
+  profiling_complete?: boolean;
 }
 
 interface CaseStudyListProps {
@@ -50,7 +51,7 @@ export default function CaseStudyList({ practitionerId, onEditCaseStudy, filterC
     async function fetch() {
       const { data } = await supabase
         .from("case_studies")
-        .select("id, title, status, subject_user_id, creator_types_identified, description, profiling_notes, reviewer_notes, form_data, body_drawing_path, created_at, updated_at")
+        .select("id, title, status, subject_user_id, creator_types_identified, description, profiling_notes, reviewer_notes, form_data, body_drawing_path, created_at, updated_at, profiling_complete")
         .eq("practitioner_id", practitionerId)
         .order("created_at", { ascending: false });
 
