@@ -98,7 +98,7 @@ export default function CompositePhotoLayout({ userId, subjectName, className, s
       setGeneratingPdf(false);
     }
   };
-
+  const handleReclassify = async () => {
     setReclassifying(true);
     try {
       const { data, error } = await supabase.functions.invoke("classify-photos", {
