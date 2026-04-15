@@ -310,17 +310,17 @@ function drawOverviewPage(
   subjectName?: string,
   uploadDate?: Date
 ) {
-  const pageW = 210;
-  const pageH = 297;
+  const pageW = 297;
+  const pageH = 210;
   const margin = 12;
   const gap = 4;
   const topY = drawHeader(doc, margin, subjectName, uploadDate, "Uploaded via www.13creators.com");
   const contentW = pageW - margin * 2;
   const contentH = pageH - margin - topY;
-  const faceRowH = contentH * 0.42;
-  const detailRowH = contentH - faceRowH - gap;
+
+  // Top row: 3 face photos
+  const faceRowH = contentH * 0.55;
   const facePhotoW = (contentW - gap * 2) / 3;
-  const detailPhotoW = (contentW - gap) / 2;
 
   FACE_KEYS.forEach((key, index) => {
     const image = images[key];
@@ -328,6 +328,10 @@ function drawOverviewPage(
     const x = margin + index * (facePhotoW + gap);
     drawContainedImage(doc, image, x, topY, facePhotoW, faceRowH);
   });
+
+  // Bottom row: feet + hands
+  const detailRowH = contentH - faceRowH - gap;
+  const detailPhotoW = (contentW - gap) / 2;
 
   DETAIL_KEYS.forEach((key, index) => {
     const image = images[key];
@@ -337,26 +341,27 @@ function drawOverviewPage(
   });
 }
 
-function drawBodyPhotoContent(
+function drawBodyPage(
   doc: jsPDF,
-  key: (typeof BODY_KEYS)[number],
-  img: HTMLImageElement,
+  images: Partial<Record<PhotoKey, HTMLImageElement>>,
   subjectName?: string,
   uploadDate?: Date
 ) {
-  const pageW = 210;
-  const pageH = 297;
+  const pageW = 297;
+  const pageH = 210;
   const margin = 12;
-  const topY = drawHeader(doc, margin, subjectName, uploadDate, getPhotoLabel(key));
-  drawContainedImage(
-    doc,
-    img,
-    margin,
-    topY,
-    pageW - margin * 2,
-    pageH - margin - topY,
-    getTrimmedSubjectCrop(img)
-  );
+  const gap = 4;
+  const topY = drawHeader(doc, margin, subjectName, uploadDate, "Uploaded via www.13creators.com");
+  const contentW = pageW - margin * 2;
+  const contentH = pageH - margin - topY;
+  const photoW = (contentW - gap * 2) / 3;
+
+  BODY_KEYS.forEach((key, index) => {
+    const image = images[key];
+    if (!image) return;
+    const x = margin + index * (photoW + gap);
+    drawContainedImage(doc, image, x, topY, photoW, contentH, getTrimmedSubjectCrop(image));
+  });
 }
 
 export async function generateProfilingPdf(
@@ -380,35 +385,16 @@ export async function generateProfilingPdf(
     })
   );
 
-  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-  const hasOverviewPhotos = [...FACE_KEYS, ...DETAIL_KEYS].some((key) => Boolean(images[key]));
-  const bodyKeysWithImages = BODY_KEYS.filter((key) => Boolean(images[key]));
+  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
 
-  if (hasOverviewPhotos || bodyKeysWithImages.length === 0) {
-    drawOverviewPage(doc, images, subjectName, uploadDate);
-  }
+  // Page 1: faces + hands/feet
+  drawOverviewPage(doc, images, subjectName, uploadDate);
 
-  if (!hasOverviewPhotos && bodyKeysWithImages.length > 0) {
-    const [firstBodyKey, ...remainingBodyKeys] = bodyKeysWithImages;
-    const firstBodyImage = images[firstBodyKey];
-
-    if (firstBodyImage) {
-      drawBodyPhotoContent(doc, firstBodyKey, firstBodyImage, subjectName, uploadDate);
-    }
-
-    remainingBodyKeys.forEach((key) => {
-      const image = images[key];
-      if (!image) return;
-      doc.addPage("a4", "portrait");
-      drawBodyPhotoContent(doc, key, image, subjectName, uploadDate);
-    });
-  } else {
-    bodyKeysWithImages.forEach((key) => {
-      const image = images[key];
-      if (!image) return;
-      doc.addPage("a4", "portrait");
-      drawBodyPhotoContent(doc, key, image, subjectName, uploadDate);
-    });
+  // Page 2: body photos
+  const hasBodyPhotos = BODY_KEYS.some((key) => Boolean(images[key]));
+  if (hasBodyPhotos) {
+    doc.addPage("a4", "landscape");
+    drawBodyPage(doc, images, subjectName, uploadDate);
   }
 
   return doc.output("blob");
