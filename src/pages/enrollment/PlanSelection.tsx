@@ -190,11 +190,9 @@ export default function PlanSelection() {
             >
               <img src={landscapeWater} alt="" className="absolute inset-0 w-full h-full object-cover" loading="lazy" decoding="async" />
               <div className="absolute inset-0 bg-card/60" />
-              <div className={cn(
-                "relative w-14 h-14 rounded-full flex items-center justify-center transition-colors",
-                signupPath === "paying" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-              )}>
-                <Users className="h-7 w-7" />
+              <div className="relative w-20 h-20 flex items-center justify-center">
+                <img src={goldRing} alt="" className="absolute inset-0 w-full h-full object-contain" />
+                <Users className="h-8 w-8" style={{ color: "#c5992a" }} />
               </div>
               <div className="relative">
                 <h3 className="text-base font-display font-bold text-foreground mb-1">Paying Client</h3>
