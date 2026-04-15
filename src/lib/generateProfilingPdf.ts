@@ -273,12 +273,34 @@ function buildHeaderText(subjectName?: string, uploadDate?: Date, pageLabel?: st
 }
 
 function drawHeader(doc: jsPDF, margin: number, subjectName?: string, uploadDate?: Date, pageLabel?: string) {
-  const headerText = buildHeaderText(subjectName, uploadDate, pageLabel);
-  if (!headerText) return margin;
+  const parts: string[] = [];
+  if (subjectName) parts.push(subjectName);
+  if (uploadDate) parts.push(formatUploadDate(uploadDate));
+  const prefix = parts.join("  —  ");
 
   doc.setFontSize(12);
   doc.setTextColor(60, 60, 60);
-  doc.text(headerText, margin, margin + 5);
+
+  let cursorX = margin;
+  const y = margin + 5;
+
+  if (prefix) {
+    doc.text(prefix, cursorX, y);
+    cursorX += doc.getTextWidth(prefix);
+  }
+
+  if (pageLabel) {
+    const separator = prefix ? "  —  " : "";
+    if (separator) {
+      doc.text(separator, cursorX, y);
+      cursorX += doc.getTextWidth(separator);
+    }
+    // Render as a clickable link
+    doc.setTextColor(30, 100, 180);
+    doc.textWithLink(pageLabel, cursorX, y, { url: "https://www.13creators.com" });
+    doc.setTextColor(60, 60, 60);
+  }
+
   return margin + 10;
 }
 
@@ -292,7 +314,7 @@ function drawOverviewPage(
   const pageH = 297;
   const margin = 12;
   const gap = 4;
-  const topY = drawHeader(doc, margin, subjectName, uploadDate, "Reference photos");
+  const topY = drawHeader(doc, margin, subjectName, uploadDate, "Uploaded via www.13creators.com");
   const contentW = pageW - margin * 2;
   const contentH = pageH - margin - topY;
   const faceRowH = contentH * 0.42;
