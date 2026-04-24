@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.send-case-study-welcome]
 verify_jwt = false
+
+[functions.admin-upload-photo]
+verify_jwt = false
