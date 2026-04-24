@@ -75,7 +75,7 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
   const p4 = fd.page4 || {};
 
   // Header fields
-  const [title, setTitle] = useState(existingCaseStudy?.title || `${clientName} — Case Study Assessment`);
+  const [title, setTitle] = useState(existingCaseStudy?.title || `Case Study - ${clientName}`);
   const [assessmentDate, setAssessmentDate] = useState(fd.assessment_date || new Date().toISOString().split("T")[0]);
 
   // Page 1: Body Assessment
