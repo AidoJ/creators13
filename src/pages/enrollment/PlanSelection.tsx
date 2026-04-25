@@ -35,6 +35,13 @@ export default function PlanSelection() {
   const urlTier = searchParams.get("tier") as TierKey | null;
   const urlCaseStudy = searchParams.get("case_study") === "true";
   const urlPractitionerCode = searchParams.get("practitioner_code") || "";
+  const urlInviteToken = searchParams.get("invite") || "";
+
+  // Mark the invitation as "link_clicked" the moment the recipient lands here.
+  useEffect(() => {
+    if (!urlInviteToken) return;
+    supabase.rpc("mark_invitation_link_clicked", { _token: urlInviteToken });
+  }, [urlInviteToken]);
 
   // Determine initial path from URL
   const initialPath: SignupPath = urlCaseStudy ? "case_study" : null;
