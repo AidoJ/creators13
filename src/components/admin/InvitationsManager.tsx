@@ -164,15 +164,9 @@ export default function InvitationsManager() {
                 </div>
                 <Badge
                   variant="outline"
-                  className={`text-[10px] capitalize flex-shrink-0 ${
-                    inv.status === "link_clicked"
-                      ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400"
-                      : inv.status === "accepted"
-                      ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
-                      : ""
-                  }`}
+                  className={`text-[10px] capitalize flex-shrink-0 ${STATUS_STYLES[inv.status] || "border-border bg-muted text-muted-foreground"}`}
                 >
-                  {inv.status === "link_clicked" ? "Clicked invitation link" : inv.status}
+                  {STATUS_LABELS[inv.status] || inv.status}
                 </Badge>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
