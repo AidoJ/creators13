@@ -30,7 +30,7 @@ interface Invitation {
 }
 
 const STATUS_LABELS: Record<string, string> = {
-  pending: "Pending",
+  pending: "Invite sent",
   link_clicked: "Clicked invitation link",
   photos_pending: "Photos pending",
   accepted: "Ready for profiling",
