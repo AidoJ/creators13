@@ -66,7 +66,10 @@ export default function InviteClientForm({ practitionerCode }: InviteClientFormP
       .select("*")
       .eq("practitioner_id", user!.id)
       .order("created_at", { ascending: false });
-    if (data) setInvitations(data as Invitation[]);
+    if (data) {
+      const resolved = await resolveInvitationStatuses(data as Invitation[]);
+      setInvitations(resolved);
+    }
   }
 
   function getInviteLink(token: string) {
