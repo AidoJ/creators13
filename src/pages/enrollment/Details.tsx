@@ -129,6 +129,16 @@ export default function Details() {
       return;
     }
 
+    // Mark any pending invitation for this email as accepted now that the user
+    // has a verified login AND a real profile (first/last name + details saved).
+    if (user.email) {
+      await supabase
+        .from("client_invitations")
+        .update({ status: "accepted" })
+        .eq("email", user.email)
+        .eq("status", "pending");
+    }
+
     toast({ title: "Details saved!" });
 
     // If returnTo is set (editing from dashboard), go back there
