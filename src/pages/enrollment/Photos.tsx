@@ -100,7 +100,6 @@ export default function Photos() {
   // Guard: redirect if no practitioner assigned
   useEffect(() => {
     if (!user) return;
-    if (params.get("preview_confirmation") === "true") return;
     const checkPractitioner = async () => {
       const { data: assignment } = await supabase
         .from("client_practitioner")
@@ -115,7 +114,7 @@ export default function Photos() {
       }
     };
     checkPractitioner();
-  }, [user, navigate, tier, billing, toast, params]);
+  }, [user, navigate, tier, billing, toast]);
 
   // Guard: redirect case study subjects who haven't given consent
   useEffect(() => {
