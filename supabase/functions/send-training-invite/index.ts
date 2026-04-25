@@ -325,7 +325,7 @@ serve(async (req) => {
           subject,
           html,
           attachments: [
-            { filename: "training-call.ics", content: icsBase64, content_type: "text/calendar" },
+            { filename: "training-call.ics", content: icsBase64, contentType: "text/calendar" },
           ],
         });
         if (error) {
