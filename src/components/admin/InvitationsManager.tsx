@@ -135,8 +135,17 @@ export default function InvitationsManager() {
                     By: {inv.practitioner_name} · Sent {new Date(inv.created_at).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })} at {new Date(inv.created_at).toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" })}
                   </p>
                 </div>
-                <Badge variant="outline" className="text-[10px] capitalize flex-shrink-0">
-                  {inv.status}
+                <Badge
+                  variant="outline"
+                  className={`text-[10px] capitalize flex-shrink-0 ${
+                    inv.status === "link_clicked"
+                      ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400"
+                      : inv.status === "accepted"
+                      ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+                      : ""
+                  }`}
+                >
+                  {inv.status === "link_clicked" ? "Clicked invitation link" : inv.status}
                 </Badge>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
