@@ -45,18 +45,32 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, serviceRoleKey);
     const resend = new Resend(apiKey);
 
-    // Find invitations created 7+ days ago, still in "pending" status
-    // (pending = link not clicked; once clicked it becomes "link_clicked", and once
-    // photos are uploaded it becomes "photos_pending" or "accepted").
-    // We only target pending so that (a) link not clicked AND (b) no photos uploaded.
+    // Optional backfill mode: ignore the 7-day age filter and reminder_sent_at,
+    // and target ALL invitations whose status is anything other than "ready_for_profiling".
+    let backfill = false;
+    try {
+      if (req.method === "POST") {
+        const body = await req.json().catch(() => ({}));
+        backfill = body?.backfill === true;
+      }
+    } catch (_) {
+      // ignore
+    }
+
+    // Default (cron) rule: invitations >=7 days old, status != ready_for_profiling,
+    // no reminder previously sent. Photo upload is double-checked below.
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
-    const { data: invitations, error: invErr } = await supabase
+    let query = supabase
       .from("client_invitations")
       .select("id, name, email, practitioner_id, invite_token, status, created_at, reminder_sent_at")
-      .eq("status", "pending")
-      .is("reminder_sent_at", null)
-      .lte("created_at", sevenDaysAgo);
+      .neq("status", "ready_for_profiling");
+
+    if (!backfill) {
+      query = query.is("reminder_sent_at", null).lte("created_at", sevenDaysAgo);
+    }
+
+    const { data: invitations, error: invErr } = await query;
 
     if (invErr) throw invErr;
 
