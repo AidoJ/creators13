@@ -109,12 +109,9 @@ serve(async (req) => {
     );
     logStep("Upserted profile enrollment_step");
 
-    // If invitation exists for this email, mark as accepted
-    await supabaseClient.from("client_invitations")
-      .update({ status: "accepted" })
-      .eq("email", userEmail)
-      .eq("status", "pending");
-    logStep("Checked/updated invitations");
+    // NOTE: Invitation status is no longer flipped here. It now flips to "accepted"
+    // only when the user completes the Details step (i.e. they have a real, verified
+    // account with profile information saved). See src/pages/enrollment/Details.tsx.
 
     // FREE TIER: no Stripe needed, return success directly
     if (!priceId || tierValue === "wren") {
