@@ -35,20 +35,6 @@ interface Invitation {
   created_at: string;
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  pending: "Invite sent",
-  link_clicked: "Clicked invitation link",
-  photos_pending: "Photos pending",
-  accepted: "Ready for profiling",
-};
-
-const STATUS_STYLES: Record<string, string> = {
-  pending: "border-slate-400/40 bg-slate-400/10 text-slate-700 dark:text-slate-300",
-  link_clicked: "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400",
-  photos_pending: "border-blue-500/40 bg-blue-500/10 text-blue-700 dark:text-blue-400",
-  accepted: "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
-};
-
 export default function InvitationsManager() {
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [loading, setLoading] = useState(true);
