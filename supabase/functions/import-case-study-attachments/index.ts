@@ -76,7 +76,7 @@ serve(async (req) => {
         results.push({ case_study_id: att.case_study_id, file_name: att.file_name, status: "ok", storage_path: storagePath });
         console.log(`✓ ${att.file_name}`);
       } catch (e) {
-        results.push({ case_study_id: att.case_study_id, file_name: att.file_name, status: "error", error: e.message });
+        results.push({ case_study_id: att.case_study_id, file_name: att.file_name, status: "error", error: e instanceof Error ? e.message : String(e) });
       }
     }
 
@@ -85,7 +85,7 @@ serve(async (req) => {
     });
   } catch (e) {
     console.error("import-case-study-attachments error:", e);
-    return new Response(JSON.stringify({ error: e.message }), {
+    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : String(e) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

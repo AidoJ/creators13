@@ -73,7 +73,7 @@ serve(async (req) => {
         results.push({ user_id: photo.user_id, photo_type: photo.photo_type, status: "ok" });
         console.log(`✓ ${photo.photo_type} for ${photo.user_id}`);
       } catch (e) {
-        results.push({ user_id: photo.user_id, photo_type: photo.photo_type, status: "error", error: e.message });
+        results.push({ user_id: photo.user_id, photo_type: photo.photo_type, status: "error", error: e instanceof Error ? e.message : String(e) });
       }
     }
 
@@ -82,7 +82,7 @@ serve(async (req) => {
     });
   } catch (e) {
     console.error("import-dropbox-photos error:", e);
-    return new Response(JSON.stringify({ error: e.message }), {
+    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : String(e) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

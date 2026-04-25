@@ -76,7 +76,7 @@ serve(async (req) => {
         results.push({ email: u.email, user_id: userId, status: "ok" });
         console.log(`✓ Created ${u.first_name} ${u.last_name} (${u.email})`);
       } catch (e) {
-        results.push({ email: u.email, status: "error", error: e.message });
+        results.push({ email: u.email, status: "error", error: e instanceof Error ? e.message : String(e) });
       }
     }
 
@@ -84,7 +84,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    return new Response(JSON.stringify({ error: e.message }), {
+    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : String(e) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
