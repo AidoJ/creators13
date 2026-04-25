@@ -8,6 +8,11 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { UserPlus, Copy, CheckCircle, Send, Loader2, Mail } from "lucide-react";
 import { getAppOrigin } from "@/lib/appOrigin";
+import {
+  getInvitationStatusLabel,
+  getInvitationStatusClass,
+  resolveInvitationStatuses,
+} from "@/lib/invitationStatus";
 
 interface Invitation {
   id: string;
@@ -61,7 +66,10 @@ export default function InviteClientForm({ practitionerCode }: InviteClientFormP
       .select("*")
       .eq("practitioner_id", user!.id)
       .order("created_at", { ascending: false });
-    if (data) setInvitations(data as Invitation[]);
+    if (data) {
+      const resolved = await resolveInvitationStatuses(data as Invitation[]);
+      setInvitations(resolved);
+    }
   }
 
   function getInviteLink(token: string) {
@@ -224,8 +232,11 @@ export default function InviteClientForm({ practitionerCode }: InviteClientFormP
                       <p className="text-sm font-medium text-foreground truncate">{inv.name}</p>
                       <p className="text-xs text-muted-foreground truncate">{inv.email} {inv.phone ? `• ${inv.phone}` : ""}</p>
                     </div>
-                    <Badge variant="outline" className="text-[10px] capitalize flex-shrink-0">
-                      {inv.status}
+                    <Badge
+                      variant="outline"
+                      className={`text-[10px] flex-shrink-0 ${getInvitationStatusClass(inv.status)}`}
+                    >
+                      {getInvitationStatusLabel(inv.status)}
                     </Badge>
                     <Button
                       variant="ghost"
