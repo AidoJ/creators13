@@ -8,6 +8,11 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { UserPlus, Copy, CheckCircle, Send, Loader2, Mail } from "lucide-react";
 import { getAppOrigin } from "@/lib/appOrigin";
+import {
+  getInvitationStatusLabel,
+  getInvitationStatusClass,
+  resolveInvitationStatuses,
+} from "@/lib/invitationStatus";
 
 interface Invitation {
   id: string;
