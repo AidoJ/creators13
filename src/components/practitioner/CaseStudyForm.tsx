@@ -131,7 +131,9 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
   function navigatePage(dir: 1 | -1) {
     const idx = PAGES.indexOf(page);
     const next = PAGES[idx + dir];
-    if (next) setPage(next);
+    if (!next) return;
+    if (feedbackPagesLocked && (next === "preparation" || next === "reflection")) return;
+    setPage(next);
   }
 
   function handlePaperFileSelect(files: FileList | null) {
