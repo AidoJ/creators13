@@ -51,6 +51,8 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
   const { user } = useAuth();
   const isEditing = !!existingCaseStudy;
   const profilingDone = !!existingCaseStudy?.profiling_complete;
+  const submittedForProfiling = !!existingCaseStudy?.status && existingCaseStudy.status !== "draft";
+  const feedbackPagesLocked = !submittedForProfiling;
   const existingAttachments = (existingCaseStudy?.form_data?.attachments as string[] | undefined) || [];
   const hasPaperAttachments = existingAttachments.length > 0;
   
