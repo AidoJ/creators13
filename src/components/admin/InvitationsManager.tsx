@@ -170,9 +170,9 @@ export default function InvitationsManager() {
                 </div>
                 <Badge
                   variant="outline"
-                  className={`text-[10px] capitalize flex-shrink-0 ${STATUS_STYLES[inv.status] || "border-border bg-muted text-muted-foreground"}`}
+                  className={`text-[10px] flex-shrink-0 ${getInvitationStatusClass(inv.status)}`}
                 >
-                  {STATUS_LABELS[inv.status] || inv.status}
+                  {getInvitationStatusLabel(inv.status)}
                 </Badge>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
