@@ -543,14 +543,27 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
       {/* Online form mode */}
       {mode === "online" && (
         <>
-          <Tabs value={page} onValueChange={v => setPage(v as typeof page)}>
+          <Tabs value={page} onValueChange={v => {
+            const target = v as typeof page;
+            if (feedbackPagesLocked && (target === "preparation" || target === "reflection")) return;
+            setPage(target);
+          }}>
             <TabsList className="w-full grid grid-cols-4">
-              {PAGES.map((p, i) => (
-                <TabsTrigger key={p} value={p} className="text-xs">
-                  <span className="hidden sm:inline">{PAGE_LABELS[p]}</span>
-                  <span className="sm:hidden">Page {i + 1}</span>
-                </TabsTrigger>
-              ))}
+              {PAGES.map((p, i) => {
+                const locked = feedbackPagesLocked && (p === "preparation" || p === "reflection");
+                return (
+                  <TabsTrigger
+                    key={p}
+                    value={p}
+                    disabled={locked}
+                    className="text-xs"
+                    title={locked ? "Submit for Profiling first to unlock" : undefined}
+                  >
+                    <span className="hidden sm:inline">{PAGE_LABELS[p]}{locked ? " 🔒" : ""}</span>
+                    <span className="sm:hidden">Page {i + 1}{locked ? " 🔒" : ""}</span>
+                  </TabsTrigger>
+                );
+              })}
             </TabsList>
 
             {/* === PAGE 1: Body Assessment === */}
