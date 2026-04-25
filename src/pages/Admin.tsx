@@ -209,7 +209,7 @@ export default function AdminDashboard() {
   }
 
   async function handleCaseStudyAction(id: string, action: "approved" | "revision_requested", notes?: string) {
-    const updateData: Record<string, any> = {
+    const updateData: { status: string; reviewed_by?: string; reviewed_at: string; reviewer_notes?: string } = {
       status: action,
       reviewed_by: user?.id,
       reviewed_at: new Date().toISOString(),

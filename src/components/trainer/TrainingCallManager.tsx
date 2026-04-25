@@ -393,7 +393,7 @@ export default function TrainingCallManager({ onCallsChanged }: TrainingCallMana
     const previousScheduledAt = call.scheduled_at;
     const newScheduledAt = new Date(`${newDate}T${newTime}`).toISOString();
 
-    const updatePayload: Record<string, any> = { scheduled_at: newScheduledAt };
+    const updatePayload: { scheduled_at: string; title?: string } = { scheduled_at: newScheduledAt };
     if (call.title.startsWith("[DUPLICATE]")) {
       updatePayload.title = call.title.replace(/^\[DUPLICATE\]\s*/, '');
     }
