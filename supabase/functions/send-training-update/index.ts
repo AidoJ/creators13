@@ -231,7 +231,7 @@ serve(async (req) => {
           html,
           attachments: isCancelled
             ? []
-            : [{ filename: "training-call-updated.ics", content: icsBase64, content_type: "text/calendar" }],
+            : [{ filename: "training-call-updated.ics", content: icsBase64, contentType: "text/calendar" }],
         });
         if (!error) sentCount++;
         else console.error(`Error sending to ${inv.email}:`, error);
