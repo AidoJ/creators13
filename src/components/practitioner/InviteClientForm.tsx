@@ -232,8 +232,11 @@ export default function InviteClientForm({ practitionerCode }: InviteClientFormP
                       <p className="text-sm font-medium text-foreground truncate">{inv.name}</p>
                       <p className="text-xs text-muted-foreground truncate">{inv.email} {inv.phone ? `• ${inv.phone}` : ""}</p>
                     </div>
-                    <Badge variant="outline" className="text-[10px] capitalize flex-shrink-0">
-                      {inv.status}
+                    <Badge
+                      variant="outline"
+                      className={`text-[10px] flex-shrink-0 ${getInvitationStatusClass(inv.status)}`}
+                    >
+                      {getInvitationStatusLabel(inv.status)}
                     </Badge>
                     <Button
                       variant="ghost"
