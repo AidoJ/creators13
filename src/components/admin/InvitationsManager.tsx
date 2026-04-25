@@ -17,6 +17,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  INVITATION_STATUS_LABELS,
+  getInvitationStatusLabel,
+  getInvitationStatusClass,
+  resolveInvitationStatuses,
+} from "@/lib/invitationStatus";
 
 interface Invitation {
   id: string;
