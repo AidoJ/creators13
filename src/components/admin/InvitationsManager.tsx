@@ -29,6 +29,20 @@ interface Invitation {
   created_at: string;
 }
 
+const STATUS_LABELS: Record<string, string> = {
+  pending: "Pending",
+  link_clicked: "Clicked invitation link",
+  photos_pending: "Photos pending",
+  accepted: "Ready for profiling",
+};
+
+const STATUS_STYLES: Record<string, string> = {
+  pending: "border-slate-400/40 bg-slate-400/10 text-slate-700 dark:text-slate-300",
+  link_clicked: "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400",
+  photos_pending: "border-blue-500/40 bg-blue-500/10 text-blue-700 dark:text-blue-400",
+  accepted: "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+};
+
 export default function InvitationsManager() {
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,10 +73,37 @@ export default function InvitationsManager() {
       nameMap[p.user_id] = `${p.first_name || ""} ${p.last_name || ""}`.trim() || "Unknown";
     });
 
-    setInvitations(data.map(d => ({
-      ...d,
-      practitioner_name: nameMap[d.practitioner_id] || "Unknown",
-    })));
+    // Look up invitee user_ids via their email so we can check for uploaded photos.
+    const inviteEmails = [...new Set(data.map(d => d.email.toLowerCase()))];
+    const { data: inviteeProfiles } = inviteEmails.length > 0
+      ? await supabase.from("profiles").select("user_id, email").in("email", inviteEmails)
+      : { data: [] };
+
+    const emailToUserId: Record<string, string> = {};
+    (inviteeProfiles || []).forEach(p => {
+      if (p.email) emailToUserId[p.email.toLowerCase()] = p.user_id;
+    });
+
+    const inviteeUserIds = Object.values(emailToUserId);
+    const { data: photoRows } = inviteeUserIds.length > 0
+      ? await supabase.from("profiling_photos").select("user_id").in("user_id", inviteeUserIds)
+      : { data: [] };
+
+    const userIdsWithPhotos = new Set((photoRows || []).map(r => r.user_id));
+
+    setInvitations(data.map(d => {
+      let status = d.status;
+      // Promote photos_pending → accepted once any photos have been uploaded.
+      if (status === "photos_pending") {
+        const uid = emailToUserId[d.email.toLowerCase()];
+        if (uid && userIdsWithPhotos.has(uid)) status = "accepted";
+      }
+      return {
+        ...d,
+        status,
+        practitioner_name: nameMap[d.practitioner_id] || "Unknown",
+      };
+    }));
     setLoading(false);
   }
 
@@ -106,7 +147,7 @@ export default function InvitationsManager() {
             <SelectContent>
               <SelectItem value="all">All Statuses</SelectItem>
               {statuses.map(s => (
-                <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>
+                <SelectItem key={s} value={s}>{STATUS_LABELS[s] || s}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -137,15 +178,9 @@ export default function InvitationsManager() {
                 </div>
                 <Badge
                   variant="outline"
-                  className={`text-[10px] capitalize flex-shrink-0 ${
-                    inv.status === "link_clicked"
-                      ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400"
-                      : inv.status === "accepted"
-                      ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
-                      : ""
-                  }`}
+                  className={`text-[10px] capitalize flex-shrink-0 ${STATUS_STYLES[inv.status] || "border-border bg-muted text-muted-foreground"}`}
                 >
-                  {inv.status === "link_clicked" ? "Clicked invitation link" : inv.status}
+                  {STATUS_LABELS[inv.status] || inv.status}
                 </Badge>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>

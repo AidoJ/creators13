@@ -129,14 +129,16 @@ export default function Details() {
       return;
     }
 
-    // Mark any pending invitation for this email as accepted now that the user
-    // has a verified login AND a real profile (first/last name + details saved).
+    // Mark any pending invitation for this email as "photos_pending" — they've
+    // verified login and saved their profile, but haven't uploaded photos yet.
+    // The list view will promote it to "accepted" (Ready for profiling) once
+    // photos are uploaded.
     if (user.email) {
       await supabase
         .from("client_invitations")
-        .update({ status: "accepted" })
+        .update({ status: "photos_pending" })
         .eq("email", user.email)
-        .eq("status", "pending");
+        .in("status", ["pending", "link_clicked"]);
     }
 
     toast({ title: "Details saved!" });
