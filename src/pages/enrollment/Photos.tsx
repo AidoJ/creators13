@@ -395,6 +395,13 @@ export default function Photos() {
       <div className="min-h-screen bg-background">
         <EnrollmentHeader currentStep={6} />
         <main className="container mx-auto px-4 py-10 max-w-lg">
+          <div className="mb-6 rounded-2xl border-2 border-primary/40 bg-primary/10 px-5 py-4 text-center">
+            <p className="text-sm font-semibold text-foreground leading-relaxed">
+              📬 Please check your junk folder for an email from{" "}
+              <span className="text-primary">info@13creators.com</span>
+            </p>
+          </div>
+
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-5">
               <CheckCircle className="h-8 w-8 text-primary" />
