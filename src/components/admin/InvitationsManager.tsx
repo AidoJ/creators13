@@ -59,10 +59,37 @@ export default function InvitationsManager() {
       nameMap[p.user_id] = `${p.first_name || ""} ${p.last_name || ""}`.trim() || "Unknown";
     });
 
-    setInvitations(data.map(d => ({
-      ...d,
-      practitioner_name: nameMap[d.practitioner_id] || "Unknown",
-    })));
+    // Look up invitee user_ids via their email so we can check for uploaded photos.
+    const inviteEmails = [...new Set(data.map(d => d.email.toLowerCase()))];
+    const { data: inviteeProfiles } = inviteEmails.length > 0
+      ? await supabase.from("profiles").select("user_id, email").in("email", inviteEmails)
+      : { data: [] };
+
+    const emailToUserId: Record<string, string> = {};
+    (inviteeProfiles || []).forEach(p => {
+      if (p.email) emailToUserId[p.email.toLowerCase()] = p.user_id;
+    });
+
+    const inviteeUserIds = Object.values(emailToUserId);
+    const { data: photoRows } = inviteeUserIds.length > 0
+      ? await supabase.from("profiling_photos").select("user_id").in("user_id", inviteeUserIds)
+      : { data: [] };
+
+    const userIdsWithPhotos = new Set((photoRows || []).map(r => r.user_id));
+
+    setInvitations(data.map(d => {
+      let status = d.status;
+      // Promote photos_pending → accepted once any photos have been uploaded.
+      if (status === "photos_pending") {
+        const uid = emailToUserId[d.email.toLowerCase()];
+        if (uid && userIdsWithPhotos.has(uid)) status = "accepted";
+      }
+      return {
+        ...d,
+        status,
+        practitioner_name: nameMap[d.practitioner_id] || "Unknown",
+      };
+    }));
     setLoading(false);
   }
 
