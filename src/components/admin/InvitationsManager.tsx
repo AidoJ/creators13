@@ -147,7 +147,7 @@ export default function InvitationsManager() {
             <SelectContent>
               <SelectItem value="all">All Statuses</SelectItem>
               {statuses.map(s => (
-                <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>
+                <SelectItem key={s} value={s}>{STATUS_LABELS[s] || s}</SelectItem>
               ))}
             </SelectContent>
           </Select>
