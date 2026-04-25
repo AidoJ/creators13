@@ -62,7 +62,7 @@ serve(async (req) => {
 
   } catch (e) {
     console.error("notify-practitioner-photos error:", e);
-    return new Response(JSON.stringify({ error: e.message }), {
+    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : String(e) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
@@ -138,7 +138,7 @@ async function sendNotifications(
       // Rate limit
       await new Promise(r => setTimeout(r, 600));
     } catch (e) {
-      results.push({ practitioner_id: practitionerId, status: "error", error: e.message });
+      results.push({ practitioner_id: practitionerId, status: "error", error: e instanceof Error ? e.message : String(e) });
     }
   }
 
