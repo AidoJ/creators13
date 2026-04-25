@@ -1228,6 +1228,10 @@ export type Database = {
           last_name: string
         }[]
       }
+      mark_invitation_link_clicked: {
+        Args: { _token: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role:
