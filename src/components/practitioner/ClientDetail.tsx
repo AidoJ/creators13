@@ -132,7 +132,7 @@ export default function ClientDetail({ clientId, onClientNameLoaded }: ClientDet
                     ? "Case Study Complete"
                     : types.length >= 4
                       ? "Creator Blueprint Complete"
-                      : "Partially Complete"
+                      : "Partial Profile"
                   : profile.enrollment_step.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
                 const color = profile.enrollment_step === "complete"
                   ? "bg-green-500/10 text-green-600 border-green-500/20"
