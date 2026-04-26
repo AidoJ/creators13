@@ -94,6 +94,8 @@ export default function PractitionerSelection() {
           .map(r => r.user_id)
       );
 
+      const currentAssignedId = assignment?.practitioner_id ?? null;
+
       const eligible = typedProfiles.filter((p: PractitionerOption) => {
         if (!practitionerUserIds.has(p.user_id)) return false;
         if (p.user_id === user!.id) return false;
@@ -102,6 +104,10 @@ export default function PractitionerSelection() {
         if (practitionerCode) {
           return p.practitioner_code === practitionerCode;
         }
+
+        // Always include the practitioner the client is already assigned to
+        // (covers case-study invitees assigned to non-certified practitioners)
+        if (currentAssignedId && p.user_id === currentAssignedId) return true;
 
         // General public: only certified practitioners
         return p.practitioner_status === "certified";
