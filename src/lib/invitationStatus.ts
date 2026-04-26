@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 export const INVITATION_STATUS_LABELS: Record<string, string> = {
   pending: "Invite sent",
   link_clicked: "Clicked invitation link",
+  account_created: "Account created",
   photos_pending: "Photos pending",
   accepted: "Ready for profiling",
 };
@@ -10,6 +11,7 @@ export const INVITATION_STATUS_LABELS: Record<string, string> = {
 export const INVITATION_STATUS_STYLES: Record<string, string> = {
   pending: "border-slate-400/40 bg-slate-400/10 text-slate-700 dark:text-slate-300",
   link_clicked: "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400",
+  account_created: "border-violet-500/40 bg-violet-500/10 text-violet-700 dark:text-violet-400",
   photos_pending: "border-blue-500/40 bg-blue-500/10 text-blue-700 dark:text-blue-400",
   accepted: "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
 };
