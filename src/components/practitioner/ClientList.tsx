@@ -109,8 +109,12 @@ export default function ClientList({ onSelectClient, selectedClientId }: ClientL
   };
 
   const stepColor = (step: string | null, typeCount: number) => {
-    if (typeCount >= 4 || step === "complete") return "bg-green-500/10 text-green-600 border-green-500/20";
+    // Fully profiled = green
+    if (typeCount >= 4) return "bg-green-500/10 text-green-600 border-green-500/20";
+    // Partial profile (1-3 types) = amber
     if (typeCount >= 1) return "bg-amber-500/10 text-amber-600 border-amber-500/20";
+    // No types yet — fall back to enrollment progress
+    if (step === "complete") return "bg-amber-500/10 text-amber-600 border-amber-500/20";
     if (step === "photos_uploaded" || step === "booking_made") return "bg-amber-500/10 text-amber-600 border-amber-500/20";
     return "bg-muted/50 text-muted-foreground border-border";
   };
