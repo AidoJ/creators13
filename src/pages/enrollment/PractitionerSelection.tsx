@@ -96,15 +96,13 @@ export default function PractitionerSelection() {
 
       const currentAssignedId = assignment?.practitioner_id ?? null;
 
-      // Look up any pending invitation for this user's email and surface
-      // the inviting practitioner even if they're not certified.
+      // Look up invitations for this user's email via a secure backend function
+      // and surface the inviting practitioner even if they're not certified.
       // Covers users who sign in directly instead of clicking the email link.
       const inviterIds = new Set<string>();
       if (user!.email) {
-        const { data: invites } = await supabase
-          .from("client_invitations")
-          .select("practitioner_id")
-          .ilike("email", user!.email);
+        const { data: invites } = await (supabase as any)
+          .rpc("get_inviting_practitioners_for_current_user");
         (invites || []).forEach(i => i.practitioner_id && inviterIds.add(i.practitioner_id));
       }
 
