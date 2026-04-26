@@ -127,18 +127,21 @@ export default function ClientDetail({ clientId, onClientNameLoaded }: ClientDet
               {profile.enrollment_step && (() => {
                 const types = [creatorType?.primary_type, creatorType?.secondary_type, creatorType?.type_3, creatorType?.type_4].filter(Boolean) as string[];
                 const isCaseStudy = !!profile.case_study_consent_at;
-                const label = profile.enrollment_step === "complete"
-                  ? isCaseStudy
-                    ? "Case Study Complete"
-                    : types.length >= 4
-                      ? "Creator Blueprint Complete"
-                      : "Partial Profile"
-                  : profile.enrollment_step.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
-                const color = profile.enrollment_step === "complete"
+                const isComplete = profile.enrollment_step === "complete" || types.length >= 4;
+                const label = types.length >= 4
+                  ? (isCaseStudy ? "Case Study Complete" : "Creator Blueprint Complete")
+                  : types.length >= 1
+                    ? "Partial Profile"
+                    : profile.enrollment_step === "complete"
+                      ? (isCaseStudy ? "Case Study Complete" : "Partial Profile")
+                      : profile.enrollment_step.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
+                const color = isComplete
                   ? "bg-green-500/10 text-green-600 border-green-500/20"
-                  : (profile.enrollment_step === "photos_uploaded" || profile.enrollment_step === "booking_made")
+                  : types.length >= 1
                     ? "bg-amber-500/10 text-amber-600 border-amber-500/20"
-                    : "bg-muted/50 text-muted-foreground border-border";
+                    : (profile.enrollment_step === "photos_uploaded" || profile.enrollment_step === "booking_made")
+                      ? "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                      : "bg-muted/50 text-muted-foreground border-border";
                 return (
                   <Badge variant="outline" className={`text-xs ${color}`}>
                     {label}
