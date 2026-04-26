@@ -168,7 +168,7 @@ export default function ClientList({ onSelectClient, selectedClientId }: ClientL
               </div>
               <p className="text-xs text-muted-foreground truncate mb-1.5">{client.profile?.email || ""}</p>
               <div className="flex flex-wrap gap-1">
-                <Badge variant="outline" className={`text-[10px] ${stepColor(client.profile?.enrollment_step || null)}`}>
+                <Badge variant="outline" className={`text-[10px] ${stepColor(client.profile?.enrollment_step || null, client.creatorTypes.length)}`}>
                   {stepLabel(client.profile?.enrollment_step || null, !!client.profile?.case_study_consent_at, client.creatorTypes.length)}
                 </Badge>
                 {sortCreatorTypes(client.creatorTypes).map(t => {
