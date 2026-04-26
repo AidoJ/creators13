@@ -138,7 +138,7 @@ export default function Details() {
         .from("client_invitations")
         .update({ status: "photos_pending" })
         .eq("email", user.email)
-        .in("status", ["pending", "link_clicked"]);
+        .in("status", ["pending", "link_clicked", "account_created"]);
     }
 
     toast({ title: "Details saved!" });
