@@ -101,6 +101,7 @@ export default function Signup() {
         user_id: userId,
         tier,
         billing,
+        practitioner_code: practitionerCode || null,
         successUrl: `${appOrigin}/enroll/practitioner?tier=${tier}&billing=${billing}&payment=skipped`,
         cancelUrl: `${appOrigin}/enroll/payment?tier=${tier}&billing=${billing}&canceled=true`,
       },
