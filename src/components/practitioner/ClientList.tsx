@@ -108,8 +108,13 @@ export default function ClientList({ onSelectClient, selectedClientId }: ClientL
     return step.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
   };
 
-  const stepColor = (step: string | null) => {
-    if (step === "complete") return "bg-green-500/10 text-green-600 border-green-500/20";
+  const stepColor = (step: string | null, typeCount: number) => {
+    // Fully profiled = green
+    if (typeCount >= 4) return "bg-green-500/10 text-green-600 border-green-500/20";
+    // Partial profile (1-3 types) = amber
+    if (typeCount >= 1) return "bg-amber-500/10 text-amber-600 border-amber-500/20";
+    // No types yet — fall back to enrollment progress
+    if (step === "complete") return "bg-amber-500/10 text-amber-600 border-amber-500/20";
     if (step === "photos_uploaded" || step === "booking_made") return "bg-amber-500/10 text-amber-600 border-amber-500/20";
     return "bg-muted/50 text-muted-foreground border-border";
   };
@@ -163,7 +168,7 @@ export default function ClientList({ onSelectClient, selectedClientId }: ClientL
               </div>
               <p className="text-xs text-muted-foreground truncate mb-1.5">{client.profile?.email || ""}</p>
               <div className="flex flex-wrap gap-1">
-                <Badge variant="outline" className={`text-[10px] ${stepColor(client.profile?.enrollment_step || null)}`}>
+                <Badge variant="outline" className={`text-[10px] ${stepColor(client.profile?.enrollment_step || null, client.creatorTypes.length)}`}>
                   {stepLabel(client.profile?.enrollment_step || null, !!client.profile?.case_study_consent_at, client.creatorTypes.length)}
                 </Badge>
                 {sortCreatorTypes(client.creatorTypes).map(t => {
