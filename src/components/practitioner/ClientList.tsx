@@ -108,8 +108,9 @@ export default function ClientList({ onSelectClient, selectedClientId }: ClientL
     return step.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
   };
 
-  const stepColor = (step: string | null) => {
-    if (step === "complete") return "bg-green-500/10 text-green-600 border-green-500/20";
+  const stepColor = (step: string | null, typeCount: number) => {
+    if (typeCount >= 4 || step === "complete") return "bg-green-500/10 text-green-600 border-green-500/20";
+    if (typeCount >= 1) return "bg-amber-500/10 text-amber-600 border-amber-500/20";
     if (step === "photos_uploaded" || step === "booking_made") return "bg-amber-500/10 text-amber-600 border-amber-500/20";
     return "bg-muted/50 text-muted-foreground border-border";
   };
