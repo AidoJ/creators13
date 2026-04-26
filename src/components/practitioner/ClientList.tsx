@@ -97,9 +97,11 @@ export default function ClientList({ onSelectClient, selectedClientId }: ClientL
   });
 
   const stepLabel = (step: string | null, isCaseStudy: boolean, typeCount: number) => {
+    // Creator type assignment takes precedence over enrollment step
+    if (typeCount >= 4) return isCaseStudy ? "Case Study Complete" : "Creator Blueprint Complete";
+    if (typeCount >= 1) return "Partial Profile";
     if (step === "complete") {
       if (isCaseStudy) return "Case Study Complete";
-      if (typeCount >= 4) return "Creator Blueprint Complete";
       return "Partial Profile";
     }
     if (!step) return "Not Started";
