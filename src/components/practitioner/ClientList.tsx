@@ -100,7 +100,7 @@ export default function ClientList({ onSelectClient, selectedClientId }: ClientL
     if (step === "complete") {
       if (isCaseStudy) return "Case Study Complete";
       if (typeCount >= 4) return "Creator Blueprint Complete";
-      return "Partially Complete";
+      return "Partial Profile";
     }
     if (!step) return "Not Started";
     return step.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
