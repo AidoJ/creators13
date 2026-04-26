@@ -96,6 +96,18 @@ export default function PractitionerSelection() {
 
       const currentAssignedId = assignment?.practitioner_id ?? null;
 
+      // Look up any pending invitation for this user's email and surface
+      // the inviting practitioner even if they're not certified.
+      // Covers users who sign in directly instead of clicking the email link.
+      const inviterIds = new Set<string>();
+      if (user!.email) {
+        const { data: invites } = await supabase
+          .from("client_invitations")
+          .select("practitioner_id")
+          .ilike("email", user!.email);
+        (invites || []).forEach(i => i.practitioner_id && inviterIds.add(i.practitioner_id));
+      }
+
       const eligible = typedProfiles.filter((p: PractitionerOption) => {
         if (!practitionerUserIds.has(p.user_id)) return false;
         if (p.user_id === user!.id) return false;
@@ -109,9 +121,17 @@ export default function PractitionerSelection() {
         // (covers case-study invitees assigned to non-certified practitioners)
         if (currentAssignedId && p.user_id === currentAssignedId) return true;
 
+        // Include any practitioner who has invited this user (by email)
+        if (inviterIds.has(p.user_id)) return true;
+
         // General public: only certified practitioners
         return p.practitioner_status === "certified";
       });
+
+      // If only the inviting practitioner is available, pre-select them
+      if (!currentAssignedId && inviterIds.size > 0 && eligible.length === 1) {
+        setSelectedId(eligible[0].user_id);
+      }
 
       // Auto-select and lock if invite flow matched a practitioner
       if (practitionerCode && eligible.length > 0) {
