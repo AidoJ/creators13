@@ -17,7 +17,6 @@ import Details from "./pages/enrollment/Details";
 import Consent from "./pages/enrollment/Consent";
 import Photos from "./pages/enrollment/Photos";
 import Booking from "./pages/enrollment/Booking";
-import PhotosSubmittedPreview from "./pages/enrollment/PhotosSubmittedPreview";
 import PractitionerDashboard from "./pages/Practitioner";
 import AdminDashboard from "./pages/Admin";
 import TrainerDashboard from "./pages/Trainer";
@@ -48,7 +47,6 @@ const App = () => (
                 <Route path="/enroll/consent" element={<ProtectedRoute><Consent /></ProtectedRoute>} />
                 <Route path="/enroll/photos" element={<ProtectedRoute><Photos /></ProtectedRoute>} />
                 <Route path="/enroll/booking" element={<ProtectedRoute><Booking /></ProtectedRoute>} />
-                <Route path="/enroll/photos-submitted-preview" element={<PhotosSubmittedPreview />} />
                 <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                 <Route path="/practitioner" element={<ProtectedRoute><RoleGuard allowedRoles={["practitioner", "trainee", "trainer"]}><PractitionerDashboard /></RoleGuard></ProtectedRoute>} />
                 <Route path="/trainer" element={<ProtectedRoute><RoleGuard allowedRoles={["trainer"]}><TrainerDashboard /></RoleGuard></ProtectedRoute>} />
