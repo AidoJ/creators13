@@ -75,59 +75,23 @@ export default function PractitionerSelection() {
         setSelectedId(assignment.practitioner_id);
       }
 
-      // Fetch practitioners from safe directory view (no PII exposed)
-      const { data: profiles } = await (supabase
-        .from("practitioner_directory" as any)
-        .select("user_id, first_name, last_name, practitioner_code, practitioner_status") as any);
+      // Fetch eligible practitioners via secure backend logic. This includes:
+      // certified public practitioners, the current assignment, invite match by email,
+      // or an explicit practitioner code from a case-study link.
+      const { data: profiles, error: practitionerError } = await (supabase as any)
+        .rpc("get_enrollment_practitioner_options", { _practitioner_code: practitionerCode || null });
 
-      if (!profiles) { setLoading(false); return; }
-      const typedProfiles = profiles as PractitionerOption[];
-
-      // Get users with practitioner/trainee roles
-      const { data: roles } = await supabase
-        .from("user_roles")
-        .select("user_id, role");
-
-      const practitionerUserIds = new Set(
-        (roles || [])
-          .filter(r => r.role === "practitioner" || r.role === "trainee")
-          .map(r => r.user_id)
-      );
-
-      const currentAssignedId = assignment?.practitioner_id ?? null;
-
-      // Look up invitations for this user's email via a secure backend function
-      // and surface the inviting practitioner even if they're not certified.
-      // Covers users who sign in directly instead of clicking the email link.
-      const inviterIds = new Set<string>();
-      if (user!.email) {
-        const { data: invites } = await (supabase as any)
-          .rpc("get_inviting_practitioners_for_current_user");
-        (invites || []).forEach(i => i.practitioner_id && inviterIds.add(i.practitioner_id));
+      if (practitionerError) {
+        toast({ title: "Failed to load practitioners", description: practitionerError.message, variant: "destructive" });
+        setLoading(false);
+        return;
       }
 
-      const eligible = typedProfiles.filter((p: PractitionerOption) => {
-        if (!practitionerUserIds.has(p.user_id)) return false;
-        if (p.user_id === user!.id) return false;
+      const eligible = (profiles || []) as PractitionerOption[];
+      const currentAssignedId = assignment?.practitioner_id ?? null;
 
-        // If arriving via invite link with a practitioner code, lock to that practitioner
-        if (practitionerCode) {
-          return p.practitioner_code === practitionerCode;
-        }
-
-        // Always include the practitioner the client is already assigned to
-        // (covers case-study invitees assigned to non-certified practitioners)
-        if (currentAssignedId && p.user_id === currentAssignedId) return true;
-
-        // Include any practitioner who has invited this user (by email)
-        if (inviterIds.has(p.user_id)) return true;
-
-        // General public: only certified practitioners
-        return p.practitioner_status === "certified";
-      });
-
-      // If only the inviting practitioner is available, pre-select them
-      if (!currentAssignedId && inviterIds.size > 0 && eligible.length === 1) {
+      // If the backend found only one invited/current practitioner, pre-select them.
+      if (!currentAssignedId && eligible.length === 1) {
         setSelectedId(eligible[0].user_id);
       }
 

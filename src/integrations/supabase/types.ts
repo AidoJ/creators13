@@ -1217,6 +1217,16 @@ export type Database = {
       generate_practitioner_code:
         | { Args: never; Returns: string }
         | { Args: { _first_name?: string }; Returns: string }
+      get_enrollment_practitioner_options: {
+        Args: { _practitioner_code?: string }
+        Returns: {
+          first_name: string
+          last_name: string
+          practitioner_code: string
+          practitioner_status: Database["public"]["Enums"]["practitioner_status"]
+          user_id: string
+        }[]
+      }
       get_inviting_practitioners_for_current_user: {
         Args: never
         Returns: {
