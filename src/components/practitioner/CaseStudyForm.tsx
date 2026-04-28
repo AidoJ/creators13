@@ -216,6 +216,18 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
         setUploadingPaper(false);
       }
       const allAttachments = [...existingAttachments, ...newPaths];
+
+      // Block empty paper saves (no scans attached)
+      if (allAttachments.length === 0) {
+        toast({
+          title: "No paper scans attached",
+          description: "Please upload at least one scanned page before saving a paper-based assessment.",
+          variant: "destructive",
+        });
+        setSaving(false);
+        return;
+      }
+
       const formData = { attachments: allAttachments, assessment_date: assessmentDate, mode: "paper" };
 
       if (isEditing && existingCaseStudy) {
@@ -230,6 +242,24 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
         if (error) toast({ title: "Error saving", description: error.message, variant: "destructive" });
         else { toast({ title: "Case study updated" }); if (status === "submitted") notifyTrainerSubmission(); onSaved?.(); }
       } else {
+        // Safeguard: check for existing case study for this subject from this practitioner
+        const { data: existingStudies } = await supabase
+          .from("case_studies")
+          .select("id, title")
+          .eq("practitioner_id", user.id)
+          .eq("subject_user_id", clientId)
+          .limit(1);
+
+        if (existingStudies && existingStudies.length > 0) {
+          toast({
+            title: "Case study already exists",
+            description: `"${existingStudies[0].title}" already exists for this client. Please edit the existing study instead.`,
+            variant: "destructive",
+          });
+          setSaving(false);
+          return;
+        }
+
         const { error } = await supabase.from("case_studies").insert({
           id: caseStudyId,
           practitioner_id: user.id,
