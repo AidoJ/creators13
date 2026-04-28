@@ -56,9 +56,10 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
   const existingAttachments = (existingCaseStudy?.form_data?.attachments as string[] | undefined) || [];
   const hasPaperAttachments = existingAttachments.length > 0;
   
-  // Assessment mode: "online" for digital form, "paper" for scanned uploads
-  const [mode, setMode] = useState<"online" | "paper">(
-    hasPaperAttachments ? "paper" : (isEditing ? "online" : "")  as "online" | "paper"
+  // Starting preference only — both online fields and paper scans are always available.
+  // Saves merge whatever data is present (page1..4 fields and/or attachments).
+  const [mode, setMode] = useState<"online" | "paper" | "">(
+    isEditing ? (hasPaperAttachments && !((existingCaseStudy?.form_data as any)?.page1) ? "paper" : "online") : ""
   );
   const [page, setPage] = useState<typeof PAGES[number]>("assessment");
   const [saving, setSaving] = useState(false);
@@ -67,6 +68,7 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
   const [paperFiles, setPaperFiles] = useState<File[]>([]);
   const [paperPreviews, setPaperPreviews] = useState<string[]>([]);
   const [uploadingPaper, setUploadingPaper] = useState(false);
+  const [showPaperPanel, setShowPaperPanel] = useState<boolean>(hasPaperAttachments);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Pre-populate from existing case study form_data if editing
@@ -206,115 +208,87 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
     if (!user) return;
     setSaving(true);
 
-    if (mode === "paper") {
-      // Paper upload mode — upload files and save as attachments
-      const caseStudyId = existingCaseStudy?.id || crypto.randomUUID();
-      let newPaths: string[] = [];
-      if (paperFiles.length > 0) {
-        setUploadingPaper(true);
-        newPaths = await uploadPaperAttachments(caseStudyId);
-        setUploadingPaper(false);
-      }
-      const allAttachments = [...existingAttachments, ...newPaths];
+    // 1. Upload any new paper scans (works in either starting mode)
+    const caseStudyId = existingCaseStudy?.id || crypto.randomUUID();
+    let newPaths: string[] = [];
+    if (paperFiles.length > 0) {
+      setUploadingPaper(true);
+      newPaths = await uploadPaperAttachments(caseStudyId);
+      setUploadingPaper(false);
+    }
+    const allAttachments = [...existingAttachments, ...newPaths];
 
-      // Block empty paper saves (no scans attached)
-      if (allAttachments.length === 0) {
-        toast({
-          title: "No paper scans attached",
-          description: "Please upload at least one scanned page before saving a paper-based assessment.",
-          variant: "destructive",
-        });
-        setSaving(false);
-        return;
-      }
+    // 2. Detect whether the user has supplied online form data (any page field filled)
+    const hasOnlineData =
+      !!(headNeck.trim() || chestArms.trim() || bellyWaist.trim() || upperThighs.trim() || legsFeet.trim() ||
+         prominentFace.trim() || prominentBody.trim() || prominentHandsFeet.trim() ||
+         concentrationOfTissue.trim() || otherAilments.trim() ||
+         keyFeaturesCT1.trim() || keyFeaturesCT2.trim() || keyFeaturesOther.trim() || keyQuestions.trim() ||
+         lightBulbMoments.trim() || whatLearned.trim() || whatWentWell.trim() || potentialFollowUp.trim() || otherComments.trim());
 
-      const formData = { attachments: allAttachments, assessment_date: assessmentDate, mode: "paper" };
-
-      if (isEditing && existingCaseStudy) {
-        const { error } = await supabase.from("case_studies").update({
-          title,
-          description: `Paper assessment for ${clientName} on ${assessmentDate}`,
-          creator_types_identified: possibleCreatorTypes,
-          form_data: formData,
-          profiling_notes: "Paper-based assessment — see attached scanned pages.",
-          status,
-        } as any).eq("id", existingCaseStudy.id);
-        if (error) toast({ title: "Error saving", description: error.message, variant: "destructive" });
-        else { toast({ title: "Case study updated" }); if (status === "submitted") notifyTrainerSubmission(); onSaved?.(); }
-      } else {
-        // Safeguard: check for existing case study for this subject from this practitioner
-        const { data: existingStudies } = await supabase
-          .from("case_studies")
-          .select("id, title")
-          .eq("practitioner_id", user.id)
-          .eq("subject_user_id", clientId)
-          .limit(1);
-
-        if (existingStudies && existingStudies.length > 0) {
-          toast({
-            title: "Case study already exists",
-            description: `"${existingStudies[0].title}" already exists for this client. Please edit the existing study instead.`,
-            variant: "destructive",
-          });
-          setSaving(false);
-          return;
-        }
-
-        const { error } = await supabase.from("case_studies").insert({
-          id: caseStudyId,
-          practitioner_id: user.id,
-          subject_user_id: clientId,
-          title,
-          description: `Paper assessment for ${clientName} on ${assessmentDate}`,
-          creator_types_identified: possibleCreatorTypes,
-          form_data: formData,
-          profiling_notes: "Paper-based assessment — see attached scanned pages.",
-          status,
-        } as any);
-        if (error) toast({ title: "Error saving", description: error.message, variant: "destructive" });
-        else { toast({ title: "Case study saved", description: status === "submitted" ? "Submitted for review." : status === "profiling_submitted" ? "Submitted for profiling." : "Saved as draft." }); if (status === "submitted") notifyTrainerSubmission(); onSaved?.(); }
-      }
+    // 3. Block totally empty saves (no online data AND no scans)
+    if (!hasOnlineData && allAttachments.length === 0) {
+      toast({
+        title: "Nothing to save yet",
+        description: "Add online assessment notes and/or upload scanned pages before saving.",
+        variant: "destructive",
+      });
       setSaving(false);
       return;
     }
 
-    // Only upload if bodyDrawing is a new data URL (not a public URL from storage)
+    // 4. Upload body drawing if it's a fresh data URL
     let drawingPath: string | null = existingCaseStudy?.body_drawing_path || null;
     if (bodyDrawing && bodyDrawing.startsWith("data:")) {
       const uploadedPath = await uploadBodyDrawing();
       if (uploadedPath) drawingPath = uploadedPath;
     }
 
-    const formData = {
-      page1: { head_neck: headNeck, chest_arms: chestArms, belly_waist: bellyWaist, upper_thighs_hips_buttocks: upperThighs, legs_feet: legsFeet },
-      page2: { prominent_features_face: prominentFace, prominent_features_body: prominentBody, prominent_features_hands_feet: prominentHandsFeet, concentration_of_tissue: concentrationOfTissue, other_ailments: otherAilments },
-      page3: { key_features_ct1: keyFeaturesCT1, key_features_ct2: keyFeaturesCT2, key_features_other: keyFeaturesOther, key_questions: keyQuestions },
-      page4: { light_bulb_moments: lightBulbMoments, what_learned: whatLearned, what_went_well: whatWentWell, potential_follow_up: potentialFollowUp, other_comments: otherComments },
+    // 5. Build form_data — always include online pages (even if blank) and attachments together
+    const formData: Record<string, unknown> = {
       assessment_date: assessmentDate,
-      mode: "online",
+      mode: hasOnlineData && allAttachments.length > 0 ? "mixed" : (allAttachments.length > 0 ? "paper" : "online"),
+      attachments: allAttachments,
     };
+    if (hasOnlineData) {
+      formData.page1 = { head_neck: headNeck, chest_arms: chestArms, belly_waist: bellyWaist, upper_thighs_hips_buttocks: upperThighs, legs_feet: legsFeet };
+      formData.page2 = { prominent_features_face: prominentFace, prominent_features_body: prominentBody, prominent_features_hands_feet: prominentHandsFeet, concentration_of_tissue: concentrationOfTissue, other_ailments: otherAilments };
+      formData.page3 = { key_features_ct1: keyFeaturesCT1, key_features_ct2: keyFeaturesCT2, key_features_other: keyFeaturesOther, key_questions: keyQuestions };
+      formData.page4 = { light_bulb_moments: lightBulbMoments, what_learned: whatLearned, what_went_well: whatWentWell, potential_follow_up: potentialFollowUp, other_comments: otherComments };
+    }
 
-    const profilingNotes = [
-      "## Body Assessment",
-      `### Head/Neck\n${headNeck || "—"}`,
-      `### Chest/Arms\n${chestArms || "—"}`,
-      `### Belly/Waist\n${bellyWaist || "—"}`,
-      `### Upper Thighs/Hips/Buttocks\n${upperThighs || "—"}`,
-      `### Legs/Feet\n${legsFeet || "—"}`,
-      "",
-      "## Prominent Features",
-      `Face: ${prominentFace || "—"}`,
-      `Body: ${prominentBody || "—"}`,
-      `Hands + Feet: ${prominentHandsFeet || "—"}`,
-      "",
-      `## Concentration of Tissue\n${concentrationOfTissue || "—"}`,
-      `## Other Ailments/Comments\n${otherAilments || "—"}`,
-    ].join("\n\n");
+    // 6. Build profiling_notes summary
+    const profilingNotes = hasOnlineData
+      ? [
+          "## Body Assessment",
+          `### Head/Neck\n${headNeck || "—"}`,
+          `### Chest/Arms\n${chestArms || "—"}`,
+          `### Belly/Waist\n${bellyWaist || "—"}`,
+          `### Upper Thighs/Hips/Buttocks\n${upperThighs || "—"}`,
+          `### Legs/Feet\n${legsFeet || "—"}`,
+          "",
+          "## Prominent Features",
+          `Face: ${prominentFace || "—"}`,
+          `Body: ${prominentBody || "—"}`,
+          `Hands + Feet: ${prominentHandsFeet || "—"}`,
+          "",
+          `## Concentration of Tissue\n${concentrationOfTissue || "—"}`,
+          `## Other Ailments/Comments\n${otherAilments || "—"}`,
+          allAttachments.length > 0 ? `\n## Scanned Pages\n${allAttachments.length} attachment(s) uploaded — see gallery.` : "",
+        ].filter(Boolean).join("\n\n")
+      : "Paper-based assessment — see attached scanned pages.";
 
+    const description = hasOnlineData && allAttachments.length > 0
+      ? `Mixed assessment (online + ${allAttachments.length} scanned page${allAttachments.length === 1 ? "" : "s"}) for ${clientName} on ${assessmentDate}`
+      : allAttachments.length > 0
+        ? `Paper assessment for ${clientName} on ${assessmentDate}`
+        : `Assessment for ${clientName} on ${assessmentDate}`;
+
+    // 7. Insert or update
     if (isEditing && existingCaseStudy) {
       const updatePayload: Record<string, unknown> = {
         title,
-        description: `Assessment for ${clientName} on ${assessmentDate}`,
+        description,
         profiling_notes: profilingNotes,
         creator_types_identified: possibleCreatorTypes,
         form_data: formData,
@@ -331,7 +305,7 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
         onSaved?.();
       }
     } else {
-      // Safeguard: check for existing case study for this subject from this practitioner
+      // Safeguard: prevent duplicate case study for same (practitioner, subject)
       const { data: existingStudies } = await supabase
         .from("case_studies")
         .select("id, title")
@@ -350,10 +324,11 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
       }
 
       const insertPayload: Record<string, unknown> = {
+        id: caseStudyId,
         practitioner_id: user.id,
         subject_user_id: clientId,
         title,
-        description: `Assessment for ${clientName} on ${assessmentDate}`,
+        description,
         profiling_notes: profilingNotes,
         creator_types_identified: possibleCreatorTypes,
         form_data: formData,
@@ -375,21 +350,28 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
 
   const pageIdx = PAGES.indexOf(page);
 
-  // Validation: all fields + drawing required for submit (online mode)
+  // Validation: all online fields + drawing OR at least one scanned page
   const allPage1Filled = !!(headNeck.trim() && chestArms.trim() && bellyWaist.trim() && upperThighs.trim() && legsFeet.trim());
   const allPage2Filled = !!(prominentFace.trim() && prominentBody.trim() && prominentHandsFeet.trim() && concentrationOfTissue.trim() && otherAilments.trim());
   const allPage3Filled = !!(keyFeaturesCT1.trim() && keyFeaturesCT2.trim() && keyFeaturesOther.trim() && keyQuestions.trim());
   const allPage4Filled = !!(lightBulbMoments.trim() && whatLearned.trim() && whatWentWell.trim() && potentialFollowUp.trim());
   const hasDrawing = !!bodyDrawing;
-  const canSubmitOnline = allPage1Filled && allPage2Filled && allPage3Filled && allPage4Filled && hasDrawing;
+  const hasScans = (existingAttachments.length + paperFiles.length) > 0;
+  const onlineComplete = allPage1Filled && allPage2Filled && allPage3Filled && allPage4Filled && hasDrawing;
+  // Can submit for review if either the online assessment is complete OR scans are attached
+  const canSubmitOnline = onlineComplete || hasScans;
+  // Can submit for profiling if (page 1 + drawing) OR scans are attached
+  const canSubmitProfiling = (hasDrawing && allPage1Filled) || hasScans;
 
-  // Build missing items list for tooltip
+  // Build missing items list for tooltip (only relevant when no scans available)
   const missingItems: string[] = [];
-  if (!hasDrawing) missingItems.push("Body drawing");
-  if (!allPage1Filled) missingItems.push("Page 1 fields");
-  if (!allPage2Filled) missingItems.push("Page 2 fields");
-  if (!allPage3Filled) missingItems.push("Page 3 fields");
-  if (!allPage4Filled) missingItems.push("Page 4 fields");
+  if (!hasScans) {
+    if (!hasDrawing) missingItems.push("Body drawing");
+    if (!allPage1Filled) missingItems.push("Page 1 fields");
+    if (!allPage2Filled) missingItems.push("Page 2 fields");
+    if (!allPage3Filled) missingItems.push("Page 3 fields");
+    if (!allPage4Filled) missingItems.push("Page 4 fields");
+  }
 
   return (
     <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
@@ -422,10 +404,11 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
         </div>
       </div>
 
-      {/* Mode selector — shown when mode not yet chosen, OR as a switcher when a mode is active */}
-      {!mode ? (
+      {/* Mode selector — only shown for brand-new case studies before a starting choice is made */}
+      {!mode && !isEditing ? (
         <div className="space-y-3">
-          <p className="text-sm font-medium text-foreground">How would you like to complete this assessment?</p>
+          <p className="text-sm font-medium text-foreground">How would you like to start this assessment?</p>
+          <p className="text-xs text-muted-foreground">You can always combine both — add the online form and scanned pages to the same case study.</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <button
               onClick={() => setMode("online")}
@@ -445,133 +428,78 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
             </button>
           </div>
         </div>
-      ) : (
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span>Mode: <span className="font-semibold text-foreground">{mode === "online" ? "Online Form" : "Paper Upload"}</span></span>
-          {paperFiles.length === 0 && existingAttachments.length === 0 && (
-            <Button variant="ghost" size="sm" className="text-xs h-6 px-2" onClick={() => setMode(mode === "online" ? "paper" : "online")}>
-              Switch to {mode === "online" ? "Paper Upload" : "Online Form"}
-            </Button>
+      ) : null}
+
+      {/* Scanned Pages panel — collapsible. Always available alongside the online form. */}
+      {mode && (
+        <div className="rounded-lg border border-border bg-muted/20">
+          <button
+            type="button"
+            onClick={() => setShowPaperPanel(v => !v)}
+            className="w-full flex items-center justify-between p-3 text-left hover:bg-muted/30 transition-colors rounded-lg"
+          >
+            <span className="text-sm font-medium text-foreground flex items-center gap-2">
+              <FileImage className="h-4 w-4 text-primary" />
+              Scanned Pages
+              {(existingAttachments.length + paperPreviews.length) > 0 && (
+                <span className="text-xs text-muted-foreground">({existingAttachments.length + paperPreviews.length} attached)</span>
+              )}
+            </span>
+            <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showPaperPanel ? "rotate-90" : ""}`} />
+          </button>
+
+          {showPaperPanel && (
+            <div className="p-4 pt-0 space-y-3">
+              <p className="text-xs text-muted-foreground">
+                Take photos or scan handwritten assessment pages and attach them. You can add scans alongside online form notes — they'll all be saved on the same case study.
+              </p>
+
+              {existingAttachments.length > 0 && (
+                <AttachmentGallery attachments={existingAttachments} title="Previously Uploaded Pages" />
+              )}
+
+              {paperPreviews.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {paperPreviews.map((preview, i) => (
+                    <div key={i} className="relative rounded-lg border border-border overflow-hidden aspect-[3/4] bg-muted/30">
+                      <img src={preview} alt={`Page ${i + 1}`} className="w-full h-full object-contain" />
+                      <button
+                        onClick={() => removePaperFile(i)}
+                        className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-0.5 hover:opacity-80"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                      <span className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[10px] px-1.5 py-0.5 text-center">
+                        New — Page {existingAttachments.length + i + 1}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={e => handlePaperFileSelect(e.target.files)}
+              />
+              <Button
+                variant="outline"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full"
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                {paperPreviews.length > 0 || existingAttachments.length > 0 ? "Add More Pages" : "Select Photos / Scans"}
+              </Button>
+            </div>
           )}
         </div>
       )}
 
-      {/* Paper upload mode */}
-      {mode === "paper" && (
-        <div className="space-y-4">
-          <div className="rounded-lg border border-border bg-muted/20 p-4 space-y-3">
-            <p className="text-sm font-medium text-foreground flex items-center gap-2">
-              <FileImage className="h-4 w-4 text-primary" /> Upload Scanned Assessment Pages
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Take photos or scan your handwritten assessment pages and upload them here. You can upload multiple pages.
-            </p>
-
-            {/* Existing attachments */}
-            {existingAttachments.length > 0 && (
-              <AttachmentGallery attachments={existingAttachments} title="Previously Uploaded Pages" />
-            )}
-
-            {/* New file previews */}
-            {paperPreviews.length > 0 && (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {paperPreviews.map((preview, i) => (
-                  <div key={i} className="relative rounded-lg border border-border overflow-hidden aspect-[3/4] bg-muted/30">
-                    <img src={preview} alt={`Page ${i + 1}`} className="w-full h-full object-contain" />
-                    <button
-                      onClick={() => removePaperFile(i)}
-                      className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-0.5 hover:opacity-80"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                    <span className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[10px] px-1.5 py-0.5 text-center">
-                      New — Page {existingAttachments.length + i + 1}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              className="hidden"
-              onChange={e => handlePaperFileSelect(e.target.files)}
-            />
-            <Button
-              variant="outline"
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full"
-            >
-              <Upload className="h-4 w-4 mr-2" />
-              {paperPreviews.length > 0 || existingAttachments.length > 0 ? "Add More Pages" : "Select Photos / Scans"}
-            </Button>
-          </div>
-
-          {/* Creator types selector (also available in paper mode) */}
-          <div>
-            <h3 className="text-sm font-bold text-foreground">POSSIBLE CREATOR TYPES?</h3>
-            <div className="flex gap-2 mt-1">
-              <Select onValueChange={v => addCreatorType(v)}>
-                <SelectTrigger className="flex-1 h-9 text-sm">
-                  <SelectValue placeholder="Select type…" />
-                </SelectTrigger>
-                <SelectContent>
-                  {CREATOR_TYPES.filter(t => !possibleCreatorTypes.includes(t)).map(t => (
-                    <SelectItem key={t} value={t}>{t}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            {possibleCreatorTypes.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-2">
-                {possibleCreatorTypes.map(t => {
-                  const c = getCreatorTypeColor(t);
-                  return (
-                    <button
-                      key={t}
-                      onClick={() => setPossibleCreatorTypes(possibleCreatorTypes.filter(x => x !== t))}
-                      className="text-xs px-2.5 py-1 rounded-full font-medium transition-opacity hover:opacity-80"
-                      style={{ backgroundColor: `${c}22`, color: c, border: `1px solid ${c}55` }}
-                    >
-                      {t} ✕
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* Save buttons for paper mode */}
-          <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
-            <Button variant="outline" onClick={() => handleSave("draft")} disabled={saving}>
-              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />}
-              Save Draft
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => handleSave("profiling_submitted")}
-              disabled={saving || (paperFiles.length === 0 && existingAttachments.length === 0)}
-              className="text-blue-600 border-blue-500/30 hover:bg-blue-500/10"
-            >
-              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Send className="h-4 w-4 mr-1" />}
-              Submit for Profiling
-            </Button>
-            <Button onClick={() => handleSave("submitted")} disabled={saving || (paperFiles.length === 0 && existingAttachments.length === 0) || !profilingDone} title={!profilingDone ? "Must be profiled by a trainer first" : undefined}>
-              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
-              Submit for Review
-            </Button>
-            {!profilingDone && (
-              <p className="text-[10px] text-muted-foreground mt-1">Submit for Profiling first</p>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Online form mode */}
-      {mode === "online" && (
+      {/* Online form — always available once a mode is chosen */}
+      {mode && (
         <>
           <Tabs value={page} onValueChange={v => {
             const target = v as typeof page;
@@ -628,7 +556,7 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
                 <Button
                   variant="outline"
                   onClick={() => handleSave("profiling_submitted")}
-                  disabled={saving || !hasDrawing || !allPage1Filled}
+                  disabled={saving || !canSubmitProfiling}
                   className="text-blue-600 border-blue-500/30 hover:bg-blue-500/10"
                 >
                   {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Send className="h-4 w-4 mr-1" />}
