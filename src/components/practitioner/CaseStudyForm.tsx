@@ -56,9 +56,10 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
   const existingAttachments = (existingCaseStudy?.form_data?.attachments as string[] | undefined) || [];
   const hasPaperAttachments = existingAttachments.length > 0;
   
-  // Assessment mode: "online" for digital form, "paper" for scanned uploads
-  const [mode, setMode] = useState<"online" | "paper">(
-    hasPaperAttachments ? "paper" : (isEditing ? "online" : "")  as "online" | "paper"
+  // Starting preference only — both online fields and paper scans are always available.
+  // Saves merge whatever data is present (page1..4 fields and/or attachments).
+  const [mode, setMode] = useState<"online" | "paper" | "">(
+    isEditing ? (hasPaperAttachments && !((existingCaseStudy?.form_data as any)?.page1) ? "paper" : "online") : ""
   );
   const [page, setPage] = useState<typeof PAGES[number]>("assessment");
   const [saving, setSaving] = useState(false);
