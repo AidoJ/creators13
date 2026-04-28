@@ -207,115 +207,87 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
     if (!user) return;
     setSaving(true);
 
-    if (mode === "paper") {
-      // Paper upload mode — upload files and save as attachments
-      const caseStudyId = existingCaseStudy?.id || crypto.randomUUID();
-      let newPaths: string[] = [];
-      if (paperFiles.length > 0) {
-        setUploadingPaper(true);
-        newPaths = await uploadPaperAttachments(caseStudyId);
-        setUploadingPaper(false);
-      }
-      const allAttachments = [...existingAttachments, ...newPaths];
+    // 1. Upload any new paper scans (works in either starting mode)
+    const caseStudyId = existingCaseStudy?.id || crypto.randomUUID();
+    let newPaths: string[] = [];
+    if (paperFiles.length > 0) {
+      setUploadingPaper(true);
+      newPaths = await uploadPaperAttachments(caseStudyId);
+      setUploadingPaper(false);
+    }
+    const allAttachments = [...existingAttachments, ...newPaths];
 
-      // Block empty paper saves (no scans attached)
-      if (allAttachments.length === 0) {
-        toast({
-          title: "No paper scans attached",
-          description: "Please upload at least one scanned page before saving a paper-based assessment.",
-          variant: "destructive",
-        });
-        setSaving(false);
-        return;
-      }
+    // 2. Detect whether the user has supplied online form data (any page field filled)
+    const hasOnlineData =
+      !!(headNeck.trim() || chestArms.trim() || bellyWaist.trim() || upperThighs.trim() || legsFeet.trim() ||
+         prominentFace.trim() || prominentBody.trim() || prominentHandsFeet.trim() ||
+         concentrationOfTissue.trim() || otherAilments.trim() ||
+         keyFeaturesCT1.trim() || keyFeaturesCT2.trim() || keyFeaturesOther.trim() || keyQuestions.trim() ||
+         lightBulbMoments.trim() || whatLearned.trim() || whatWentWell.trim() || potentialFollowUp.trim() || otherComments.trim());
 
-      const formData = { attachments: allAttachments, assessment_date: assessmentDate, mode: "paper" };
-
-      if (isEditing && existingCaseStudy) {
-        const { error } = await supabase.from("case_studies").update({
-          title,
-          description: `Paper assessment for ${clientName} on ${assessmentDate}`,
-          creator_types_identified: possibleCreatorTypes,
-          form_data: formData,
-          profiling_notes: "Paper-based assessment — see attached scanned pages.",
-          status,
-        } as any).eq("id", existingCaseStudy.id);
-        if (error) toast({ title: "Error saving", description: error.message, variant: "destructive" });
-        else { toast({ title: "Case study updated" }); if (status === "submitted") notifyTrainerSubmission(); onSaved?.(); }
-      } else {
-        // Safeguard: check for existing case study for this subject from this practitioner
-        const { data: existingStudies } = await supabase
-          .from("case_studies")
-          .select("id, title")
-          .eq("practitioner_id", user.id)
-          .eq("subject_user_id", clientId)
-          .limit(1);
-
-        if (existingStudies && existingStudies.length > 0) {
-          toast({
-            title: "Case study already exists",
-            description: `"${existingStudies[0].title}" already exists for this client. Please edit the existing study instead.`,
-            variant: "destructive",
-          });
-          setSaving(false);
-          return;
-        }
-
-        const { error } = await supabase.from("case_studies").insert({
-          id: caseStudyId,
-          practitioner_id: user.id,
-          subject_user_id: clientId,
-          title,
-          description: `Paper assessment for ${clientName} on ${assessmentDate}`,
-          creator_types_identified: possibleCreatorTypes,
-          form_data: formData,
-          profiling_notes: "Paper-based assessment — see attached scanned pages.",
-          status,
-        } as any);
-        if (error) toast({ title: "Error saving", description: error.message, variant: "destructive" });
-        else { toast({ title: "Case study saved", description: status === "submitted" ? "Submitted for review." : status === "profiling_submitted" ? "Submitted for profiling." : "Saved as draft." }); if (status === "submitted") notifyTrainerSubmission(); onSaved?.(); }
-      }
+    // 3. Block totally empty saves (no online data AND no scans)
+    if (!hasOnlineData && allAttachments.length === 0) {
+      toast({
+        title: "Nothing to save yet",
+        description: "Add online assessment notes and/or upload scanned pages before saving.",
+        variant: "destructive",
+      });
       setSaving(false);
       return;
     }
 
-    // Only upload if bodyDrawing is a new data URL (not a public URL from storage)
+    // 4. Upload body drawing if it's a fresh data URL
     let drawingPath: string | null = existingCaseStudy?.body_drawing_path || null;
     if (bodyDrawing && bodyDrawing.startsWith("data:")) {
       const uploadedPath = await uploadBodyDrawing();
       if (uploadedPath) drawingPath = uploadedPath;
     }
 
-    const formData = {
-      page1: { head_neck: headNeck, chest_arms: chestArms, belly_waist: bellyWaist, upper_thighs_hips_buttocks: upperThighs, legs_feet: legsFeet },
-      page2: { prominent_features_face: prominentFace, prominent_features_body: prominentBody, prominent_features_hands_feet: prominentHandsFeet, concentration_of_tissue: concentrationOfTissue, other_ailments: otherAilments },
-      page3: { key_features_ct1: keyFeaturesCT1, key_features_ct2: keyFeaturesCT2, key_features_other: keyFeaturesOther, key_questions: keyQuestions },
-      page4: { light_bulb_moments: lightBulbMoments, what_learned: whatLearned, what_went_well: whatWentWell, potential_follow_up: potentialFollowUp, other_comments: otherComments },
+    // 5. Build form_data — always include online pages (even if blank) and attachments together
+    const formData: Record<string, unknown> = {
       assessment_date: assessmentDate,
-      mode: "online",
+      mode: hasOnlineData && allAttachments.length > 0 ? "mixed" : (allAttachments.length > 0 ? "paper" : "online"),
+      attachments: allAttachments,
     };
+    if (hasOnlineData) {
+      formData.page1 = { head_neck: headNeck, chest_arms: chestArms, belly_waist: bellyWaist, upper_thighs_hips_buttocks: upperThighs, legs_feet: legsFeet };
+      formData.page2 = { prominent_features_face: prominentFace, prominent_features_body: prominentBody, prominent_features_hands_feet: prominentHandsFeet, concentration_of_tissue: concentrationOfTissue, other_ailments: otherAilments };
+      formData.page3 = { key_features_ct1: keyFeaturesCT1, key_features_ct2: keyFeaturesCT2, key_features_other: keyFeaturesOther, key_questions: keyQuestions };
+      formData.page4 = { light_bulb_moments: lightBulbMoments, what_learned: whatLearned, what_went_well: whatWentWell, potential_follow_up: potentialFollowUp, other_comments: otherComments };
+    }
 
-    const profilingNotes = [
-      "## Body Assessment",
-      `### Head/Neck\n${headNeck || "—"}`,
-      `### Chest/Arms\n${chestArms || "—"}`,
-      `### Belly/Waist\n${bellyWaist || "—"}`,
-      `### Upper Thighs/Hips/Buttocks\n${upperThighs || "—"}`,
-      `### Legs/Feet\n${legsFeet || "—"}`,
-      "",
-      "## Prominent Features",
-      `Face: ${prominentFace || "—"}`,
-      `Body: ${prominentBody || "—"}`,
-      `Hands + Feet: ${prominentHandsFeet || "—"}`,
-      "",
-      `## Concentration of Tissue\n${concentrationOfTissue || "—"}`,
-      `## Other Ailments/Comments\n${otherAilments || "—"}`,
-    ].join("\n\n");
+    // 6. Build profiling_notes summary
+    const profilingNotes = hasOnlineData
+      ? [
+          "## Body Assessment",
+          `### Head/Neck\n${headNeck || "—"}`,
+          `### Chest/Arms\n${chestArms || "—"}`,
+          `### Belly/Waist\n${bellyWaist || "—"}`,
+          `### Upper Thighs/Hips/Buttocks\n${upperThighs || "—"}`,
+          `### Legs/Feet\n${legsFeet || "—"}`,
+          "",
+          "## Prominent Features",
+          `Face: ${prominentFace || "—"}`,
+          `Body: ${prominentBody || "—"}`,
+          `Hands + Feet: ${prominentHandsFeet || "—"}`,
+          "",
+          `## Concentration of Tissue\n${concentrationOfTissue || "—"}`,
+          `## Other Ailments/Comments\n${otherAilments || "—"}`,
+          allAttachments.length > 0 ? `\n## Scanned Pages\n${allAttachments.length} attachment(s) uploaded — see gallery.` : "",
+        ].filter(Boolean).join("\n\n")
+      : "Paper-based assessment — see attached scanned pages.";
 
+    const description = hasOnlineData && allAttachments.length > 0
+      ? `Mixed assessment (online + ${allAttachments.length} scanned page${allAttachments.length === 1 ? "" : "s"}) for ${clientName} on ${assessmentDate}`
+      : allAttachments.length > 0
+        ? `Paper assessment for ${clientName} on ${assessmentDate}`
+        : `Assessment for ${clientName} on ${assessmentDate}`;
+
+    // 7. Insert or update
     if (isEditing && existingCaseStudy) {
       const updatePayload: Record<string, unknown> = {
         title,
-        description: `Assessment for ${clientName} on ${assessmentDate}`,
+        description,
         profiling_notes: profilingNotes,
         creator_types_identified: possibleCreatorTypes,
         form_data: formData,
@@ -332,7 +304,7 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
         onSaved?.();
       }
     } else {
-      // Safeguard: check for existing case study for this subject from this practitioner
+      // Safeguard: prevent duplicate case study for same (practitioner, subject)
       const { data: existingStudies } = await supabase
         .from("case_studies")
         .select("id, title")
@@ -351,10 +323,11 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
       }
 
       const insertPayload: Record<string, unknown> = {
+        id: caseStudyId,
         practitioner_id: user.id,
         subject_user_id: clientId,
         title,
-        description: `Assessment for ${clientName} on ${assessmentDate}`,
+        description,
         profiling_notes: profilingNotes,
         creator_types_identified: possibleCreatorTypes,
         form_data: formData,
