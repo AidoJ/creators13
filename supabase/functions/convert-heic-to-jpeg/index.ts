@@ -1,9 +1,6 @@
-// One-off admin tool: convert specified profiling_photos HEIC files to JPEG
-// using Lovable AI Gateway is overkill — instead use a pure JS HEIC decoder.
+// Admin helper: issue signed download URLs + signed upload tokens
+// for a user's HEIC profiling photos so a sandbox script can convert them.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import decode from "https://esm.sh/heic-decode@2.0.0";
-// @ts-ignore - jpeg-js for encoding
-import * as jpegJs from "https://esm.sh/jpeg-js@0.4.4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,82 +16,67 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    const { user_id } = await req.json();
-    if (!user_id) {
-      return new Response(JSON.stringify({ error: "user_id required" }), {
-        status: 400,
+    const body = await req.json().catch(() => ({}));
+    const { user_id, action, photo_id, new_path } = body;
+
+    if (action === "list") {
+      const { data: photos, error } = await supabase
+        .from("profiling_photos")
+        .select("id, photo_type, storage_path")
+        .eq("user_id", user_id)
+        .ilike("storage_path", "%.HEIC");
+      if (error) throw error;
+
+      const items = await Promise.all((photos ?? []).map(async (p) => {
+        const { data: signed } = await supabase.storage
+          .from("profiling-photos")
+          .createSignedUrl(p.storage_path, 3600);
+        const newPath = p.storage_path.replace(/\.HEIC$/i, ".jpeg");
+        const { data: uploadToken } = await supabase.storage
+          .from("profiling-photos")
+          .createSignedUploadUrl(newPath);
+        return {
+          id: p.id,
+          photo_type: p.photo_type,
+          old_path: p.storage_path,
+          new_path: newPath,
+          download_url: signed?.signedUrl,
+          upload_url: uploadToken?.signedUrl,
+          upload_token: uploadToken?.token,
+        };
+      }));
+
+      return new Response(JSON.stringify({ items }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Find HEIC photos for this user. Optionally limit to one photo_type.
-    const { photo_type } = await (async () => {
-      try { const b = await req.clone().json(); return { photo_type: b.photo_type }; } catch { return { photo_type: null }; }
-    })();
+    if (action === "finalize") {
+      // Update DB row to point to new path, delete old HEIC
+      const { data: photo } = await supabase
+        .from("profiling_photos").select("storage_path").eq("id", photo_id).single();
+      const oldPath = photo?.storage_path;
 
-    let q = supabase
-      .from("profiling_photos")
-      .select("id, photo_type, storage_path")
-      .eq("user_id", user_id)
-      .ilike("storage_path", "%.HEIC");
-    if (photo_type) q = q.eq("photo_type", photo_type);
-    const { data: photos, error: queryErr } = await q;
+      const { error: updErr } = await supabase
+        .from("profiling_photos")
+        .update({ storage_path: new_path })
+        .eq("id", photo_id);
+      if (updErr) throw updErr;
 
-    if (queryErr) throw queryErr;
-
-    const results: any[] = [];
-
-    for (const p of photos ?? []) {
-      try {
-        // Download HEIC
-        const { data: blob, error: dlErr } = await supabase.storage
-          .from("profiling-photos")
-          .download(p.storage_path);
-        if (dlErr) throw dlErr;
-
-        const heicBuf = new Uint8Array(await blob.arrayBuffer());
-
-        // Decode HEIC -> raw RGBA
-        const decoded = await decode({ buffer: heicBuf });
-        const { width, height, data } = decoded;
-
-        // Encode as JPEG
-        const jpeg = jpegJs.encode({ data: new Uint8Array(data), width, height }, 88);
-
-        const newPath = p.storage_path.replace(/\.HEIC$/i, ".jpeg");
-
-        // Upload JPEG
-        const { error: upErr } = await supabase.storage
-          .from("profiling-photos")
-          .upload(newPath, jpeg.data, {
-            contentType: "image/jpeg",
-            upsert: true,
-          });
-        if (upErr) throw upErr;
-
-        // Update DB row
-        const { error: updErr } = await supabase
-          .from("profiling_photos")
-          .update({ storage_path: newPath })
-          .eq("id", p.id);
-        if (updErr) throw updErr;
-
-        // Delete old HEIC
-        await supabase.storage.from("profiling-photos").remove([p.storage_path]);
-
-        results.push({ photo_type: p.photo_type, old: p.storage_path, new: newPath, status: "converted" });
-      } catch (e) {
-        results.push({ photo_type: p.photo_type, path: p.storage_path, status: "error", error: String(e) });
+      if (oldPath && oldPath !== new_path) {
+        await supabase.storage.from("profiling-photos").remove([oldPath]);
       }
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    return new Response(JSON.stringify({ count: results.length, results }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    return new Response(JSON.stringify({ error: "unknown action" }), {
+      status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     return new Response(JSON.stringify({ error: String(e) }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
