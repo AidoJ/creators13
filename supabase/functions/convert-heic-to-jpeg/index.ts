@@ -27,12 +27,18 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Find HEIC photos for this user
-    const { data: photos, error: queryErr } = await supabase
+    // Find HEIC photos for this user. Optionally limit to one photo_type.
+    const { photo_type } = await (async () => {
+      try { const b = await req.clone().json(); return { photo_type: b.photo_type }; } catch { return { photo_type: null }; }
+    })();
+
+    let q = supabase
       .from("profiling_photos")
       .select("id, photo_type, storage_path")
       .eq("user_id", user_id)
       .ilike("storage_path", "%.HEIC");
+    if (photo_type) q = q.eq("photo_type", photo_type);
+    const { data: photos, error: queryErr } = await q;
 
     if (queryErr) throw queryErr;
 
