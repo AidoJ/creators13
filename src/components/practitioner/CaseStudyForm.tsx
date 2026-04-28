@@ -138,12 +138,43 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
     setPage(next);
   }
 
-  function handlePaperFileSelect(files: FileList | null) {
+  async function handlePaperFileSelect(files: FileList | null) {
     if (!files) return;
-    const newFiles = Array.from(files).filter(f => f.type.startsWith("image/"));
-    const newPreviews = newFiles.map(f => URL.createObjectURL(f));
-    setPaperFiles(prev => [...prev, ...newFiles]);
-    setPaperPreviews(prev => [...prev, ...newPreviews]);
+    const incoming = Array.from(files);
+    const accepted: File[] = [];
+    const previews: string[] = [];
+
+    for (const raw of incoming) {
+      const name = raw.name || "";
+      const lower = name.toLowerCase();
+      const isHeic = /\.(heic|heif)$/i.test(name) || raw.type === "image/heic" || raw.type === "image/heif";
+      const isPdf = raw.type === "application/pdf" || lower.endsWith(".pdf");
+      const isImage = raw.type.startsWith("image/") || /\.(jpe?g|png|webp|gif|bmp|tiff?)$/i.test(name);
+
+      if (!isHeic && !isPdf && !isImage) {
+        toast({ title: "Unsupported file", description: `${name || "File"} can't be uploaded. Use a photo, scan, or PDF.`, variant: "destructive" });
+        continue;
+      }
+
+      try {
+        let file = raw;
+        if (isHeic) {
+          const heic2any = (await import("heic2any")).default;
+          const converted = await heic2any({ blob: raw, toType: "image/jpeg", quality: 0.9 });
+          const blob = Array.isArray(converted) ? converted[0] : converted;
+          file = new File([blob], name.replace(/\.(heic|heif)$/i, ".jpg"), { type: "image/jpeg" });
+        }
+        accepted.push(file);
+        previews.push(isPdf ? "" : URL.createObjectURL(file));
+      } catch (err) {
+        console.error("File processing error:", err);
+        toast({ title: "Couldn't process file", description: name, variant: "destructive" });
+      }
+    }
+
+    if (accepted.length === 0) return;
+    setPaperFiles(prev => [...prev, ...accepted]);
+    setPaperPreviews(prev => [...prev, ...previews]);
   }
 
   function removePaperFile(idx: number) {
