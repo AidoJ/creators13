@@ -423,122 +423,76 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
         </div>
       ) : null}
 
-      {/* Paper upload mode */}
-      {mode === "paper" && (
-        <div className="space-y-4">
-          <div className="rounded-lg border border-border bg-muted/20 p-4 space-y-3">
-            <p className="text-sm font-medium text-foreground flex items-center gap-2">
-              <FileImage className="h-4 w-4 text-primary" /> Upload Scanned Assessment Pages
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Take photos or scan your handwritten assessment pages and upload them here. You can upload multiple pages.
-            </p>
+      {/* Scanned Pages panel — collapsible. Always available alongside the online form. */}
+      {mode && (
+        <div className="rounded-lg border border-border bg-muted/20">
+          <button
+            type="button"
+            onClick={() => setShowPaperPanel(v => !v)}
+            className="w-full flex items-center justify-between p-3 text-left hover:bg-muted/30 transition-colors rounded-lg"
+          >
+            <span className="text-sm font-medium text-foreground flex items-center gap-2">
+              <FileImage className="h-4 w-4 text-primary" />
+              Scanned Pages
+              {(existingAttachments.length + paperPreviews.length) > 0 && (
+                <span className="text-xs text-muted-foreground">({existingAttachments.length + paperPreviews.length} attached)</span>
+              )}
+            </span>
+            <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showPaperPanel ? "rotate-90" : ""}`} />
+          </button>
 
-            {/* Existing attachments */}
-            {existingAttachments.length > 0 && (
-              <AttachmentGallery attachments={existingAttachments} title="Previously Uploaded Pages" />
-            )}
+          {showPaperPanel && (
+            <div className="p-4 pt-0 space-y-3">
+              <p className="text-xs text-muted-foreground">
+                Take photos or scan handwritten assessment pages and attach them. You can add scans alongside online form notes — they'll all be saved on the same case study.
+              </p>
 
-            {/* New file previews */}
-            {paperPreviews.length > 0 && (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {paperPreviews.map((preview, i) => (
-                  <div key={i} className="relative rounded-lg border border-border overflow-hidden aspect-[3/4] bg-muted/30">
-                    <img src={preview} alt={`Page ${i + 1}`} className="w-full h-full object-contain" />
-                    <button
-                      onClick={() => removePaperFile(i)}
-                      className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-0.5 hover:opacity-80"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                    <span className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[10px] px-1.5 py-0.5 text-center">
-                      New — Page {existingAttachments.length + i + 1}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
+              {existingAttachments.length > 0 && (
+                <AttachmentGallery attachments={existingAttachments} title="Previously Uploaded Pages" />
+              )}
 
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              className="hidden"
-              onChange={e => handlePaperFileSelect(e.target.files)}
-            />
-            <Button
-              variant="outline"
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full"
-            >
-              <Upload className="h-4 w-4 mr-2" />
-              {paperPreviews.length > 0 || existingAttachments.length > 0 ? "Add More Pages" : "Select Photos / Scans"}
-            </Button>
-          </div>
-
-          {/* Creator types selector (also available in paper mode) */}
-          <div>
-            <h3 className="text-sm font-bold text-foreground">POSSIBLE CREATOR TYPES?</h3>
-            <div className="flex gap-2 mt-1">
-              <Select onValueChange={v => addCreatorType(v)}>
-                <SelectTrigger className="flex-1 h-9 text-sm">
-                  <SelectValue placeholder="Select type…" />
-                </SelectTrigger>
-                <SelectContent>
-                  {CREATOR_TYPES.filter(t => !possibleCreatorTypes.includes(t)).map(t => (
-                    <SelectItem key={t} value={t}>{t}</SelectItem>
+              {paperPreviews.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {paperPreviews.map((preview, i) => (
+                    <div key={i} className="relative rounded-lg border border-border overflow-hidden aspect-[3/4] bg-muted/30">
+                      <img src={preview} alt={`Page ${i + 1}`} className="w-full h-full object-contain" />
+                      <button
+                        onClick={() => removePaperFile(i)}
+                        className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-0.5 hover:opacity-80"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                      <span className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[10px] px-1.5 py-0.5 text-center">
+                        New — Page {existingAttachments.length + i + 1}
+                      </span>
+                    </div>
                   ))}
-                </SelectContent>
-              </Select>
-            </div>
-            {possibleCreatorTypes.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-2">
-                {possibleCreatorTypes.map(t => {
-                  const c = getCreatorTypeColor(t);
-                  return (
-                    <button
-                      key={t}
-                      onClick={() => setPossibleCreatorTypes(possibleCreatorTypes.filter(x => x !== t))}
-                      className="text-xs px-2.5 py-1 rounded-full font-medium transition-opacity hover:opacity-80"
-                      style={{ backgroundColor: `${c}22`, color: c, border: `1px solid ${c}55` }}
-                    >
-                      {t} ✕
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+                </div>
+              )}
 
-          {/* Save buttons for paper mode */}
-          <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
-            <Button variant="outline" onClick={() => handleSave("draft")} disabled={saving}>
-              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />}
-              Save Draft
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => handleSave("profiling_submitted")}
-              disabled={saving || (paperFiles.length === 0 && existingAttachments.length === 0)}
-              className="text-blue-600 border-blue-500/30 hover:bg-blue-500/10"
-            >
-              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Send className="h-4 w-4 mr-1" />}
-              Submit for Profiling
-            </Button>
-            <Button onClick={() => handleSave("submitted")} disabled={saving || (paperFiles.length === 0 && existingAttachments.length === 0) || !profilingDone} title={!profilingDone ? "Must be profiled by a trainer first" : undefined}>
-              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
-              Submit for Review
-            </Button>
-            {!profilingDone && (
-              <p className="text-[10px] text-muted-foreground mt-1">Submit for Profiling first</p>
-            )}
-          </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={e => handlePaperFileSelect(e.target.files)}
+              />
+              <Button
+                variant="outline"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full"
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                {paperPreviews.length > 0 || existingAttachments.length > 0 ? "Add More Pages" : "Select Photos / Scans"}
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Online form mode */}
-      {mode === "online" && (
+      {/* Online form — always available once a mode is chosen */}
+      {mode && (
         <>
           <Tabs value={page} onValueChange={v => {
             const target = v as typeof page;
