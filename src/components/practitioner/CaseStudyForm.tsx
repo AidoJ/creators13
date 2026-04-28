@@ -216,6 +216,18 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
         setUploadingPaper(false);
       }
       const allAttachments = [...existingAttachments, ...newPaths];
+
+      // Block empty paper saves (no scans attached)
+      if (allAttachments.length === 0) {
+        toast({
+          title: "No paper scans attached",
+          description: "Please upload at least one scanned page before saving a paper-based assessment.",
+          variant: "destructive",
+        });
+        setSaving(false);
+        return;
+      }
+
       const formData = { attachments: allAttachments, assessment_date: assessmentDate, mode: "paper" };
 
       if (isEditing && existingCaseStudy) {
