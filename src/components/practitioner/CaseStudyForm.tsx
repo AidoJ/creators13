@@ -350,21 +350,28 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
 
   const pageIdx = PAGES.indexOf(page);
 
-  // Validation: all fields + drawing required for submit (online mode)
+  // Validation: all online fields + drawing OR at least one scanned page
   const allPage1Filled = !!(headNeck.trim() && chestArms.trim() && bellyWaist.trim() && upperThighs.trim() && legsFeet.trim());
   const allPage2Filled = !!(prominentFace.trim() && prominentBody.trim() && prominentHandsFeet.trim() && concentrationOfTissue.trim() && otherAilments.trim());
   const allPage3Filled = !!(keyFeaturesCT1.trim() && keyFeaturesCT2.trim() && keyFeaturesOther.trim() && keyQuestions.trim());
   const allPage4Filled = !!(lightBulbMoments.trim() && whatLearned.trim() && whatWentWell.trim() && potentialFollowUp.trim());
   const hasDrawing = !!bodyDrawing;
-  const canSubmitOnline = allPage1Filled && allPage2Filled && allPage3Filled && allPage4Filled && hasDrawing;
+  const hasScans = (existingAttachments.length + paperFiles.length) > 0;
+  const onlineComplete = allPage1Filled && allPage2Filled && allPage3Filled && allPage4Filled && hasDrawing;
+  // Can submit for review if either the online assessment is complete OR scans are attached
+  const canSubmitOnline = onlineComplete || hasScans;
+  // Can submit for profiling if (page 1 + drawing) OR scans are attached
+  const canSubmitProfiling = (hasDrawing && allPage1Filled) || hasScans;
 
-  // Build missing items list for tooltip
+  // Build missing items list for tooltip (only relevant when no scans available)
   const missingItems: string[] = [];
-  if (!hasDrawing) missingItems.push("Body drawing");
-  if (!allPage1Filled) missingItems.push("Page 1 fields");
-  if (!allPage2Filled) missingItems.push("Page 2 fields");
-  if (!allPage3Filled) missingItems.push("Page 3 fields");
-  if (!allPage4Filled) missingItems.push("Page 4 fields");
+  if (!hasScans) {
+    if (!hasDrawing) missingItems.push("Body drawing");
+    if (!allPage1Filled) missingItems.push("Page 1 fields");
+    if (!allPage2Filled) missingItems.push("Page 2 fields");
+    if (!allPage3Filled) missingItems.push("Page 3 fields");
+    if (!allPage4Filled) missingItems.push("Page 4 fields");
+  }
 
   return (
     <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
