@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Paperclip, ZoomIn } from "lucide-react";
+import { Paperclip, ZoomIn, FileText } from "lucide-react";
 
 interface AttachmentGalleryProps {
   attachments: string[];
@@ -30,19 +30,27 @@ export default function AttachmentGallery({ attachments, title = "Paper Assessme
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {attachments.map((path, i) => {
           const url = getPublicUrl(path);
+          const isPdf = /\.pdf$/i.test(path);
           return (
             <button
               key={i}
-              onClick={() => setZoomedUrl(url)}
+              onClick={() => isPdf ? window.open(url, "_blank", "noopener,noreferrer") : setZoomedUrl(url)}
               className="group relative rounded-lg border border-border overflow-hidden bg-muted/30 aspect-[3/4] hover:ring-2 hover:ring-primary/40 transition-all"
             >
-              <img
-                src={url}
-                alt={getLabel(path)}
-                className="w-full h-full object-contain"
-                loading="lazy"
-                decoding="async"
-              />
+              {isPdf ? (
+                <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground p-2 text-center">
+                  <FileText className="h-10 w-10 mb-1" />
+                  <span className="text-[10px] uppercase tracking-wide">PDF</span>
+                </div>
+              ) : (
+                <img
+                  src={url}
+                  alt={getLabel(path)}
+                  className="w-full h-full object-contain"
+                  loading="lazy"
+                  decoding="async"
+                />
+              )}
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                 <ZoomIn className="h-5 w-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>

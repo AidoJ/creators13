@@ -138,12 +138,43 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
     setPage(next);
   }
 
-  function handlePaperFileSelect(files: FileList | null) {
+  async function handlePaperFileSelect(files: FileList | null) {
     if (!files) return;
-    const newFiles = Array.from(files).filter(f => f.type.startsWith("image/"));
-    const newPreviews = newFiles.map(f => URL.createObjectURL(f));
-    setPaperFiles(prev => [...prev, ...newFiles]);
-    setPaperPreviews(prev => [...prev, ...newPreviews]);
+    const incoming = Array.from(files);
+    const accepted: File[] = [];
+    const previews: string[] = [];
+
+    for (const raw of incoming) {
+      const name = raw.name || "";
+      const lower = name.toLowerCase();
+      const isHeic = /\.(heic|heif)$/i.test(name) || raw.type === "image/heic" || raw.type === "image/heif";
+      const isPdf = raw.type === "application/pdf" || lower.endsWith(".pdf");
+      const isImage = raw.type.startsWith("image/") || /\.(jpe?g|png|webp|gif|bmp|tiff?)$/i.test(name);
+
+      if (!isHeic && !isPdf && !isImage) {
+        toast({ title: "Unsupported file", description: `${name || "File"} can't be uploaded. Use a photo, scan, or PDF.`, variant: "destructive" });
+        continue;
+      }
+
+      try {
+        let file = raw;
+        if (isHeic) {
+          const heic2any = (await import("heic2any")).default;
+          const converted = await heic2any({ blob: raw, toType: "image/jpeg", quality: 0.9 });
+          const blob = Array.isArray(converted) ? converted[0] : converted;
+          file = new File([blob], name.replace(/\.(heic|heif)$/i, ".jpg"), { type: "image/jpeg" });
+        }
+        accepted.push(file);
+        previews.push(isPdf ? "" : URL.createObjectURL(file));
+      } catch (err) {
+        console.error("File processing error:", err);
+        toast({ title: "Couldn't process file", description: name, variant: "destructive" });
+      }
+    }
+
+    if (accepted.length === 0) return;
+    setPaperFiles(prev => [...prev, ...accepted]);
+    setPaperPreviews(prev => [...prev, ...previews]);
   }
 
   function removePaperFile(idx: number) {
@@ -158,11 +189,12 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
     const paths: string[] = [];
     for (let i = 0; i < paperFiles.length; i++) {
       const file = paperFiles[i];
-      const ext = file.name.split(".").pop() || "jpg";
+      const nameExt = file.name.split(".").pop()?.toLowerCase();
+      const ext = nameExt || (file.type === "application/pdf" ? "pdf" : "jpg");
       const path = `case-study-attachments/${caseStudyId}/${clientName.replace(/\s+/g, "_")}_page_${existingAttachments.length + i + 1}.${ext}`;
       const { error } = await supabase.storage
         .from("profiling-photos")
-        .upload(path, file, { contentType: file.type, upsert: true });
+        .upload(path, file, { contentType: file.type || (ext === "pdf" ? "application/pdf" : "image/jpeg"), upsert: true });
       if (error) {
         console.error("Upload error:", error);
         toast({ title: "Upload failed", description: `${file.name}: ${error.message}`, variant: "destructive" });
@@ -460,27 +492,38 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
 
               {paperPreviews.length > 0 && (
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {paperPreviews.map((preview, i) => (
-                    <div key={i} className="relative rounded-lg border border-border overflow-hidden aspect-[3/4] bg-muted/30">
-                      <img src={preview} alt={`Page ${i + 1}`} className="w-full h-full object-contain" />
-                      <button
-                        onClick={() => removePaperFile(i)}
-                        className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-0.5 hover:opacity-80"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </button>
-                      <span className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[10px] px-1.5 py-0.5 text-center">
-                        New — Page {existingAttachments.length + i + 1}
-                      </span>
-                    </div>
-                  ))}
+                  {paperPreviews.map((preview, i) => {
+                    const file = paperFiles[i];
+                    const isPdf = file?.type === "application/pdf" || /\.pdf$/i.test(file?.name || "");
+                    return (
+                      <div key={i} className="relative rounded-lg border border-border overflow-hidden aspect-[3/4] bg-muted/30">
+                        {isPdf ? (
+                          <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground p-2 text-center">
+                            <Upload className="h-8 w-8 mb-1" />
+                            <span className="text-[10px] break-all">{file?.name || "PDF"}</span>
+                          </div>
+                        ) : (
+                          <img src={preview} alt={`Page ${i + 1}`} className="w-full h-full object-contain" />
+                        )}
+                        <button
+                          onClick={() => removePaperFile(i)}
+                          className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-0.5 hover:opacity-80"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                        <span className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[10px] px-1.5 py-0.5 text-center">
+                          New — Page {existingAttachments.length + i + 1}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/*,application/pdf,.pdf,.heic,.heif"
                 multiple
                 className="hidden"
                 onChange={e => handlePaperFileSelect(e.target.files)}
