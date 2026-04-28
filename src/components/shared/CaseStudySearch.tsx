@@ -107,12 +107,13 @@ export default function CaseStudySearch({ onSelectCaseStudy, onSelectClient }: C
           });
         }
 
-        if (c.subject_user_id) seenClients.add(c.subject_user_id);
+        if (c.subject_user_id) {
+          // no-op: we now always show client entries too
+        }
       });
 
-      // Match clients from all accessible profiles (includes those without case studies)
+      // Match clients from all accessible profiles (always include alongside case studies)
       allProfiles.forEach(p => {
-        if (seenClients.has(p.user_id)) return; // already shown via case study
         const name = `${p.first_name || ""} ${p.last_name || ""}`.trim().toLowerCase();
         const email = (p.email || "").toLowerCase();
         if (name.includes(q) || email.includes(q)) {
