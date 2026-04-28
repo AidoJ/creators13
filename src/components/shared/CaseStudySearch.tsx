@@ -87,7 +87,6 @@ export default function CaseStudySearch({ onSelectCaseStudy, onSelectClient }: C
       });
 
       // Match case studies
-      const seenClients = new Set<string>();
       cases.forEach(c => {
         const subjectName = c.subject_user_id ? nameMap[c.subject_user_id] || "Unknown" : "—";
         const practName = nameMap[c.practitioner_id] || "Unknown";
