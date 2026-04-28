@@ -556,7 +556,7 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
                 <Button
                   variant="outline"
                   onClick={() => handleSave("profiling_submitted")}
-                  disabled={saving || !hasDrawing || !allPage1Filled}
+                  disabled={saving || !canSubmitProfiling}
                   className="text-blue-600 border-blue-500/30 hover:bg-blue-500/10"
                 >
                   {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Send className="h-4 w-4 mr-1" />}
