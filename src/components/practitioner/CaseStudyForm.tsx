@@ -189,11 +189,12 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
     const paths: string[] = [];
     for (let i = 0; i < paperFiles.length; i++) {
       const file = paperFiles[i];
-      const ext = file.name.split(".").pop() || "jpg";
+      const nameExt = file.name.split(".").pop()?.toLowerCase();
+      const ext = nameExt || (file.type === "application/pdf" ? "pdf" : "jpg");
       const path = `case-study-attachments/${caseStudyId}/${clientName.replace(/\s+/g, "_")}_page_${existingAttachments.length + i + 1}.${ext}`;
       const { error } = await supabase.storage
         .from("profiling-photos")
-        .upload(path, file, { contentType: file.type, upsert: true });
+        .upload(path, file, { contentType: file.type || (ext === "pdf" ? "application/pdf" : "image/jpeg"), upsert: true });
       if (error) {
         console.error("Upload error:", error);
         toast({ title: "Upload failed", description: `${file.name}: ${error.message}`, variant: "destructive" });
