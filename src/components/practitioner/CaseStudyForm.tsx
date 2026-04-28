@@ -492,27 +492,38 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
 
               {paperPreviews.length > 0 && (
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {paperPreviews.map((preview, i) => (
-                    <div key={i} className="relative rounded-lg border border-border overflow-hidden aspect-[3/4] bg-muted/30">
-                      <img src={preview} alt={`Page ${i + 1}`} className="w-full h-full object-contain" />
-                      <button
-                        onClick={() => removePaperFile(i)}
-                        className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-0.5 hover:opacity-80"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </button>
-                      <span className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[10px] px-1.5 py-0.5 text-center">
-                        New — Page {existingAttachments.length + i + 1}
-                      </span>
-                    </div>
-                  ))}
+                  {paperPreviews.map((preview, i) => {
+                    const file = paperFiles[i];
+                    const isPdf = file?.type === "application/pdf" || /\.pdf$/i.test(file?.name || "");
+                    return (
+                      <div key={i} className="relative rounded-lg border border-border overflow-hidden aspect-[3/4] bg-muted/30">
+                        {isPdf ? (
+                          <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground p-2 text-center">
+                            <Upload className="h-8 w-8 mb-1" />
+                            <span className="text-[10px] break-all">{file?.name || "PDF"}</span>
+                          </div>
+                        ) : (
+                          <img src={preview} alt={`Page ${i + 1}`} className="w-full h-full object-contain" />
+                        )}
+                        <button
+                          onClick={() => removePaperFile(i)}
+                          className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-0.5 hover:opacity-80"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                        <span className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[10px] px-1.5 py-0.5 text-center">
+                          New — Page {existingAttachments.length + i + 1}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/*,application/pdf,.pdf,.heic,.heif"
                 multiple
                 className="hidden"
                 onChange={e => handlePaperFileSelect(e.target.files)}
