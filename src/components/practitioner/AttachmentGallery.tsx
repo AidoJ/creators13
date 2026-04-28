@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Paperclip, ZoomIn } from "lucide-react";
+import { Paperclip, ZoomIn, FileText } from "lucide-react";
 
 interface AttachmentGalleryProps {
   attachments: string[];
