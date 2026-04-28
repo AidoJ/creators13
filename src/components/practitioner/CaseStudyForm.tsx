@@ -396,10 +396,11 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
         </div>
       </div>
 
-      {/* Mode selector — shown when mode not yet chosen, OR as a switcher when a mode is active */}
-      {!mode ? (
+      {/* Mode selector — only shown for brand-new case studies before a starting choice is made */}
+      {!mode && !isEditing ? (
         <div className="space-y-3">
-          <p className="text-sm font-medium text-foreground">How would you like to complete this assessment?</p>
+          <p className="text-sm font-medium text-foreground">How would you like to start this assessment?</p>
+          <p className="text-xs text-muted-foreground">You can always combine both — add the online form and scanned pages to the same case study.</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <button
               onClick={() => setMode("online")}
@@ -419,16 +420,7 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
             </button>
           </div>
         </div>
-      ) : (
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span>Mode: <span className="font-semibold text-foreground">{mode === "online" ? "Online Form" : "Paper Upload"}</span></span>
-          {paperFiles.length === 0 && existingAttachments.length === 0 && (
-            <Button variant="ghost" size="sm" className="text-xs h-6 px-2" onClick={() => setMode(mode === "online" ? "paper" : "online")}>
-              Switch to {mode === "online" ? "Paper Upload" : "Online Form"}
-            </Button>
-          )}
-        </div>
-      )}
+      ) : null}
 
       {/* Paper upload mode */}
       {mode === "paper" && (
