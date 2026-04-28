@@ -68,6 +68,7 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
   const [paperFiles, setPaperFiles] = useState<File[]>([]);
   const [paperPreviews, setPaperPreviews] = useState<string[]>([]);
   const [uploadingPaper, setUploadingPaper] = useState(false);
+  const [showPaperPanel, setShowPaperPanel] = useState<boolean>(hasPaperAttachments);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Pre-populate from existing case study form_data if editing
