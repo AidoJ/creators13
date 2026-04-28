@@ -195,12 +195,28 @@ export default function Photos() {
     }
   }, []);
 
-  const handleFileSelect = (file: File) => {
+  const handleFileSelect = async (rawFile: File) => {
     const key = slot.key;
-    if (!file.type.startsWith("image/")) {
+    const isHeic = /\.(heic|heif)$/i.test(rawFile.name) || rawFile.type === "image/heic" || rawFile.type === "image/heif";
+    let file = rawFile;
+
+    if (isHeic) {
+      try {
+        setPhotos((p) => ({ ...p, [key]: { ...p[key], error: null, reviewing: true } }));
+        const heic2any = (await import("heic2any")).default;
+        const converted = await heic2any({ blob: rawFile, toType: "image/jpeg", quality: 0.9 });
+        const blob = Array.isArray(converted) ? converted[0] : converted;
+        const newName = rawFile.name.replace(/\.(heic|heif)$/i, ".jpg");
+        file = new File([blob], newName, { type: "image/jpeg" });
+      } catch (e) {
+        setPhotos((p) => ({ ...p, [key]: { ...p[key], reviewing: false, error: "Could not convert HEIC photo. Please save as JPEG and try again." } }));
+        return;
+      }
+    } else if (!rawFile.type.startsWith("image/")) {
       setPhotos((p) => ({ ...p, [key]: { ...p[key], error: "Please select an image file" } }));
       return;
     }
+
     if (file.size > 10 * 1024 * 1024) {
       setPhotos((p) => ({ ...p, [key]: { ...p[key], error: "Image must be under 10MB" } }));
       return;
