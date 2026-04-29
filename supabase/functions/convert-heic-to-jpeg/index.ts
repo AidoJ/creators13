@@ -17,7 +17,17 @@ Deno.serve(async (req) => {
     );
 
     const body = await req.json().catch(() => ({}));
-    const { user_id, action, photo_id, new_path } = body;
+    const { user_id, action, photo_id, new_path, storage_path } = body;
+
+    if (action === "signed_upload") {
+      const { data: uploadToken, error } = await supabase.storage
+        .from("profiling-photos")
+        .createSignedUploadUrl(storage_path, { upsert: true });
+      if (error) throw error;
+      return new Response(JSON.stringify({ upload_url: uploadToken?.signedUrl, token: uploadToken?.token, path: storage_path }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     if (action === "list") {
       const { data: photos, error } = await supabase
