@@ -134,7 +134,6 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
     const idx = PAGES.indexOf(page);
     const next = PAGES[idx + dir];
     if (!next) return;
-    if (feedbackPagesLocked && (next === "preparation" || next === "reflection")) return;
     setPage(next);
   }
 
@@ -544,27 +543,18 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
       {/* Online form — always available once a mode is chosen */}
       {mode && (
         <>
-          <Tabs value={page} onValueChange={v => {
-            const target = v as typeof page;
-            if (feedbackPagesLocked && (target === "preparation" || target === "reflection")) return;
-            setPage(target);
-          }}>
+          <Tabs value={page} onValueChange={v => setPage(v as typeof page)}>
             <TabsList className="w-full grid grid-cols-4">
-              {PAGES.map((p, i) => {
-                const locked = feedbackPagesLocked && (p === "preparation" || p === "reflection");
-                return (
-                  <TabsTrigger
-                    key={p}
-                    value={p}
-                    disabled={locked}
-                    className="text-xs"
-                    title={locked ? "Submit for Profiling first to unlock" : undefined}
-                  >
-                    <span className="hidden sm:inline">{PAGE_LABELS[p]}{locked ? " 🔒" : ""}</span>
-                    <span className="sm:hidden">Page {i + 1}{locked ? " 🔒" : ""}</span>
-                  </TabsTrigger>
-                );
-              })}
+              {PAGES.map((p, i) => (
+                <TabsTrigger
+                  key={p}
+                  value={p}
+                  className="text-xs"
+                >
+                  <span className="hidden sm:inline">{PAGE_LABELS[p]}</span>
+                  <span className="sm:hidden">Page {i + 1}</span>
+                </TabsTrigger>
+              ))}
             </TabsList>
 
             {/* === PAGE 1: Body Assessment === */}
