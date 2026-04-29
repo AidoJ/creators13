@@ -197,7 +197,28 @@ export default function Photos() {
 
   const handleFileSelect = async (rawFile: File) => {
     const key = slot.key;
-    const isHeic = /\.(heic|heif)$/i.test(rawFile.name) || rawFile.type === "image/heic" || rawFile.type === "image/heif";
+
+    // Detect HEIC/HEIF by extension, MIME, AND magic bytes — some phones (esp. Android
+    // share-sheets / gallery apps) deliver HEIC bytes mis-labelled as image/jpeg with a
+    // .jpeg extension, which slips past extension/MIME checks and uploads unviewable files.
+    const extHeic = /\.(heic|heif)$/i.test(rawFile.name) || rawFile.type === "image/heic" || rawFile.type === "image/heif";
+    let isHeic = extHeic;
+    if (!isHeic) {
+      try {
+        const head = new Uint8Array(await rawFile.slice(0, 32).arrayBuffer());
+        // ISO BMFF box: bytes 4..8 == "ftyp", bytes 8..12 == brand
+        if (head.length >= 12 && head[4] === 0x66 && head[5] === 0x74 && head[6] === 0x79 && head[7] === 0x70) {
+          const brand = String.fromCharCode(head[8], head[9], head[10], head[11]).toLowerCase();
+          // Common HEIC/HEIF brand codes
+          if (["heic", "heix", "heim", "heis", "hevc", "hevx", "mif1", "msf1", "heif"].includes(brand)) {
+            isHeic = true;
+          }
+        }
+      } catch {
+        // ignore — fall through with isHeic = false
+      }
+    }
+
     let file = rawFile;
 
     if (isHeic) {
@@ -206,8 +227,8 @@ export default function Photos() {
         const heic2any = (await import("heic2any")).default;
         const converted = await heic2any({ blob: rawFile, toType: "image/jpeg", quality: 0.9 });
         const blob = Array.isArray(converted) ? converted[0] : converted;
-        const newName = rawFile.name.replace(/\.(heic|heif)$/i, ".jpg");
-        file = new File([blob], newName, { type: "image/jpeg" });
+        const newName = rawFile.name.replace(/\.(heic|heif|jpe?g)$/i, ".jpg") || "photo.jpg";
+        file = new File([blob], newName.endsWith(".jpg") ? newName : `${newName}.jpg`, { type: "image/jpeg" });
       } catch (e) {
         setPhotos((p) => ({ ...p, [key]: { ...p[key], reviewing: false, error: "Could not convert HEIC photo. Please save as JPEG and try again." } }));
         return;

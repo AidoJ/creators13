@@ -146,9 +146,23 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
     for (const raw of incoming) {
       const name = raw.name || "";
       const lower = name.toLowerCase();
-      const isHeic = /\.(heic|heif)$/i.test(name) || raw.type === "image/heic" || raw.type === "image/heif";
+      let isHeic = /\.(heic|heif)$/i.test(name) || raw.type === "image/heic" || raw.type === "image/heif";
       const isPdf = raw.type === "application/pdf" || lower.endsWith(".pdf");
       const isImage = raw.type.startsWith("image/") || /\.(jpe?g|png|webp|gif|bmp|tiff?)$/i.test(name);
+
+      // Sniff magic bytes — Android share-sheets often deliver HEIC bytes mis-labelled
+      // as image/jpeg with a .jpg/.jpeg extension. Catch those before upload.
+      if (!isHeic && !isPdf) {
+        try {
+          const head = new Uint8Array(await raw.slice(0, 32).arrayBuffer());
+          if (head.length >= 12 && head[4] === 0x66 && head[5] === 0x74 && head[6] === 0x79 && head[7] === 0x70) {
+            const brand = String.fromCharCode(head[8], head[9], head[10], head[11]).toLowerCase();
+            if (["heic", "heix", "heim", "heis", "hevc", "hevx", "mif1", "msf1", "heif"].includes(brand)) {
+              isHeic = true;
+            }
+          }
+        } catch { /* ignore */ }
+      }
 
       if (!isHeic && !isPdf && !isImage) {
         toast({ title: "Unsupported file", description: `${name || "File"} can't be uploaded. Use a photo, scan, or PDF.`, variant: "destructive" });
@@ -161,7 +175,8 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
           const heic2any = (await import("heic2any")).default;
           const converted = await heic2any({ blob: raw, toType: "image/jpeg", quality: 0.9 });
           const blob = Array.isArray(converted) ? converted[0] : converted;
-          file = new File([blob], name.replace(/\.(heic|heif)$/i, ".jpg"), { type: "image/jpeg" });
+          const cleanName = (name || "page").replace(/\.(heic|heif|jpe?g)$/i, "") + ".jpg";
+          file = new File([blob], cleanName, { type: "image/jpeg" });
         }
         accepted.push(file);
         previews.push(isPdf ? "" : URL.createObjectURL(file));
