@@ -599,18 +599,21 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
                 </div>
               </div>
 
-              {/* Submit for Profiling button at bottom of page 1 */}
-              <div className="flex items-center justify-end pt-2 border-t border-border">
-                <Button
-                  variant="outline"
-                  onClick={() => handleSave("profiling_submitted")}
-                  disabled={saving || !canSubmitProfiling}
-                  className="text-blue-600 border-blue-500/30 hover:bg-blue-500/10"
-                >
-                  {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Send className="h-4 w-4 mr-1" />}
-                  Submit for Profiling
-                </Button>
-              </div>
+              {/* Submit for Profiling button at bottom of page 1 — hidden once a trainer has profiled */}
+              {!profilingDone && (
+                <div className="flex items-center justify-end pt-2 border-t border-border">
+                  <Button
+                    variant="outline"
+                    onClick={() => handleSave("profiling_submitted")}
+                    disabled={saving || !canSubmitProfiling || submittedForProfiling}
+                    className="text-blue-600 border-blue-500/30 hover:bg-blue-500/10"
+                    title={submittedForProfiling ? "Already submitted — awaiting trainer profiling" : undefined}
+                  >
+                    {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Send className="h-4 w-4 mr-1" />}
+                    {submittedForProfiling ? "Awaiting Profiling" : "Submit for Profiling"}
+                  </Button>
+                </div>
+              )}
             </TabsContent>
 
             {/* === PAGE 2: Assessment Details === */}
