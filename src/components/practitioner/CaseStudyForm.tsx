@@ -134,7 +134,6 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
     const idx = PAGES.indexOf(page);
     const next = PAGES[idx + dir];
     if (!next) return;
-    if (feedbackPagesLocked && (next === "preparation" || next === "reflection")) return;
     setPage(next);
   }
 
