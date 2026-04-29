@@ -244,16 +244,26 @@ function drawContainedImage(
   const drawH = crop.height * scale;
   const offsetX = x + (boxW - drawW) / 2;
   const offsetY = y + (boxH - drawH) / 2;
+  // Target ~300 DPI (≈11.8 px/mm) but cap at the source resolution to avoid upscaling.
+  const targetPxPerMm = 11.8;
+  const maxW = Math.max(1, Math.round(drawW * targetPxPerMm));
+  const maxH = Math.max(1, Math.round(drawH * targetPxPerMm));
+  const scaleToFit = Math.min(maxW / crop.width, maxH / crop.height, 1);
+  const canvasW = Math.max(1, Math.round(crop.width * scaleToFit));
+  const canvasH = Math.max(1, Math.round(crop.height * scaleToFit));
+
   const canvas = document.createElement("canvas");
-  canvas.width = Math.max(1, Math.round(drawW * 4));
-  canvas.height = Math.max(1, Math.round(drawH * 4));
+  canvas.width = canvasW;
+  canvas.height = canvasH;
 
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
 
-  ctx.drawImage(img, crop.left, crop.top, crop.width, crop.height, 0, 0, canvas.width, canvas.height);
-  const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
-  doc.addImage(dataUrl, "JPEG", offsetX, offsetY, drawW, drawH);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(img, crop.left, crop.top, crop.width, crop.height, 0, 0, canvasW, canvasH);
+  const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
+  doc.addImage(dataUrl, "JPEG", offsetX, offsetY, drawW, drawH, undefined, "SLOW");
 }
 
 function formatUploadDate(date: Date): string {
