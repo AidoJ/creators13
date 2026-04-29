@@ -41,6 +41,7 @@ const TIMEZONE_OPTIONS = [
   "Australia/Brisbane",
   "Australia/Perth",
   "Australia/Adelaide",
+  "Australia/Darwin",
   "Australia/Hobart",
   "Pacific/Auckland",
   "Asia/Tokyo",
