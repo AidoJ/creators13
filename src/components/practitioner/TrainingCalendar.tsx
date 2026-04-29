@@ -298,10 +298,12 @@ export default function TrainingCalendar({ compact = false, refreshKey = 0 }: Tr
               <SelectTrigger className="w-[200px] h-8 text-xs">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
-                {TIMEZONE_OPTIONS.map(tz => (
-                  <SelectItem key={tz} value={tz} className="text-xs">{tz.replace(/_/g, " ")}</SelectItem>
-                ))}
+              <SelectContent className="max-h-[60vh]">
+                <div className="max-h-[55vh] overflow-y-auto">
+                  {TIMEZONE_OPTIONS.map(tz => (
+                    <SelectItem key={tz} value={tz} className="text-xs">{tz.replace(/_/g, " ")}</SelectItem>
+                  ))}
+                </div>
               </SelectContent>
             </Select>
           </div>
