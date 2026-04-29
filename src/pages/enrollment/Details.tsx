@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -48,9 +48,13 @@ export default function Details() {
   const [country, setCountry] = useState("Australia");
   const [medicalHistory, setMedicalHistory] = useState("");
 
-  // Fetch existing profile data on mount
+  // Fetch existing profile data on mount — only once per user id, so that
+  // returning to the tab (which re-fires auth state) doesn't wipe in-progress edits.
+  const loadedForUserId = useRef<string | null>(null);
   useEffect(() => {
     if (!user) { setFetching(false); return; }
+    if (loadedForUserId.current === user.id) return;
+    loadedForUserId.current = user.id;
     const load = async () => {
       const { data } = await supabase
         .from("profiles")
@@ -58,10 +62,10 @@ export default function Details() {
         .eq("user_id", user.id)
         .maybeSingle();
       if (data) {
-        setFirstName(data.first_name || "");
-        setLastName(data.last_name || "");
-        setPhone(data.phone || "+61 ");
-        setDateOfBirth(data.date_of_birth || "");
+        if (data.first_name) setFirstName(data.first_name);
+        if (data.last_name) setLastName(data.last_name);
+        if (data.phone) setPhone(data.phone);
+        if (data.date_of_birth) setDateOfBirth(data.date_of_birth);
         const g = data.gender || "";
         if (["female", "male", "gender-diverse", "prefer-not-to-say"].includes(g)) {
           setGender(g);
@@ -69,16 +73,16 @@ export default function Details() {
           setGender("other");
           setGenderOther(g);
         }
-        setPronouns(data.pronouns || "");
-        setHeightCm(data.height_cm != null ? String(data.height_cm) : "");
-        setShoeSize(data.shoe_size || "");
-        setAddressLine1(data.address_line1 || "");
-        setAddressLine2(data.address_line2 || "");
-        setCity(data.city || "");
-        setState(data.state || "");
-        setPostalCode(data.postal_code || "");
-        setCountry(data.country || "Australia");
-        setMedicalHistory(data.medical_history || "");
+        if (data.pronouns) setPronouns(data.pronouns);
+        if (data.height_cm != null) setHeightCm(String(data.height_cm));
+        if (data.shoe_size) setShoeSize(data.shoe_size);
+        if (data.address_line1) setAddressLine1(data.address_line1);
+        if (data.address_line2) setAddressLine2(data.address_line2);
+        if (data.city) setCity(data.city);
+        if (data.state) setState(data.state);
+        if (data.postal_code) setPostalCode(data.postal_code);
+        if (data.country) setCountry(data.country);
+        if (data.medical_history) setMedicalHistory(data.medical_history);
       }
       setFetching(false);
     };
