@@ -296,8 +296,14 @@ export default function Photos() {
     if (currentStep > 0) setCurrentStep(currentStep - 1);
   };
 
-  // AI review is purely advisory — never block submission.
-  const hasBlockingFailures = false;
+  // Block submission only when one of the 3 body photos fails AI review.
+  // Face / hands / feet remain advisory.
+  const hasBlockingFailures = (["body_front", "body_back", "body_side"] as PhotoKey[]).some(
+    (key) => {
+      const p = photos[key];
+      return p?.review && p.review.pass === false;
+    }
+  );
 
   const handleSubmitAll = async () => {
     if (!user) {
