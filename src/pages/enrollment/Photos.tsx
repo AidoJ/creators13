@@ -71,6 +71,37 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
+// Downscale a large image (in-browser) to keep uploads under storage/network limits.
+// Returns the original file if it's already small or if downscaling fails.
+async function downscaleImage(file: File, maxEdge = 2400, quality = 0.85): Promise<File> {
+  // Skip if already small enough
+  if (file.size <= 3 * 1024 * 1024) return file;
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height));
+    if (scale >= 1) return file;
+    const w = Math.round(bitmap.width * scale);
+    const h = Math.round(bitmap.height * scale);
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return file;
+    ctx.drawImage(bitmap, 0, 0, w, h);
+    const blob: Blob | null = await new Promise((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg", quality)
+    );
+    if (!blob) return file;
+    const newName = file.name.replace(/\.(heic|heif|png|webp)$/i, ".jpg");
+    return new File([blob], newName.endsWith(".jpg") || newName.endsWith(".jpeg") ? newName : `${newName}.jpg`, {
+      type: "image/jpeg",
+      lastModified: Date.now(),
+    });
+  } catch {
+    return file;
+  }
+}
+
 export default function Photos() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
@@ -238,8 +269,11 @@ export default function Photos() {
       return;
     }
 
-    if (file.size > 10 * 1024 * 1024) {
-      setPhotos((p) => ({ ...p, [key]: { ...p[key], error: "Image must be under 10MB" } }));
+    // Auto-downscale large photos (modern phone cameras often produce 10–20MB files).
+    file = await downscaleImage(file);
+
+    if (file.size > 15 * 1024 * 1024) {
+      setPhotos((p) => ({ ...p, [key]: { ...p[key], error: "Image is too large even after compression. Please try a different photo." } }));
       return;
     }
     const preview = URL.createObjectURL(file);
@@ -262,26 +296,12 @@ export default function Photos() {
     if (currentStep > 0) setCurrentStep(currentStep - 1);
   };
 
-  // Body photo types that require passing AI review
-  const BLOCKING_PHOTO_TYPES = ["body_front", "body_back", "body_side"];
-
-  const hasBlockingFailures = BLOCKING_PHOTO_TYPES.some((key) => {
-    const p = photos[key];
-    return p.review && !p.review.pass;
-  });
+  // AI review is purely advisory — never block submission.
+  const hasBlockingFailures = false;
 
   const handleSubmitAll = async () => {
     if (!user) {
       toast({ title: "Please sign in first", variant: "destructive" });
-      return;
-    }
-
-    if (hasBlockingFailures) {
-      toast({
-        title: "Some photos need to be retaken",
-        description: "Your body photos did not pass the quality check. Please review the feedback and retake the flagged photos before submitting.",
-        variant: "destructive",
-      });
       return;
     }
     setSubmitting(true);
@@ -303,6 +323,7 @@ export default function Photos() {
 
       if (uploadError) {
         setPhotos((prev) => ({ ...prev, [s.key]: { ...prev[s.key], uploading: false, error: uploadError.message } }));
+        toast({ title: `Upload failed: ${s.label}`, description: uploadError.message, variant: "destructive" });
         setSubmitting(false);
         return;
       }
@@ -314,6 +335,7 @@ export default function Photos() {
 
       if (dbError) {
         setPhotos((prev) => ({ ...prev, [s.key]: { ...prev[s.key], uploading: false, error: dbError.message } }));
+        toast({ title: `Save failed: ${s.label}`, description: dbError.message, variant: "destructive" });
         setSubmitting(false);
         return;
       }
