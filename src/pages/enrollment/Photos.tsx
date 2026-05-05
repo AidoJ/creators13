@@ -323,6 +323,7 @@ export default function Photos() {
 
       if (uploadError) {
         setPhotos((prev) => ({ ...prev, [s.key]: { ...prev[s.key], uploading: false, error: uploadError.message } }));
+        toast({ title: `Upload failed: ${s.label}`, description: uploadError.message, variant: "destructive" });
         setSubmitting(false);
         return;
       }
@@ -334,6 +335,7 @@ export default function Photos() {
 
       if (dbError) {
         setPhotos((prev) => ({ ...prev, [s.key]: { ...prev[s.key], uploading: false, error: dbError.message } }));
+        toast({ title: `Save failed: ${s.label}`, description: dbError.message, variant: "destructive" });
         setSubmitting(false);
         return;
       }
