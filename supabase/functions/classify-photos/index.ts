@@ -110,6 +110,21 @@ Respond with ONLY the JSON array, no other text.`;
 
     if (!aiResponse.ok) {
       const errText = await aiResponse.text();
+      if (aiResponse.status === 402) {
+        return new Response(
+          JSON.stringify({
+            error: "AI credits exhausted. Please top up Lovable AI credits in Workspace → Plans & Billing, then try again.",
+            code: "ai_credits_exhausted",
+          }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      if (aiResponse.status === 429) {
+        return new Response(
+          JSON.stringify({ error: "AI rate limit reached, please try again in a moment.", code: "ai_rate_limited" }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
       throw new Error(`AI API error: ${aiResponse.status} ${errText}`);
     }
 
