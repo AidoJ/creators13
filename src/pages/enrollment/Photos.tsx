@@ -269,8 +269,11 @@ export default function Photos() {
       return;
     }
 
-    if (file.size > 10 * 1024 * 1024) {
-      setPhotos((p) => ({ ...p, [key]: { ...p[key], error: "Image must be under 10MB" } }));
+    // Auto-downscale large photos (modern phone cameras often produce 10–20MB files).
+    file = await downscaleImage(file);
+
+    if (file.size > 15 * 1024 * 1024) {
+      setPhotos((p) => ({ ...p, [key]: { ...p[key], error: "Image is too large even after compression. Please try a different photo." } }));
       return;
     }
     const preview = URL.createObjectURL(file);
