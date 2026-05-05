@@ -71,6 +71,37 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
+// Downscale a large image (in-browser) to keep uploads under storage/network limits.
+// Returns the original file if it's already small or if downscaling fails.
+async function downscaleImage(file: File, maxEdge = 2400, quality = 0.85): Promise<File> {
+  // Skip if already small enough
+  if (file.size <= 3 * 1024 * 1024) return file;
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height));
+    if (scale >= 1) return file;
+    const w = Math.round(bitmap.width * scale);
+    const h = Math.round(bitmap.height * scale);
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return file;
+    ctx.drawImage(bitmap, 0, 0, w, h);
+    const blob: Blob | null = await new Promise((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg", quality)
+    );
+    if (!blob) return file;
+    const newName = file.name.replace(/\.(heic|heif|png|webp)$/i, ".jpg");
+    return new File([blob], newName.endsWith(".jpg") || newName.endsWith(".jpeg") ? newName : `${newName}.jpg`, {
+      type: "image/jpeg",
+      lastModified: Date.now(),
+    });
+  } catch {
+    return file;
+  }
+}
+
 export default function Photos() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
