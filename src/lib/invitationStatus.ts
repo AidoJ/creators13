@@ -61,8 +61,15 @@ export async function resolveInvitationStatuses<
 
   const userIdsWithPhotos = new Set((photoRows || []).map((r) => r.user_id));
 
+  const promotable = new Set([
+    "pending",
+    "link_clicked",
+    "account_created",
+    "photos_pending",
+  ]);
+
   return invitations.map((inv) => {
-    if (inv.status === "photos_pending") {
+    if (promotable.has(inv.status)) {
       const uid = emailToUserId[inv.email.toLowerCase()];
       if (uid && userIdsWithPhotos.has(uid)) {
         return { ...inv, status: "accepted" };
