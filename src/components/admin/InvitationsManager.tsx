@@ -85,8 +85,8 @@ export default function InvitationsManager() {
 
     setInvitations(data.map(d => {
       let status = d.status;
-      // Promote photos_pending → accepted once any photos have been uploaded.
-      if (status === "photos_pending") {
+      // Promote any pre-accepted status → accepted once any photos have been uploaded.
+      if (["pending", "link_clicked", "account_created", "photos_pending"].includes(status)) {
         const uid = emailToUserId[d.email.toLowerCase()];
         if (uid && userIdsWithPhotos.has(uid)) status = "accepted";
       }
