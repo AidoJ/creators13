@@ -44,6 +44,8 @@ interface PhotoState {
   reviewing: boolean;
   review: ReviewResult | null;
   existingPath: string | null; // Track if loaded from storage
+  rawFallback: File | null; // Original file when HEIC conversion fails — uploaded as-is, admin can convert later
+  skipReview: boolean; // True when AI review was skipped (e.g. HEIC fallback) — practitioner will check manually
 }
 
 const initialPhotoState: PhotoState = {
@@ -55,6 +57,8 @@ const initialPhotoState: PhotoState = {
   reviewing: false,
   review: null,
   existingPath: null,
+  rawFallback: null,
+  skipReview: false,
 };
 
 type ViewMode = "guidelines" | "wizard" | "review";
@@ -261,23 +265,61 @@ export default function Photos() {
         const newName = rawFile.name.replace(/\.(heic|heif|jpe?g)$/i, ".jpg") || "photo.jpg";
         file = new File([blob], newName.endsWith(".jpg") ? newName : `${newName}.jpg`, { type: "image/jpeg" });
       } catch (e) {
-        setPhotos((p) => ({ ...p, [key]: { ...p[key], reviewing: false, error: "Could not convert HEIC photo. Please save as JPEG and try again." } }));
+        // HEIC conversion failed in browser (common on older iOS Safari, large Live Photos, low memory).
+        // Accept the original HEIC bytes anyway so the user isn't blocked — admin can convert server-side later.
+        console.warn("HEIC conversion failed, accepting original file:", e);
+        const previewUrl = URL.createObjectURL(rawFile);
+        setPhotos((p) => ({
+          ...p,
+          [key]: {
+            ...initialPhotoState,
+            file: rawFile,
+            rawFallback: rawFile,
+            preview: previewUrl,
+            skipReview: true,
+            review: { pass: true, feedback: "Photo accepted (your practitioner will check it manually)." },
+          },
+        }));
         return;
       }
-    } else if (!rawFile.type.startsWith("image/")) {
-      setPhotos((p) => ({ ...p, [key]: { ...p[key], error: "Please select an image file" } }));
-      return;
+    } else {
+      // Loose image-type check — accept anything with an image-like extension OR an image/* MIME.
+      // Some Android share-sheets deliver image files with empty MIME, so extension is the fallback.
+      const looksLikeImage =
+        rawFile.type.startsWith("image/") ||
+        /\.(jpe?g|png|webp|gif|bmp|tiff?|heic|heif|avif)$/i.test(rawFile.name);
+      if (!looksLikeImage) {
+        setPhotos((p) => ({
+          ...p,
+          [key]: {
+            ...p[key],
+            error: `This file (${rawFile.name || "unknown"}) doesn't look like a photo. Please choose a JPG, PNG, or HEIC image.`,
+          },
+        }));
+        return;
+      }
     }
 
     // Auto-downscale large photos (modern phone cameras often produce 10–20MB files).
-    file = await downscaleImage(file);
+    try {
+      file = await downscaleImage(file);
+    } catch (e) {
+      console.warn("Downscale failed, using original:", e);
+    }
 
-    if (file.size > 15 * 1024 * 1024) {
-      setPhotos((p) => ({ ...p, [key]: { ...p[key], error: "Image is too large even after compression. Please try a different photo." } }));
+    if (file.size > 25 * 1024 * 1024) {
+      // Last-resort cap. Most phone photos are well under this.
+      setPhotos((p) => ({
+        ...p,
+        [key]: {
+          ...p[key],
+          error: "Image is over 25MB. Please try a different photo or save it at lower quality.",
+        },
+      }));
       return;
     }
     const preview = URL.createObjectURL(file);
-    setPhotos((p) => ({ ...p, [key]: { file, preview, uploading: false, uploaded: false, error: null, reviewing: false, review: null, existingPath: null } }));
+    setPhotos((p) => ({ ...p, [key]: { ...initialPhotoState, file, preview } }));
     reviewPhoto(key, file);
   };
 
