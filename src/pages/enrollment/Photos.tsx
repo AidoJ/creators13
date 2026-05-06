@@ -44,6 +44,8 @@ interface PhotoState {
   reviewing: boolean;
   review: ReviewResult | null;
   existingPath: string | null; // Track if loaded from storage
+  rawFallback: File | null; // Original file when HEIC conversion fails — uploaded as-is, admin can convert later
+  skipReview: boolean; // True when AI review was skipped (e.g. HEIC fallback) — practitioner will check manually
 }
 
 const initialPhotoState: PhotoState = {
@@ -55,6 +57,8 @@ const initialPhotoState: PhotoState = {
   reviewing: false,
   review: null,
   existingPath: null,
+  rawFallback: null,
+  skipReview: false,
 };
 
 type ViewMode = "guidelines" | "wizard" | "review";
