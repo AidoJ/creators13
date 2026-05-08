@@ -802,7 +802,7 @@ export default function Photos() {
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div className="flex flex-col">
             <span className="text-xs font-semibold text-muted-foreground mb-1.5 text-center uppercase tracking-wide">Example</span>
-            <div className="rounded-xl border border-border overflow-hidden bg-muted/20 flex-1">
+            <div className="rounded-xl border border-border overflow-hidden bg-muted/20 h-[55vh] max-h-[480px] min-h-[240px] flex items-center justify-center">
               <img src={slot.guide} alt={`Guide: ${slot.label}`} className="w-full h-full object-contain" />
             </div>
           </div>
@@ -813,7 +813,7 @@ export default function Photos() {
               type="button"
               onClick={() => fileInputRef.current?.click()}
               className={cn(
-                "relative rounded-xl border-2 border-dashed flex flex-col items-center justify-center overflow-hidden transition-all flex-1 min-h-[200px]",
+                "relative rounded-xl border-2 border-dashed flex flex-col items-center justify-center overflow-hidden transition-all h-[55vh] max-h-[480px] min-h-[240px]",
                 photo.preview ? "border-primary/40" : "border-border hover:border-primary/40 bg-muted/30 hover:bg-muted/50",
                 photo.error && "border-destructive/60"
               )}
