@@ -13,6 +13,9 @@ export default function GlobalFooter() {
           <Link to="/privacy-policy" className="hover:text-foreground transition-colors">
             Privacy Policy
           </Link>
+          <Link to="/terms-of-service" className="hover:text-foreground transition-colors">
+            Terms of Service
+          </Link>
           <a
             href="https://www.13creators.com"
             target="_blank"
