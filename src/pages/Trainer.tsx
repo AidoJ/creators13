@@ -20,6 +20,8 @@ import CaseStudySearch from "@/components/shared/CaseStudySearch";
 import InvitationsManager from "@/components/admin/InvitationsManager";
 import FaceSplitMirror from "@/components/trainer/FaceSplitMirror";
 import BodyAnnotationTool from "@/components/trainer/BodyAnnotationTool";
+import ClientDetail from "@/components/practitioner/ClientDetail";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 type EnrollmentStep = Database["public"]["Enums"]["enrollment_step"];
@@ -68,6 +70,8 @@ export default function TrainerDashboard() {
   const [searchFilterId, setSearchFilterId] = useState<string | null>(null);
   const [pipelineStatusFilter, setPipelineStatusFilter] = useState<string | null>(null);
   const [pipelinePractitionerFilter, setPipelinePractitionerFilter] = useState<string | null>(null);
+  const [viewingClientId, setViewingClientId] = useState<string | null>(null);
+  const [viewingClientName, setViewingClientName] = useState<string>("");
 
   const fetchUsers = useCallback(async () => {
     const [profilesRes, rolesRes, subsRes] = await Promise.all([
@@ -219,37 +223,18 @@ export default function TrainerDashboard() {
               setActiveTab("cases-filtered");
             }}
             onSelectClient={async (clientId) => {
-              // Try local cache first
-              const cs = caseStudies.find(c => c.subject_user_id === clientId);
-              if (cs) {
-                setSearchFilterId(cs.id);
-                setExpandedCaseStudy(cs.id);
-                setPipelineStatusFilter(null);
-                setPipelinePractitionerFilter(null);
-                setActiveTab("cases-filtered");
-                return;
-              }
-              // Fallback: query DB for any case study linked to this client
-              const { data } = await supabase
-                .from("case_studies")
-                .select("id")
-                .eq("subject_user_id", clientId)
-                .order("created_at", { ascending: false })
-                .limit(1)
+              // Always open the client file sheet — works for any client,
+              // whether or not they have a case study.
+              const { data: prof } = await supabase
+                .from("profiles")
+                .select("first_name, last_name, email")
+                .eq("user_id", clientId)
                 .maybeSingle();
-              if (data) {
-                await fetchCaseStudies(); // refresh list so filter works
-                setSearchFilterId(data.id);
-                setExpandedCaseStudy(data.id);
-                setPipelineStatusFilter(null);
-                setPipelinePractitionerFilter(null);
-                setActiveTab("cases-filtered");
-              } else {
-                toast({
-                  title: "No case study found",
-                  description: "This client does not have a case study yet. Ask their practitioner to create one.",
-                });
-              }
+              const name = prof
+                ? (`${prof.first_name || ""} ${prof.last_name || ""}`.trim() || prof.email || "Client")
+                : "Client";
+              setViewingClientName(name);
+              setViewingClientId(clientId);
             }}
           />
         </div>
@@ -401,6 +386,16 @@ export default function TrainerDashboard() {
             <BodyAnnotationTool />
           </TabsContent>
         </Tabs>
+
+        {/* Client File Sheet — viewable for any client, regardless of case study */}
+        <Sheet open={!!viewingClientId} onOpenChange={(open) => { if (!open) setViewingClientId(null); }}>
+          <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle>{viewingClientName}'s File</SheetTitle>
+            </SheetHeader>
+            {viewingClientId && <div className="mt-4"><ClientDetail clientId={viewingClientId} /></div>}
+          </SheetContent>
+        </Sheet>
       </main>
     </div>
   );
