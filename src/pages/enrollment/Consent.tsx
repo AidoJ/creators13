@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowRight, Loader2, ShieldCheck } from "lucide-react";
 import EnrollmentHeader from "@/components/enrollment/EnrollmentHeader";
+import { useEnrollmentGate } from "@/hooks/useEnrollmentGate";
 
 const CONSENT_ITEMS = [
   "I understand that my photos will be used for body-type profiling as part of a practitioner training case study.",
@@ -19,6 +20,7 @@ export default function Consent() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { ready: gateReady } = useEnrollmentGate();
   const { toast } = useToast();
 
   const tier = params.get("tier") || "wren";
@@ -57,6 +59,14 @@ export default function Consent() {
     if (params.get("case_study") === "true") nextParams.set("case_study", "true");
     navigate(`/enroll/photos?${nextParams.toString()}`);
   };
+
+  if (!gateReady) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">

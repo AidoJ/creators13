@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import EnrollmentHeader from "@/components/enrollment/EnrollmentHeader";
+import { useEnrollmentGate } from "@/hooks/useEnrollmentGate";
 import { useToast } from "@/hooks/use-toast";
 
 import guidePhoto1 from "@/assets/guide-photo-1.png";
@@ -110,6 +111,7 @@ export default function Photos() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { ready: gateReady } = useEnrollmentGate();
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(0);
   const [viewMode, setViewMode] = useState<ViewMode>("guidelines");
@@ -493,7 +495,7 @@ export default function Photos() {
     );
   };
 
-  if (loadingExisting) {
+  if (loadingExisting || !gateReady) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

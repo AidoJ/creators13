@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import EnrollmentHeader from "@/components/enrollment/EnrollmentHeader";
+import { useEnrollmentGate } from "@/hooks/useEnrollmentGate";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -13,6 +14,7 @@ export default function Booking() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const { user, loading } = useAuth();
+  const { ready: gateReady } = useEnrollmentGate();
 
   const tier = (params.get("tier") as TierKey) || "wren";
   const tierInfo = TIERS[tier] || TIERS.wren;
@@ -99,7 +101,7 @@ export default function Booking() {
     };
   }, []);
 
-  if (loading || !accessChecked) {
+  if (loading || !accessChecked || !gateReady) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">

@@ -11,11 +11,13 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowRight, Loader2, CheckCircle } from "lucide-react";
 import { TIERS, TierKey } from "@/lib/tiers";
 import EnrollmentHeader from "@/components/enrollment/EnrollmentHeader";
+import { useEnrollmentGate } from "@/hooks/useEnrollmentGate";
 
 export default function Details() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { ready: gateReady } = useEnrollmentGate();
   const { toast } = useToast();
 
   const tier = (params.get("tier") as TierKey) || "wren";
@@ -186,7 +188,7 @@ export default function Details() {
     }
   };
 
-  if (fetching) {
+  if (fetching || !gateReady) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

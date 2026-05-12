@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useEnrollmentGate } from "@/hooks/useEnrollmentGate";
 import type { TierKey } from "@/lib/tiers";
 
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
@@ -45,6 +46,7 @@ interface SubData {
 
 export default function Dashboard() {
   const { user, signOut } = useAuth();
+  const { ready: gateReady } = useEnrollmentGate();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [booking, setBooking] = useState<BookingData | null>(null);
   const [subscription, setSubscription] = useState<SubData | null>(null);
@@ -110,7 +112,7 @@ export default function Dashboard() {
   const statusLabel = "In Review";
   const statusColor = "bg-amber-500/10 text-amber-600 border-amber-500/20";
 
-  if (loading) {
+  if (!gateReady || loading) {
     return (
       <div className="min-h-screen bg-background">
         <DashboardHeader email={user?.email} onSignOut={signOut} />
