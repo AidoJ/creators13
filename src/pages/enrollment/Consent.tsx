@@ -8,7 +8,6 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowRight, Loader2, ShieldCheck } from "lucide-react";
 import EnrollmentHeader from "@/components/enrollment/EnrollmentHeader";
 import { useEnrollmentGate } from "@/hooks/useEnrollmentGate";
-import { Loader2 } from "lucide-react";
 
 const CONSENT_ITEMS = [
   "I understand that my photos will be used for body-type profiling as part of a practitioner training case study.",
