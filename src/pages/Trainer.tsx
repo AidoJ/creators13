@@ -386,6 +386,16 @@ export default function TrainerDashboard() {
             <BodyAnnotationTool />
           </TabsContent>
         </Tabs>
+
+        {/* Client File Sheet — viewable for any client, regardless of case study */}
+        <Sheet open={!!viewingClientId} onOpenChange={(open) => { if (!open) setViewingClientId(null); }}>
+          <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle>{viewingClientName}'s File</SheetTitle>
+            </SheetHeader>
+            {viewingClientId && <div className="mt-4"><ClientDetail clientId={viewingClientId} /></div>}
+          </SheetContent>
+        </Sheet>
       </main>
     </div>
   );
