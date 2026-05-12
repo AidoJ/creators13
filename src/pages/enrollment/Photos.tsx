@@ -151,18 +151,23 @@ export default function Photos() {
     checkPractitioner();
   }, [user, navigate, tier, billing, toast]);
 
-  // Guard: redirect case study subjects who haven't given consent
+  // Guard: consent is REQUIRED for everyone before uploading photos.
+  // Fail-closed: if consent is missing for any reason, redirect to consent screen.
   useEffect(() => {
     if (!user) return;
     const checkConsent = async () => {
-      // Check if user is a case study subject (has referral_code or case_study param)
       const [{ data: sub }, { data: profile }] = await Promise.all([
-        supabase.from("subscriptions").select("referral_code").eq("user_id", user.id).maybeSingle(),
+        supabase.from("subscriptions").select("referral_code, tier").eq("user_id", user.id).maybeSingle(),
         supabase.from("profiles").select("case_study_consent_at").eq("user_id", user.id).maybeSingle(),
       ]);
-      const isCaseStudy = params.get("case_study") === "true" || !!sub?.referral_code;
-      if (isCaseStudy && !profile?.case_study_consent_at) {
-        const nextParams = new URLSearchParams({ tier, billing, case_study: "true" });
+      if (!profile?.case_study_consent_at) {
+        const isCaseStudy =
+          params.get("case_study") === "true" ||
+          !!sub?.referral_code ||
+          !sub?.tier ||
+          sub?.tier === "wren";
+        const nextParams = new URLSearchParams({ tier, billing });
+        if (isCaseStudy) nextParams.set("case_study", "true");
         navigate(`/enroll/consent?${nextParams.toString()}`, { replace: true });
       }
     };
