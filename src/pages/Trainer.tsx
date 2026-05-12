@@ -20,6 +20,8 @@ import CaseStudySearch from "@/components/shared/CaseStudySearch";
 import InvitationsManager from "@/components/admin/InvitationsManager";
 import FaceSplitMirror from "@/components/trainer/FaceSplitMirror";
 import BodyAnnotationTool from "@/components/trainer/BodyAnnotationTool";
+import ClientDetail from "@/components/practitioner/ClientDetail";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 type EnrollmentStep = Database["public"]["Enums"]["enrollment_step"];
