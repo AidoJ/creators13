@@ -9,6 +9,7 @@ import { ArrowRight, Loader2, UserCheck, Search, CheckCircle } from "lucide-reac
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import EnrollmentHeader from "@/components/enrollment/EnrollmentHeader";
+import { useEnrollmentGate } from "@/hooks/useEnrollmentGate";
 import type { TierKey } from "@/lib/tiers";
 
 interface PractitionerOption {
@@ -23,6 +24,7 @@ export default function PractitionerSelection() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  const { ready: gateReady } = useEnrollmentGate();
   const { toast } = useToast();
 
   const tier = (params.get("tier") as TierKey) || "wren";
@@ -155,7 +157,7 @@ export default function PractitionerSelection() {
     return name.includes(q) || (p.practitioner_code || "").toLowerCase().includes(q);
   });
 
-  if (authLoading || loading) {
+  if (authLoading || loading || !gateReady) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
