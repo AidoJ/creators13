@@ -70,6 +70,8 @@ export default function TrainerDashboard() {
   const [searchFilterId, setSearchFilterId] = useState<string | null>(null);
   const [pipelineStatusFilter, setPipelineStatusFilter] = useState<string | null>(null);
   const [pipelinePractitionerFilter, setPipelinePractitionerFilter] = useState<string | null>(null);
+  const [viewingClientId, setViewingClientId] = useState<string | null>(null);
+  const [viewingClientName, setViewingClientName] = useState<string>("");
 
   const fetchUsers = useCallback(async () => {
     const [profilesRes, rolesRes, subsRes] = await Promise.all([
