@@ -125,6 +125,21 @@ export default function PlanSelection() {
 
       if (selectedTier === "wren") {
         if (isCaseStudy) {
+          // Ensure subscription + practitioner link exist before navigating,
+          // otherwise the enrollment gate bounces the user back to /enroll.
+          try {
+            await supabase.functions.invoke("create-checkout", {
+              body: {
+                tier: "wren",
+                billing: "monthly",
+                email: user.email,
+                user_id: user.id,
+                practitioner_code: practitionerCode.trim(),
+              },
+            });
+          } catch (e) {
+            console.error("Failed to provision case-study enrollment:", e);
+          }
           navigate(`/enroll/details?${params.toString()}`);
         } else {
           navigate(`/enroll/practitioner?${params.toString()}`);
