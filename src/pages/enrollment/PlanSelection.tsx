@@ -57,11 +57,39 @@ export default function PlanSelection() {
 
   const isCaseStudy = signupPath === "case_study";
 
-  // Force sign-out when arriving via case study invite link
+  const buildEnrollmentParams = () => {
+    const params = new URLSearchParams({
+      tier: selectedTier || "wren",
+      billing: annual ? "annual" : "monthly",
+    });
+    if (isCaseStudy) {
+      params.set("case_study", "true");
+      params.set("practitioner_code", practitionerCode.trim());
+    }
+    return params;
+  };
+
+  // If staff open a case-study invite while signed in, sign them out so they
+  // don't accidentally enroll their own practitioner/admin account as the client.
+  // Existing client invitees must remain signed in so Continue can advance them.
   useEffect(() => {
     if (!user || signingOut || !urlCaseStudy) return;
-    setSigningOut(true);
-    supabase.auth.signOut().then(() => setSigningOut(false));
+    let cancelled = false;
+    (async () => {
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id);
+      const isStaff = (roles || []).some((r: any) =>
+        ["practitioner", "trainee", "trainer", "admin"].includes(r.role)
+      );
+      if (!cancelled && isStaff) {
+        setSigningOut(true);
+        await supabase.auth.signOut();
+        if (!cancelled) setSigningOut(false);
+      }
+    })();
+    return () => { cancelled = true; };
   }, [user, urlCaseStudy, signingOut]);
 
   // Auto-select wren when switching to case study
@@ -100,14 +128,7 @@ export default function PlanSelection() {
     if (!selectedTier || !signupPath) return;
     if (isCaseStudy && !practitionerCode.trim()) return;
 
-    const params = new URLSearchParams({
-      tier: selectedTier,
-      billing: annual ? "annual" : "monthly",
-    });
-    if (isCaseStudy) {
-      params.set("case_study", "true");
-      params.set("practitioner_code", practitionerCode.trim());
-    }
+    const params = buildEnrollmentParams();
 
     // If already logged in, check if this is an upgrade
     if (user) {
@@ -400,7 +421,7 @@ export default function PlanSelection() {
               <div className="flex flex-col items-center gap-2">
                 <p className="text-sm text-muted-foreground">Already have an account?</p>
                 <a
-                  href={`/auth?returnTo=${encodeURIComponent("/enroll/plan")}`}
+                  href={`/auth?returnTo=${encodeURIComponent(`/enroll?${buildEnrollmentParams().toString()}`)}`}
                   className="inline-flex items-center justify-center rounded-full border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground px-8 py-2.5 text-sm font-semibold transition-colors"
                 >
                   Sign in
