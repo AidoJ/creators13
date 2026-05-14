@@ -73,11 +73,39 @@ export default function PlanSelection() {
 
   // If staff open a case-study invite while signed in, sign them out so they
   // don't accidentally enroll their own practitioner/admin account as the client.
-  // Existing client invitees must remain signed in so Continue can advance them.
+  // Also sign out if the session is stale (auth user no longer exists) or if the
+  // signed-in email doesn't match the invitation email.
   useEffect(() => {
     if (!user || signingOut || !urlCaseStudy) return;
     let cancelled = false;
     (async () => {
+      // 1. Verify the session is still valid server-side (deleted user → stale token)
+      const { data: freshUser, error: freshErr } = await supabase.auth.getUser();
+      if (!cancelled && (freshErr || !freshUser?.user)) {
+        setSigningOut(true);
+        await supabase.auth.signOut();
+        if (!cancelled) setSigningOut(false);
+        return;
+      }
+
+      // 2. If invited via token, ensure the signed-in email matches the invitation
+      if (urlInviteToken) {
+        const { data: inv } = await supabase
+          .from("client_invitations")
+          .select("email")
+          .eq("invite_token", urlInviteToken)
+          .maybeSingle();
+        const invEmail = (inv?.email || "").trim().toLowerCase();
+        const userEmail = (user.email || "").trim().toLowerCase();
+        if (!cancelled && invEmail && userEmail && invEmail !== userEmail) {
+          setSigningOut(true);
+          await supabase.auth.signOut();
+          if (!cancelled) setSigningOut(false);
+          return;
+        }
+      }
+
+      // 3. Sign out staff so they don't enroll their own account
       const { data: roles } = await supabase
         .from("user_roles")
         .select("role")
@@ -92,7 +120,7 @@ export default function PlanSelection() {
       }
     })();
     return () => { cancelled = true; };
-  }, [user, urlCaseStudy, signingOut]);
+  }, [user, urlCaseStudy, urlInviteToken, signingOut]);
 
   // Auto-select wren when switching to case study
   useEffect(() => {
