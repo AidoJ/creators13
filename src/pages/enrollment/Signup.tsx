@@ -136,6 +136,7 @@ export default function Signup() {
           clientName: email.split("@")[0],
           loginLink: loginUrl,
           photosLink: photosUrl,
+          practitionerCode: practitionerCode || "",
         },
       }).then(({ error: emailErr }) => {
         if (emailErr) console.error("Welcome email error:", emailErr);
