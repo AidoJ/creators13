@@ -30,7 +30,7 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, serviceRoleKey);
     const resend = new Resend(apiKey);
-    const { to, clientName, inviteLink }: InviteEmailRequest = await req.json();
+    const { to, clientName, inviteLink, practitionerCode }: InviteEmailRequest = await req.json();
 
     if (!to || !clientName || !inviteLink) {
       throw new Error("Missing required fields: to, clientName, inviteLink");
@@ -51,7 +51,8 @@ serve(async (req) => {
     // Replace placeholders
     const html = template.html_body
       .replace(/\{\{clientName\}\}/g, clientName)
-      .replace(/\{\{inviteLink\}\}/g, inviteLink);
+      .replace(/\{\{inviteLink\}\}/g, inviteLink)
+      .replace(/\{\{practitionerCode\}\}/g, practitionerCode || "");
 
     const subject = template.subject
       .replace(/\{\{clientName\}\}/g, clientName);
