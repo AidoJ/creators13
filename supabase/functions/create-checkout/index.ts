@@ -58,12 +58,27 @@ serve(async (req) => {
     const tierValue = tier || "wren";
     const role = tierValue === "owl" ? "trainee" : "client";
     const practitionerCode = body.practitioner_code || null;
+    const inviteToken = body.invite_token || null;
+
+    if (inviteToken) {
+      const { data: invitation, error: invitationError } = await supabaseClient
+        .from("client_invitations")
+        .select("email, practitioner_id")
+        .eq("invite_token", inviteToken)
+        .maybeSingle();
+      if (invitationError) throw new Error(`Could not verify invitation: ${invitationError.message}`);
+      if (!invitation) throw new Error("Invitation link was not found");
+      if ((invitation.email || "").trim().toLowerCase() !== userEmail.trim().toLowerCase()) {
+        throw new Error(`This invitation is for ${invitation.email}. Please sign in with that email address, or sign out and create Goldie's account.`);
+      }
+    }
 
     // Always create role + subscription records
-    await supabaseClient.from("user_roles").upsert(
+    const { error: roleError } = await supabaseClient.from("user_roles").upsert(
       { user_id: userId, role },
       { onConflict: "user_id,role" }
     );
+    if (roleError) throw new Error(`Could not create user role: ${roleError.message}`);
 
     const subData: Record<string, any> = {
       user_id: userId,
@@ -73,22 +88,24 @@ serve(async (req) => {
     };
     if (practitionerCode) subData.referral_code = practitionerCode;
 
-    await supabaseClient.from("subscriptions").upsert(
+    const { error: subscriptionError } = await supabaseClient.from("subscriptions").upsert(
       subData,
       { onConflict: "user_id" }
     );
+    if (subscriptionError) throw new Error(`Could not create subscription record: ${subscriptionError.message}`);
     logStep("Created role + subscription records", { role, tier: tierValue });
 
     // If practitioner code provided, link client to practitioner
     if (practitionerCode) {
-      const { data: pracProfile } = await supabaseClient
+      const { data: pracProfile, error: practitionerError } = await supabaseClient
         .from("profiles")
         .select("user_id")
         .eq("practitioner_code", practitionerCode)
         .maybeSingle();
+      if (practitionerError) throw new Error(`Could not verify practitioner code: ${practitionerError.message}`);
 
       if (pracProfile) {
-        await supabaseClient.from("client_practitioner").upsert(
+        const { error: linkError } = await supabaseClient.from("client_practitioner").upsert(
           {
             client_id: userId,
             practitioner_id: pracProfile.user_id,
@@ -96,17 +113,20 @@ serve(async (req) => {
           },
           { onConflict: "client_id,practitioner_id" }
         );
+        if (linkError) throw new Error(`Could not link client to practitioner: ${linkError.message}`);
         logStep("Linked client to practitioner", { practitionerId: pracProfile.user_id, code: practitionerCode });
       } else {
-        logStep("Practitioner code not found", { code: practitionerCode });
+        throw new Error("Practitioner code was not found");
       }
     }
 
-    // Upsert profile enrollment_step (in case trigger didn't fire)
-    await supabaseClient.from("profiles").upsert(
+    // Insert the profile only if the auth trigger did not create it.
+    // Do not overwrite enrollment_step for returning clients already further along.
+    const { error: profileError } = await supabaseClient.from("profiles").upsert(
       { user_id: userId, email: userEmail, enrollment_step: "signed_up" },
-      { onConflict: "user_id" }
+      { onConflict: "user_id", ignoreDuplicates: true }
     );
+    if (profileError) throw new Error(`Could not update enrollment profile: ${profileError.message}`);
     logStep("Upserted profile enrollment_step");
 
     // NOTE: Invitation status is no longer flipped here. It now flips to "accepted"

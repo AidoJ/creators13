@@ -21,11 +21,13 @@ export default function Signup() {
   const billing = params.get("billing") || "monthly";
   const caseStudy = params.get("case_study") === "true";
   const practitionerCode = params.get("practitioner_code") || "";
+  const inviteToken = params.get("invite") || "";
   const tierInfo = TIERS[tier] || TIERS.wren;
   const authReturnParams = new URLSearchParams({ tier, billing });
   if (caseStudy) {
     authReturnParams.set("case_study", "true");
     authReturnParams.set("practitioner_code", practitionerCode);
+    if (inviteToken) authReturnParams.set("invite", inviteToken);
   }
   const authReturnTo = tier === "wren"
     ? `/enroll?${authReturnParams.toString()}`
@@ -75,6 +77,7 @@ export default function Signup() {
     if (caseStudy) {
       verifyParams.set("case_study", "true");
       verifyParams.set("practitioner_code", practitionerCode);
+      if (inviteToken) verifyParams.set("invite", inviteToken);
     }
     const redirectUrl = `${appOrigin}/enroll/signup?${verifyParams.toString()}`;
 
@@ -110,6 +113,7 @@ export default function Signup() {
         tier,
         billing,
         practitioner_code: practitionerCode || null,
+        invite_token: inviteToken || null,
         successUrl: `${appOrigin}/enroll/practitioner?tier=${tier}&billing=${billing}&payment=skipped`,
         cancelUrl: `${appOrigin}/enroll/payment?tier=${tier}&billing=${billing}&canceled=true`,
       },
@@ -151,6 +155,7 @@ export default function Signup() {
     if (caseStudy) {
       nextParams.set("case_study", "true");
       nextParams.set("practitioner_code", practitionerCode);
+      if (inviteToken) nextParams.set("invite", inviteToken);
     }
     if (tier === "wren") {
       navigate(`/enroll/practitioner?${nextParams.toString()}`);

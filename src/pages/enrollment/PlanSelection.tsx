@@ -66,6 +66,7 @@ export default function PlanSelection() {
     if (isCaseStudy) {
       params.set("case_study", "true");
       params.set("practitioner_code", practitionerCode.trim());
+      if (urlInviteToken) params.set("invite", urlInviteToken);
     }
     return params;
   };
@@ -162,6 +163,7 @@ export default function PlanSelection() {
                 email: user.email,
                 user_id: user.id,
                 practitioner_code: code,
+                invite_token: urlInviteToken || null,
               },
             });
             if (error) {
