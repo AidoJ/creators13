@@ -13,6 +13,7 @@ interface WelcomeRequest {
   clientName: string;
   loginLink: string;
   photosLink: string;
+  practitionerCode?: string;
 }
 
 serve(async (req) => {
