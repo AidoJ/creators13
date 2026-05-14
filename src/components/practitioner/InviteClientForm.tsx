@@ -57,8 +57,9 @@ export default function InviteClientForm({ practitionerCode }: InviteClientFormP
     if (!templateHtml) return null;
     return templateHtml
       .replace(/\{\{clientName\}\}/g, "there")
-      .replace(/\{\{inviteLink\}\}/g, "#");
-  }, [templateHtml]);
+      .replace(/\{\{inviteLink\}\}/g, "#")
+      .replace(/\{\{practitionerCode\}\}/g, practitionerCode || "");
+  }, [templateHtml, practitionerCode]);
 
   async function fetchInvitations() {
     const { data } = await supabase
@@ -107,7 +108,7 @@ export default function InviteClientForm({ practitionerCode }: InviteClientFormP
       const inv = data as Invitation;
       const inviteLink = getInviteLink(inv.invite_token);
       const { error: emailError } = await supabase.functions.invoke("send-invite-email", {
-        body: { to: inv.email, clientName: inv.name, inviteLink },
+        body: { to: inv.email, clientName: inv.name, inviteLink, practitionerCode: practitionerCode || "" },
       });
 
       if (emailError) {
@@ -137,7 +138,7 @@ export default function InviteClientForm({ practitionerCode }: InviteClientFormP
   async function handleEmailLink(inv: Invitation) {
     const inviteLink = getInviteLink(inv.invite_token);
     const { error } = await supabase.functions.invoke("send-invite-email", {
-      body: { to: inv.email, clientName: inv.name, inviteLink },
+      body: { to: inv.email, clientName: inv.name, inviteLink, practitionerCode: practitionerCode || "" },
     });
     if (error) {
       toast({ title: "Email failed", description: "Could not resend. Try copying the link instead.", variant: "destructive" });
