@@ -147,21 +147,55 @@ export default function PlanSelection() {
 
       if (selectedTier === "wren") {
         if (isCaseStudy) {
-          // Ensure subscription + practitioner link exist before navigating,
-          // otherwise the enrollment gate bounces the user back to /enroll.
+          // Hard guard: provision subscription + practitioner link before navigating.
+          // If anything fails, surface a clear error so the user isn't silently looped back.
+          const code = practitionerCode.trim();
+          if (!practitionerName) {
+            toast.error("We can't verify your practitioner code. Please double-check it with the person who invited you.");
+            return;
+          }
           try {
-            await supabase.functions.invoke("create-checkout", {
+            const { data, error } = await supabase.functions.invoke("create-checkout", {
               body: {
                 tier: "wren",
                 billing: "monthly",
                 email: user.email,
                 user_id: user.id,
-                practitioner_code: practitionerCode.trim(),
+                practitioner_code: code,
               },
             });
-          } catch (e) {
+            if (error) {
+              console.error("create-checkout error:", error);
+              toast.error(`We couldn't set up your case-study enrollment: ${error.message || "Unknown error"}. Please try again or contact your practitioner.`);
+              return;
+            }
+            if (data?.error) {
+              toast.error(`Enrollment setup failed: ${data.error}. Please try again or contact your practitioner.`);
+              return;
+            }
+          } catch (e: any) {
             console.error("Failed to provision case-study enrollment:", e);
+            toast.error(`Network error while setting up enrollment: ${e?.message || "please check your connection"}. Please try again.`);
+            return;
           }
+
+          // Verify the subscription row actually exists before navigating away,
+          // otherwise the enrollment gate will bounce the user back to /enroll.
+          const { data: sub, error: subErr } = await supabase
+            .from("subscriptions")
+            .select("id")
+            .eq("user_id", user.id)
+            .maybeSingle();
+          if (subErr) {
+            console.error("subscription check error:", subErr);
+            toast.error(`We couldn't confirm your enrollment: ${subErr.message}. Please try again.`);
+            return;
+          }
+          if (!sub) {
+            toast.error("Your enrollment record wasn't created. Please try again — if this keeps happening, contact your practitioner.");
+            return;
+          }
+
           navigate(`/enroll/details?${params.toString()}`);
         } else {
           navigate(`/enroll/practitioner?${params.toString()}`);
