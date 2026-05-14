@@ -108,7 +108,7 @@ export default function InviteClientForm({ practitionerCode }: InviteClientFormP
       const inv = data as Invitation;
       const inviteLink = getInviteLink(inv.invite_token);
       const { error: emailError } = await supabase.functions.invoke("send-invite-email", {
-        body: { to: inv.email, clientName: inv.name, inviteLink },
+        body: { to: inv.email, clientName: inv.name, inviteLink, practitionerCode: practitionerCode || "" },
       });
 
       if (emailError) {
