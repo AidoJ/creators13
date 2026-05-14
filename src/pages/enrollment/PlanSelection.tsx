@@ -264,6 +264,23 @@ export default function PlanSelection() {
       <EnrollmentHeader currentStep={0} />
 
       <main className="container mx-auto px-4 py-12 max-w-5xl">
+        {isStaff && (
+          <div className="mb-8 rounded-xl border-2 border-primary/30 bg-primary/5 p-4 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <Info className="h-5 w-5 text-primary shrink-0" />
+              <p className="text-sm text-foreground">
+                You're signed in as a practitioner/trainer. This page is for new clients.
+              </p>
+            </div>
+            <Link
+              to="/dashboard"
+              className="inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 text-sm font-semibold transition-colors whitespace-nowrap shrink-0"
+            >
+              Go to Dashboard
+            </Link>
+          </div>
+        )}
+
         <div className="text-center mb-10">
           <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-3">
             {urlCaseStudy ? "Your Case Study Invitation" : "How Are You Joining?"}
