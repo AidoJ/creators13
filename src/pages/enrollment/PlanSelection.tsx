@@ -123,7 +123,25 @@ export default function PlanSelection() {
     return () => { cancelled = true; };
   }, [user, urlCaseStudy, urlInviteToken, signingOut]);
 
-  // Auto-select wren when switching to case study
+  // Detect if a signed-in user is staff so we can show a helpful banner
+  useEffect(() => {
+    if (!user) {
+      setIsStaff(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id);
+      const staff = (roles || []).some((r: any) =>
+        ["practitioner", "trainee", "trainer", "admin"].includes(r.role)
+      );
+      if (!cancelled) setIsStaff(staff);
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
   useEffect(() => {
     if (signupPath === "case_study") {
       setSelectedTier("wren");
