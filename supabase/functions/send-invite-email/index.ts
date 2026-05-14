@@ -12,6 +12,7 @@ interface InviteEmailRequest {
   to: string;
   clientName: string;
   inviteLink: string;
+  practitionerCode?: string;
 }
 
 serve(async (req) => {
