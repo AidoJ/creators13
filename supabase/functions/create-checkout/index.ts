@@ -120,10 +120,11 @@ serve(async (req) => {
       }
     }
 
-    // Upsert profile enrollment_step (in case trigger didn't fire)
+    // Insert the profile only if the auth trigger did not create it.
+    // Do not overwrite enrollment_step for returning clients already further along.
     const { error: profileError } = await supabaseClient.from("profiles").upsert(
       { user_id: userId, email: userEmail, enrollment_step: "signed_up" },
-      { onConflict: "user_id" }
+      { onConflict: "user_id", ignoreDuplicates: true }
     );
     if (profileError) throw new Error(`Could not update enrollment profile: ${profileError.message}`);
     logStep("Upserted profile enrollment_step");
