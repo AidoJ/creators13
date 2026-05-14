@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export interface EnrollmentState {
   isStaff: boolean; // practitioner/trainee/trainer/admin → bypass client gate
+  isCaseStudySubject: boolean;
   hasSubscription: boolean;
   hasPractitioner: boolean;
   practitionerIsTrainer: boolean;
@@ -18,14 +19,14 @@ export interface EnrollmentState {
 }
 
 export async function loadEnrollmentState(userId: string): Promise<EnrollmentState> {
-  const [rolesRes, profileRes, subRes, photosRes, bookingRes, cpRes] = await Promise.all([
+  const [rolesRes, profileRes, subRes, photosRes, bookingRes, cpRes, csRes] = await Promise.all([
     supabase.from("user_roles").select("role").eq("user_id", userId),
     supabase
       .from("profiles")
-      .select("first_name, date_of_birth, gender, height_cm, case_study_consent_at")
+      .select("first_name, date_of_birth, gender, height_cm, case_study_consent_at, email")
       .eq("user_id", userId)
       .maybeSingle(),
-    supabase.from("subscriptions").select("tier, billing_period").eq("user_id", userId).maybeSingle(),
+    supabase.from("subscriptions").select("tier, billing_period, referral_code").eq("user_id", userId).maybeSingle(),
     supabase
       .from("profiling_photos")
       .select("id", { count: "exact", head: true })
@@ -36,6 +37,7 @@ export async function loadEnrollmentState(userId: string): Promise<EnrollmentSta
       .select("practitioner_id")
       .eq("client_id", userId)
       .eq("active", true),
+    supabase.from("case_studies").select("id").eq("subject_user_id", userId).limit(1),
   ]);
 
   const roles = (rolesRes.data || []).map((r: any) => r.role);
@@ -54,8 +56,26 @@ export async function loadEnrollmentState(userId: string): Promise<EnrollmentSta
     practitionerIsTrainer = !!(trainerRoles && trainerRoles.length > 0);
   }
 
+  let hasInvitation = false;
+  const profileEmail = profileRes.data?.email?.trim().toLowerCase();
+  if (profileEmail) {
+    const { data: invitations } = await supabase
+      .from("client_invitations")
+      .select("id")
+      .ilike("email", profileEmail)
+      .limit(1);
+    hasInvitation = !!(invitations && invitations.length > 0);
+  }
+
+  const isCaseStudySubject = !!(
+    subRes.data?.referral_code ||
+    hasInvitation ||
+    (csRes.data && csRes.data.length > 0)
+  );
+
   return {
     isStaff,
+    isCaseStudySubject,
     hasSubscription: !!subRes.data?.tier,
     hasPractitioner: practIds.length > 0,
     practitionerIsTrainer,
@@ -96,8 +116,9 @@ export function getRequiredEnrollmentPath(state: EnrollmentState): string | null
   // Consent is REQUIRED for everyone before photos — fail-closed.
   if (!state.hasConsent) return `/enroll/consent${qs()}`;
   if (!state.hasPhotos) return `/enroll/photos${qs()}`;
-  // Booking only required for clients linked to a trainer-role practitioner.
-  if (state.practitionerIsTrainer && !state.hasBooking) return `/enroll/booking${qs()}`;
+  // Booking only required for paying/direct clients linked to a trainer-role practitioner.
+  // Invited case-study subjects should land on their dashboard after photos.
+  if (!state.isCaseStudySubject && state.practitionerIsTrainer && !state.hasBooking) return `/enroll/booking${qs()}`;
 
   return null; // complete
 }
