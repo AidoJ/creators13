@@ -57,8 +57,9 @@ export default function InviteClientForm({ practitionerCode }: InviteClientFormP
     if (!templateHtml) return null;
     return templateHtml
       .replace(/\{\{clientName\}\}/g, "there")
-      .replace(/\{\{inviteLink\}\}/g, "#");
-  }, [templateHtml]);
+      .replace(/\{\{inviteLink\}\}/g, "#")
+      .replace(/\{\{practitionerCode\}\}/g, practitionerCode || "");
+  }, [templateHtml, practitionerCode]);
 
   async function fetchInvitations() {
     const { data } = await supabase
