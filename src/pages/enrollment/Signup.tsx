@@ -22,6 +22,14 @@ export default function Signup() {
   const caseStudy = params.get("case_study") === "true";
   const practitionerCode = params.get("practitioner_code") || "";
   const tierInfo = TIERS[tier] || TIERS.wren;
+  const authReturnParams = new URLSearchParams({ tier, billing });
+  if (caseStudy) {
+    authReturnParams.set("case_study", "true");
+    authReturnParams.set("practitioner_code", practitionerCode);
+  }
+  const authReturnTo = tier === "wren"
+    ? `/enroll?${authReturnParams.toString()}`
+    : `/enroll/payment?${authReturnParams.toString()}`;
 
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
@@ -257,7 +265,7 @@ export default function Signup() {
             <p className="text-sm text-muted-foreground">
               Already have an account?{" "}
               <Link
-                to={`/auth?returnTo=${encodeURIComponent(`/enroll/payment?tier=${tier}&billing=${billing}`)}`}
+                 to={`/auth?returnTo=${encodeURIComponent(authReturnTo)}`}
                 className="text-primary font-semibold hover:underline"
               >
                 Sign in
