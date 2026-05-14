@@ -127,7 +127,8 @@ export default function Signup() {
     // 3. If case study, send welcome email with login details and photo upload prompt
     if (caseStudy) {
       const appOrigin = getAppOrigin();
-      const loginUrl = `${appOrigin}/auth`;
+      const returnToPath = `/enroll/practitioner?tier=${tier}&billing=${billing}&case_study=true&practitioner_code=${encodeURIComponent(practitionerCode)}${inviteToken ? `&invite=${encodeURIComponent(inviteToken)}` : ""}`;
+      const loginUrl = `${appOrigin}/auth?returnTo=${encodeURIComponent(returnToPath)}`;
       const photosUrl = `${appOrigin}/enroll/photos?tier=${tier}&billing=${billing}&case_study=true&practitioner_code=${practitionerCode}`;
       supabase.functions.invoke("send-case-study-welcome", {
         body: {
