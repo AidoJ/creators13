@@ -12,7 +12,7 @@ import { useEnrollmentGate } from "@/hooks/useEnrollmentGate";
 const CONSENT_ITEMS = [
   "I understand that my photos will be used for body-type profiling as part of a practitioner training case study.",
   "I consent to my anonymised profiling data being reviewed by a certified trainer for assessment purposes.",
-  "I understand I can withdraw my consent and request deletion of my data at any time by contacting support.",
+  "I understand I can withdraw my consent and request deletion of my data at any time by contacting my practitioner.",
   "I confirm that I am over 18 years of age.",
 ];
 
