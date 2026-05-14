@@ -31,7 +31,7 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, serviceRoleKey);
     const resend = new Resend(apiKey);
-    const { to, clientName, loginLink, photosLink }: WelcomeRequest = await req.json();
+    const { to, clientName, loginLink, photosLink, practitionerCode }: WelcomeRequest = await req.json();
 
     if (!to || !clientName || !loginLink || !photosLink) {
       throw new Error("Missing required fields: to, clientName, loginLink, photosLink");
@@ -54,7 +54,8 @@ serve(async (req) => {
       .replace(/\{\{clientName\}\}/g, clientName)
       .replace(/\{\{email\}\}/g, to)
       .replace(/\{\{loginLink\}\}/g, loginLink)
-      .replace(/\{\{photosLink\}\}/g, photosLink);
+      .replace(/\{\{photosLink\}\}/g, photosLink)
+      .replace(/\{\{practitionerCode\}\}/g, practitionerCode || "");
 
     const subject = template.subject
       .replace(/\{\{clientName\}\}/g, clientName);
