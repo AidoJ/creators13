@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Check, ArrowRight, Users, GraduationCap } from "lucide-react";
+import { Check, ArrowRight, Users, GraduationCap, Info } from "lucide-react";
 import landscapeLeaf from "@/assets/landscape-leaf.png";
 import landscapeWater from "@/assets/landscape-water.png";
 import goldRing from "@/assets/gold-ring.png";
