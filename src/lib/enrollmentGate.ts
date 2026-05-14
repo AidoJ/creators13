@@ -56,20 +56,12 @@ export async function loadEnrollmentState(userId: string): Promise<EnrollmentSta
     practitionerIsTrainer = !!(trainerRoles && trainerRoles.length > 0);
   }
 
-  let hasInvitation = false;
-  const profileEmail = profileRes.data?.email?.trim().toLowerCase();
-  if (profileEmail) {
-    const { data: invitations } = await supabase
-      .from("client_invitations")
-      .select("id")
-      .ilike("email", profileEmail)
-      .limit(1);
-    hasInvitation = !!(invitations && invitations.length > 0);
-  }
+  const { data: invitingPractitioners } = await (supabase as any)
+    .rpc("get_inviting_practitioners_for_current_user");
+  const hasInvitation = !!(invitingPractitioners && invitingPractitioners.length > 0);
 
   const isCaseStudySubject = !!(
     subRes.data?.referral_code ||
-    profileRes.data?.case_study_consent_at ||
     hasInvitation ||
     (csRes.data && csRes.data.length > 0)
   );
