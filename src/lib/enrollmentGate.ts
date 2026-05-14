@@ -69,6 +69,7 @@ export async function loadEnrollmentState(userId: string): Promise<EnrollmentSta
 
   const isCaseStudySubject = !!(
     subRes.data?.referral_code ||
+    profileRes.data?.case_study_consent_at ||
     hasInvitation ||
     (csRes.data && csRes.data.length > 0)
   );
