@@ -58,6 +58,20 @@ serve(async (req) => {
     const tierValue = tier || "wren";
     const role = tierValue === "owl" ? "trainee" : "client";
     const practitionerCode = body.practitioner_code || null;
+    const inviteToken = body.invite_token || null;
+
+    if (inviteToken) {
+      const { data: invitation, error: invitationError } = await supabaseClient
+        .from("client_invitations")
+        .select("email, practitioner_id")
+        .eq("invite_token", inviteToken)
+        .maybeSingle();
+      if (invitationError) throw new Error(`Could not verify invitation: ${invitationError.message}`);
+      if (!invitation) throw new Error("Invitation link was not found");
+      if ((invitation.email || "").trim().toLowerCase() !== userEmail.trim().toLowerCase()) {
+        throw new Error(`This invitation is for ${invitation.email}. Please sign in with that email address, or sign out and create Goldie's account.`);
+      }
+    }
 
     // Always create role + subscription records
     const { error: roleError } = await supabaseClient.from("user_roles").upsert(
