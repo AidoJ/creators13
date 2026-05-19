@@ -388,12 +388,14 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
         onSaved?.();
       }
     } else {
-      // Safeguard: prevent duplicate case study for same (practitioner, subject)
+      // Safeguard: prevent duplicate case study for same (practitioner, subject).
+      // Exclude our own pre-created stub row (matched by id).
       const { data: existingStudies } = await supabase
         .from("case_studies")
         .select("id, title")
         .eq("practitioner_id", user.id)
         .eq("subject_user_id", clientId)
+        .neq("id", caseStudyId)
         .limit(1);
 
       if (existingStudies && existingStudies.length > 0) {
@@ -419,7 +421,9 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
         status,
       };
 
-      const { error } = await supabase.from("case_studies").insert(insertPayload as any);
+      // Upsert by id so this works both for fresh inserts and when a stub row
+      // was pre-created earlier in this save (to satisfy storage RLS for paper uploads).
+      const { error } = await supabase.from("case_studies").upsert(insertPayload as any, { onConflict: "id" });
       if (error) {
         toast({ title: "Error saving", description: error.message, variant: "destructive" });
       } else {
