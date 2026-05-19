@@ -256,6 +256,43 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
 
     // 1. Upload any new paper scans (works in either starting mode)
     const caseStudyId = existingCaseStudy?.id || crypto.randomUUID();
+
+    // If this is a new case study and we have paper files to upload, pre-create
+    // a stub case_studies row first so the storage RLS policy
+    // ("case_studies row exists and is owned by this practitioner") passes.
+    if (!existingCaseStudy && paperFiles.length > 0) {
+      // Safeguard: prevent duplicate case study for same (practitioner, subject)
+      const { data: existingStudies } = await supabase
+        .from("case_studies")
+        .select("id, title")
+        .eq("practitioner_id", user.id)
+        .eq("subject_user_id", clientId)
+        .limit(1);
+
+      if (existingStudies && existingStudies.length > 0) {
+        toast({
+          title: "Case study already exists",
+          description: `"${existingStudies[0].title}" already exists for this client. Please edit the existing study instead.`,
+          variant: "destructive",
+        });
+        setSaving(false);
+        return;
+      }
+
+      const { error: stubError } = await supabase.from("case_studies").insert({
+        id: caseStudyId,
+        practitioner_id: user.id,
+        subject_user_id: clientId,
+        title: title || `Case study for ${clientName}`,
+        status: "draft",
+      } as any);
+      if (stubError) {
+        toast({ title: "Error saving", description: stubError.message, variant: "destructive" });
+        setSaving(false);
+        return;
+      }
+    }
+
     let newPaths: string[] = [];
     if (paperFiles.length > 0) {
       setUploadingPaper(true);
@@ -351,12 +388,14 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
         onSaved?.();
       }
     } else {
-      // Safeguard: prevent duplicate case study for same (practitioner, subject)
+      // Safeguard: prevent duplicate case study for same (practitioner, subject).
+      // Exclude our own pre-created stub row (matched by id).
       const { data: existingStudies } = await supabase
         .from("case_studies")
         .select("id, title")
         .eq("practitioner_id", user.id)
         .eq("subject_user_id", clientId)
+        .neq("id", caseStudyId)
         .limit(1);
 
       if (existingStudies && existingStudies.length > 0) {
@@ -382,7 +421,9 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
         status,
       };
 
-      const { error } = await supabase.from("case_studies").insert(insertPayload as any);
+      // Upsert by id so this works both for fresh inserts and when a stub row
+      // was pre-created earlier in this save (to satisfy storage RLS for paper uploads).
+      const { error } = await supabase.from("case_studies").upsert(insertPayload as any, { onConflict: "id" });
       if (error) {
         toast({ title: "Error saving", description: error.message, variant: "destructive" });
       } else {
