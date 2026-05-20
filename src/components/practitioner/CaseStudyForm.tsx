@@ -30,7 +30,7 @@ interface ExistingCaseStudy {
 interface CaseStudyFormProps {
   clientId: string;
   clientName: string;
-  onSaved?: () => void;
+  onSaved?: (status?: string) => void;
   existingCaseStudy?: ExistingCaseStudy;
 }
 
@@ -385,7 +385,7 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
       } else {
         toast({ title: "Case study updated", description: status === "submitted" ? "Re-submitted for review." : status === "profiling_submitted" ? "Submitted for profiling." : "Saved as draft." });
         if (status === "submitted") notifyTrainerSubmission();
-        onSaved?.();
+        onSaved?.(status);
       }
     } else {
       // Safeguard: prevent duplicate case study for same (practitioner, subject).
@@ -429,7 +429,7 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
       } else {
         toast({ title: "Case study saved", description: status === "submitted" ? "Submitted for review." : status === "profiling_submitted" ? "Submitted for profiling." : "Saved as draft." });
         if (status === "submitted") notifyTrainerSubmission();
-        onSaved?.();
+        onSaved?.(status);
       }
     }
     setSaving(false);

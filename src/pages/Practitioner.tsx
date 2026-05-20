@@ -204,7 +204,14 @@ export default function PractitionerDashboard() {
                         <CaseStudyForm
                           clientId={selectedClientId}
                           clientName={selectedClientName}
-                          onSaved={() => { setShowCaseStudy(false); setEditingCaseStudy(null); }}
+                          onSaved={(status) => {
+                            setShowCaseStudy(false);
+                            setEditingCaseStudy(null);
+                            if (status === "submitted" || status === "profiling_submitted") {
+                              setSelectedClientId(null);
+                              setActiveTab("pipeline");
+                            }
+                          }}
                           existingCaseStudy={editingCaseStudy || undefined}
                         />
                       </>
@@ -243,7 +250,14 @@ export default function PractitionerDashboard() {
                 <CaseStudyForm
                   clientId={selectedClientId}
                   clientName={selectedClientName}
-                  onSaved={() => { setShowCaseStudy(false); setEditingCaseStudy(null); }}
+                  onSaved={(status) => {
+                    setShowCaseStudy(false);
+                    setEditingCaseStudy(null);
+                    if (status === "submitted" || status === "profiling_submitted") {
+                      setSelectedClientId(null);
+                      setActiveTab("pipeline");
+                    }
+                  }}
                   existingCaseStudy={editingCaseStudy}
                 />
               </div>
