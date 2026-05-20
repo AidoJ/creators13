@@ -30,7 +30,7 @@ interface ExistingCaseStudy {
 interface CaseStudyFormProps {
   clientId: string;
   clientName: string;
-  onSaved?: () => void;
+  onSaved?: (status?: "draft" | "submitted" | "profiling_submitted") => void;
   existingCaseStudy?: ExistingCaseStudy;
 }
 
