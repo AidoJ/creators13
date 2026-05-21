@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TIERS, type TierKey } from "@/lib/tiers";
-import { ArrowRight, BookOpen, CircleHelp } from "lucide-react";
+import { ArrowRight, BookOpen, CircleHelp, CalendarDays, GraduationCap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { sortCreatorTypes } from "@/lib/creatorTypes";
 import welcomeBg from "@/assets/welcome-bg.png";
