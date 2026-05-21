@@ -126,10 +126,13 @@ export default function TrainerDashboard() {
   }, [fetchUsers, fetchCaseStudies]);
 
   async function handleCaseStudyAction(id: string, action: "approved" | "revision_requested", notes?: string) {
-    const updateData: { status: "approved" | "revision_requested"; reviewed_by?: string; reviewed_at: string; reviewer_notes?: string } = {
+    const updateData: { status: "approved" | "revision_requested"; reviewed_by?: string; reviewed_at: string; reviewer_notes?: string; profiling_complete?: boolean } = {
       status: action, reviewed_by: user?.id, reviewed_at: new Date().toISOString(),
     };
     if (notes) updateData.reviewer_notes = notes;
+    // Any trainer action implies the case study has been reviewed/profiled —
+    // unlock the practitioner's feedback pages so they can complete the assessment.
+    updateData.profiling_complete = true;
     const { error } = await supabase.from("case_studies").update(updateData).eq("id", id);
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
