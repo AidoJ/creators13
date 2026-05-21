@@ -159,6 +159,10 @@ export default function Dashboard() {
           enrollmentStep={profile?.enrollment_step}
           country={profile?.country}
           showBooking={hasTrainerPractitioner && !isCaseStudySubject}
+          hasDetails={hasDetails}
+          photosUploaded={photosUploaded}
+          bookingMade={bookingMade}
+          isComplete={isComplete}
         />
 
         {/* Upsell for lower tiers — hidden until paid tiers are available */}

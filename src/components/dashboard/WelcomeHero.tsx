@@ -46,9 +46,13 @@ interface WelcomeHeroProps {
   enrollmentStep?: string | null;
   country?: string | null;
   showBooking?: boolean;
+  hasDetails?: boolean;
+  photosUploaded?: boolean;
+  bookingMade?: boolean;
+  isComplete?: boolean;
 }
 
-export default function WelcomeHero({ firstName, tier, subscriptionStatus, statusLabel, statusColor, creatorTypes = [], showStatusBadge = true, enrollmentStep, country, showBooking = false }: WelcomeHeroProps) {
+export default function WelcomeHero({ firstName, tier, subscriptionStatus, statusLabel, statusColor, creatorTypes = [], showStatusBadge = true, enrollmentStep, country, showBooking = false, hasDetails = false, photosUploaded = false, bookingMade = false, isComplete = false }: WelcomeHeroProps) {
   const tierData = tier ? TIERS[tier] : null;
   const birdSrc = tier ? TIER_BIRDS[tier] : null;
 
@@ -86,19 +90,14 @@ export default function WelcomeHero({ firstName, tier, subscriptionStatus, statu
     loadGlyphs();
   }, [creatorTypes]);
 
-  // Determine "What's Next?" prompt
+  // Determine "What's Next?" prompt — derived from actual data, not just enrollment_step
   const getNextStep = () => {
-    if (!enrollmentStep || enrollmentStep === "plan_selected" || enrollmentStep === "signed_up")
-      return { label: "Complete your personal details", link: "/enroll/details" };
-    if (enrollmentStep === "payment_complete")
-      return { label: "Upload your profiling photos", link: "/enroll/photos" };
-    if (enrollmentStep === "photos_uploaded" && showBooking)
-      return { label: "Book your profiling session", link: "/enroll/booking" };
-    if (enrollmentStep === "photos_uploaded" && !showBooking)
-      return { label: "Your photos are being reviewed", link: null };
-    if (enrollmentStep === "booking_made" || enrollmentStep === "awaiting_profiling")
-      return { label: "Your profile is being reviewed", link: null };
-    return null; // complete
+    if (isComplete) return null;
+    if (!hasDetails) return { label: "Complete your personal details", link: "/enroll/details" };
+    if (!photosUploaded) return { label: "Upload your profiling photos", link: "/enroll/photos" };
+    if (!bookingMade && showBooking) return { label: "Book your profiling session", link: "/enroll/booking" };
+    if (!bookingMade && !showBooking) return { label: "Your photos are being reviewed", link: null };
+    return { label: "Your profile is being reviewed", link: null };
   };
   const nextStep = getNextStep();
 
