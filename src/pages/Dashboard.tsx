@@ -139,7 +139,7 @@ export default function Dashboard() {
           <div className="relative space-y-1.5">
             <p className="text-xs font-semibold uppercase tracking-widest text-secondary">Coming Soon…</p>
             <h2 className="text-base sm:text-lg font-display font-bold text-foreground leading-snug">
-              Doors open in April 2026 to the Creator Types ecosystem
+              Doors open in July 2026 to the Creator Types ecosystem
             </h2>
             <p className="text-sm text-muted-foreground max-w-lg mx-auto">
               The only place online where you can meet other Creators by their body type
