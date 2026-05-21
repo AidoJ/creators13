@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TIERS, type TierKey } from "@/lib/tiers";
-import { ArrowRight, BookOpen, CircleHelp } from "lucide-react";
+import { ArrowRight, BookOpen, CircleHelp, CalendarDays, GraduationCap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { sortCreatorTypes } from "@/lib/creatorTypes";
 import welcomeBg from "@/assets/welcome-bg.png";
@@ -190,25 +190,39 @@ export default function WelcomeHero({ firstName, tier, subscriptionStatus, statu
         </div>
       )}
 
-      {/* Book button when enrollment is complete but user is in Australia */}
-      {!nextStep && isAustralia && (
+      {/* Extra action buttons when enrollment is complete */}
+      {!nextStep && (
         <div className="rounded-2xl border border-orange-300/30 bg-card p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <div className="w-10 h-10 rounded-full bg-orange-500/15 flex items-center justify-center shrink-0">
-              <BookOpen className="h-5 w-5 text-orange-500" />
+              <CircleHelp className="h-5 w-5 text-orange-500" />
             </div>
             <div className="flex-1 min-w-0">
-              <span className="text-sm font-semibold text-foreground">13Creators Book</span>
-              <p className="text-xs text-muted-foreground">Get your copy of the 13Creators book</p>
+              <span className="text-sm font-semibold text-foreground">What's Next?</span>
+              <p className="text-xs text-muted-foreground">Explore more ways to engage with the Creator Types ecosystem</p>
             </div>
           </div>
-          <div className="w-full sm:w-auto">
-            <Button variant="outline" size="sm" className="gap-1.5 shrink-0 border-orange-400/40 text-orange-600 hover:bg-orange-500/10" asChild>
-              <a href="https://www.paypal.com/ncp/payment/Q5UNQG7THTWQW" target="_blank" rel="noopener noreferrer">
-                <BookOpen className="h-3.5 w-3.5" />
-                Buy Now
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+            <Button variant="outline" size="sm" className="w-full sm:w-auto justify-center gap-1.5 shrink-0 border-orange-400/40 text-orange-600 hover:bg-orange-500/10" asChild>
+              <a href="/enroll/plan">
+                <CalendarDays className="h-3.5 w-3.5" />
+                Book a Private Session
               </a>
             </Button>
+            <Button variant="outline" size="sm" className="w-full sm:w-auto justify-center gap-1.5 shrink-0 border-orange-400/40 text-orange-600 hover:bg-orange-500/10" asChild>
+              <a href="https://sacredbusiness.com.au/wp-content/uploads/2026/02/2026-13CREATORS-Training-Prospectus.pdf" target="_blank" rel="noopener noreferrer">
+                <GraduationCap className="h-3.5 w-3.5" />
+                Become a Practitioner
+              </a>
+            </Button>
+            {isAustralia && (
+              <Button variant="outline" size="sm" className="w-full sm:w-auto justify-center gap-1.5 shrink-0 border-orange-400/40 text-orange-600 hover:bg-orange-500/10" asChild>
+                <a href="https://www.paypal.com/ncp/payment/Q5UNQG7THTWQW" target="_blank" rel="noopener noreferrer">
+                  <BookOpen className="h-3.5 w-3.5" />
+                  Buy the Book
+                </a>
+              </Button>
+            )}
           </div>
         </div>
       )}
