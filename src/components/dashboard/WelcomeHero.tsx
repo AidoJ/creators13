@@ -181,7 +181,7 @@ export default function WelcomeHero({ firstName, tier, subscriptionStatus, statu
             <Button variant="outline" size="sm" className="w-full sm:w-auto justify-center gap-1.5 shrink-0 border-orange-400/40 text-orange-600 hover:bg-orange-500/10" asChild>
               <a href="/enroll/plan">
                 <CalendarDays className="h-3.5 w-3.5" />
-                Book a Private Session
+                Book a Private Consult
               </a>
             </Button>
             <Button variant="outline" size="sm" className="w-full sm:w-auto justify-center gap-1.5 shrink-0 border-orange-400/40 text-orange-600 hover:bg-orange-500/10" asChild>
