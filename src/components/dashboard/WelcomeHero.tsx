@@ -178,6 +178,18 @@ export default function WelcomeHero({ firstName, tier, subscriptionStatus, statu
                 <a href={nextStep.link}>Continue <ArrowRight className="h-3 w-3 ml-1" /></a>
               </Button>
             )}
+            <Button variant="outline" size="sm" className="w-full sm:w-auto justify-center gap-1.5 shrink-0 border-orange-400/40 text-orange-600 hover:bg-orange-500/10" asChild>
+              <a href="/enroll/plan">
+                <CalendarDays className="h-3.5 w-3.5" />
+                Book a Private Session
+              </a>
+            </Button>
+            <Button variant="outline" size="sm" className="w-full sm:w-auto justify-center gap-1.5 shrink-0 border-orange-400/40 text-orange-600 hover:bg-orange-500/10" asChild>
+              <a href="https://sacredbusiness.com.au/wp-content/uploads/2026/02/2026-13CREATORS-Training-Prospectus.pdf" target="_blank" rel="noopener noreferrer">
+                <GraduationCap className="h-3.5 w-3.5" />
+                Become a Practitioner
+              </a>
+            </Button>
             {isAustralia && (
               <Button variant="outline" size="sm" className="w-full sm:w-auto justify-center gap-1.5 shrink-0 border-orange-400/40 text-orange-600 hover:bg-orange-500/10" asChild>
                 <a href="https://www.paypal.com/ncp/payment/Q5UNQG7THTWQW" target="_blank" rel="noopener noreferrer">
