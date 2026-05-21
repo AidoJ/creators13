@@ -605,7 +605,7 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
                 <TabsTrigger
                   key={p}
                   value={p}
-                  className="text-xs"
+                  className="text-xs text-foreground/80 hover:text-foreground border border-transparent data-[state=inactive]:bg-muted/40 data-[state=inactive]:border-border"
                 >
                   <span className="hidden sm:inline">{PAGE_LABELS[p]}</span>
                   <span className="sm:hidden">Page {i + 1}</span>
