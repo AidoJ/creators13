@@ -29,8 +29,9 @@ export async function loadEnrollmentState(userId: string): Promise<EnrollmentSta
     supabase.from("subscriptions").select("tier, billing_period, referral_code").eq("user_id", userId).maybeSingle(),
     supabase
       .from("profiling_photos")
-      .select("id", { count: "exact", head: true })
+      .select("photo_type")
       .eq("user_id", userId),
+
     supabase.from("bookings").select("id").eq("client_id", userId).limit(1).maybeSingle(),
     supabase
       .from("client_practitioner")
@@ -79,7 +80,15 @@ export async function loadEnrollmentState(userId: string): Promise<EnrollmentSta
       profileRes.data?.height_cm
     ),
     hasConsent: !!profileRes.data?.case_study_consent_at,
-    hasPhotos: (photosRes.count || 0) > 0,
+    hasPhotos: (() => {
+      const REQUIRED = [
+        "face_front_closed", "face_front_smiling", "face_side",
+        "body_front", "body_back", "body_side", "feet", "hands",
+      ];
+      const types = new Set((photosRes.data || []).map((r: any) => r.photo_type));
+      return REQUIRED.every((t) => types.has(t));
+    })(),
+
     hasBooking: !!bookingRes.data,
     tier: subRes.data?.tier ?? null,
     billing: subRes.data?.billing_period ?? null,
