@@ -29,8 +29,9 @@ export async function loadEnrollmentState(userId: string): Promise<EnrollmentSta
     supabase.from("subscriptions").select("tier, billing_period, referral_code").eq("user_id", userId).maybeSingle(),
     supabase
       .from("profiling_photos")
-      .select("id", { count: "exact", head: true })
+      .select("photo_type")
       .eq("user_id", userId),
+
     supabase.from("bookings").select("id").eq("client_id", userId).limit(1).maybeSingle(),
     supabase
       .from("client_practitioner")
