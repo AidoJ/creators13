@@ -269,8 +269,11 @@ export default function ClientDetail({ clientId, onClientNameLoaded }: ClientDet
       )}
 
       {/* Session Recordings */}
-      <div className="rounded-2xl border border-border bg-card p-4">
+      <div className="rounded-2xl border border-border bg-card p-4 space-y-4">
         <ClientRecordingLinks clientId={clientId} />
+        <div className="border-t border-border pt-4">
+          <ClientSessionImages clientId={clientId} />
+        </div>
       </div>
 
       {/* Subscription info */}
