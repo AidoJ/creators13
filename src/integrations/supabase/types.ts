@@ -289,6 +289,33 @@ export type Database = {
         }
         Relationships: []
       }
+      client_session_images: {
+        Row: {
+          client_id: string
+          created_at: string
+          id: string
+          label: string | null
+          practitioner_id: string
+          storage_path: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          id?: string
+          label?: string | null
+          practitioner_id: string
+          storage_path: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          id?: string
+          label?: string | null
+          practitioner_id?: string
+          storage_path?: string
+        }
+        Relationships: []
+      }
       community_posts: {
         Row: {
           content: string | null
