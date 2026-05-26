@@ -87,7 +87,7 @@ export default function ClientDetail({ clientId, onClientNameLoaded }: ClientDet
         supabase.from("bookings").select("id, scheduled_at, status, zoom_link").eq("client_id", clientId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("creator_type_profiles").select("primary_type, secondary_type, type_3, type_4, profiled_at").eq("user_id", clientId).maybeSingle(),
         (supabase.from("client_subscription_summary" as any).select("tier").eq("user_id", clientId).maybeSingle() as any),
-        supabase.from("case_studies").select("id").eq("subject_user_id", clientId).limit(1),
+        supabase.from("case_studies").select("id, creator_types_identified, reviewed_at, status").eq("subject_user_id", clientId).order("created_at", { ascending: false }),
       ]);
       if (profileRes.data) {
         setProfile(profileRes.data);
@@ -95,7 +95,25 @@ export default function ClientDetail({ clientId, onClientNameLoaded }: ClientDet
         onClientNameLoaded?.(name || "Unknown");
       }
       if (bookingRes.data) setBooking(bookingRes.data);
-      if (ctRes.data) setCreatorType(ctRes.data);
+      // Prefer creator_type_profiles; otherwise fall back to types already identified
+      // on the most recent case study (even if not yet approved by a trainer).
+      if (ctRes.data) {
+        setCreatorType(ctRes.data);
+      } else {
+        const profiledCs = (csRes.data || []).find(
+          (cs: any) => Array.isArray(cs.creator_types_identified) && cs.creator_types_identified.length > 0
+        );
+        if (profiledCs) {
+          const types = ((profiledCs as any).creator_types_identified as string[]).map((t) => t.toLowerCase());
+          setCreatorType({
+            primary_type: types[0] ?? null,
+            secondary_type: types[1] ?? null,
+            type_3: types[2] ?? null,
+            type_4: types[3] ?? null,
+            profiled_at: (profiledCs as any).reviewed_at ?? null,
+          });
+        }
+      }
       setClientIsPaidSubscriber(isPaidTier(subRes.data?.tier));
       setIsCaseStudySubject(!!(csRes.data && csRes.data.length > 0));
       setLoading(false);
