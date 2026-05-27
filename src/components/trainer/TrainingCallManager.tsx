@@ -433,8 +433,9 @@ export default function TrainingCallManager({ onCallsChanged }: TrainingCallMana
   async function handleDuplicate() {
     if (!duplicateSource || !user || !duplicateDate || !duplicateTime) return;
     const newScheduledAt = new Date(`${duplicateDate}T${duplicateTime}`).toISOString();
+    const newTitle = duplicateTitle.trim() || duplicateSource.title.replace(/^\[DUPLICATE\]\s*/, '');
     const { data, error } = await supabase.from("training_calls").insert({
-      title: duplicateTitle.trim() || duplicateSource.title.replace(/^\[DUPLICATE\]\s*/, ''),
+      title: newTitle,
       description: duplicateSource.description,
       scheduled_at: newScheduledAt,
       duration_minutes: duplicateSource.duration_minutes,
@@ -446,8 +447,43 @@ export default function TrainingCallManager({ onCallsChanged }: TrainingCallMana
       toast({ title: "Error duplicating call", description: error.message, variant: "destructive" });
     } else {
       await supabase.from("training_call_events").insert({ call_id: data.id, event_type: "created", details: `Duplicated from "${duplicateSource.title}"` });
-      toast({ title: "Call duplicated", description: `Scheduled for ${new Date(newScheduledAt).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })}.` });
+
+      // Copy invitees from source call and auto-send invites to them so the
+      // duplicated call mirrors the original's recipient list.
+      const { data: sourceInvitees } = await supabase
+        .from("training_call_invitees")
+        .select("user_id, email")
+        .eq("call_id", duplicateSource.id);
+
+      const practitionerUserIds = Array.from(
+        new Set((sourceInvitees || []).filter((i: any) => !!i.user_id).map((i: any) => i.user_id as string))
+      );
+      const externalGuestEmails = Array.from(
+        new Set((sourceInvitees || []).filter((i: any) => !i.user_id && i.email).map((i: any) => (i.email as string).toLowerCase()))
+      );
+
+      const sourceClosed = duplicateSource as TrainingCall;
+      const callForInvite: Record<string, any> = {
+        id: data.id,
+        title: newTitle,
+        description: sourceClosed.description,
+        scheduled_at: newScheduledAt,
+        duration_minutes: sourceClosed.duration_minutes,
+        zoom_link: sourceClosed.zoom_link,
+        recurrence_rule: "none",
+      };
+
       setDuplicateSource(null);
+
+      if (practitionerUserIds.length > 0 || externalGuestEmails.length > 0) {
+        await sendInvites(callForInvite, practitionerUserIds, externalGuestEmails);
+      } else {
+        toast({
+          title: "Call duplicated",
+          description: `Scheduled for ${new Date(newScheduledAt).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })}. No invitees on the source call — open the call to add and send invites.`,
+        });
+      }
+
       await fetchCalls();
       onCallsChanged?.();
     }
