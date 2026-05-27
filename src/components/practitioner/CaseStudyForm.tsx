@@ -780,23 +780,36 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
           </Tabs>
 
           {/* Navigation + Save */}
-          <div className="flex items-center justify-between pt-2 border-t border-border">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigatePage(-1)}
-              disabled={pageIdx === 0}
-            >
-              <ChevronLeft className="h-4 w-4 mr-1" /> Previous
-            </Button>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-2 border-t border-border">
+            <div className="flex justify-between sm:contents">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigatePage(-1)}
+                disabled={pageIdx === 0}
+                className="sm:order-1"
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" /> Previous
+              </Button>
 
-            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigatePage(1)}
+                disabled={pageIdx === PAGES.length - 1}
+                className="sm:order-3"
+              >
+                Next <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+
+            <div className="flex flex-wrap gap-2 sm:order-2 justify-center">
               <Button variant="outline" onClick={() => handleSave("draft")} disabled={saving}>
                 {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />}
                 Save Draft
               </Button>
               {pageIdx === PAGES.length - 1 && (
-                <div className="flex flex-col items-end gap-1">
+                <div className="flex flex-col items-center sm:items-end gap-1">
                   <Button onClick={() => handleSave("submitted")} disabled={saving || !canSubmitOnline || !profilingDone} title={!profilingDone ? "Must be profiled by a trainer first" : undefined}>
                     {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
                     Submit for Review
@@ -813,16 +826,8 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
                 </div>
               )}
             </div>
-
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigatePage(1)}
-              disabled={pageIdx === PAGES.length - 1}
-            >
-              Next <ChevronRight className="h-4 w-4 ml-1" />
-            </Button>
           </div>
+
         </>
       )}
     </div>
