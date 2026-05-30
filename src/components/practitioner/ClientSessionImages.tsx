@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Image as ImageIcon, Plus, Trash2, ZoomIn, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -14,6 +14,11 @@ interface SessionImage {
   created_at: string;
 }
 
+interface PendingFile {
+  file: File;
+  label: string;
+}
+
 interface Props {
   clientId: string;
   canEdit?: boolean;
@@ -22,12 +27,17 @@ interface Props {
 const MAX_IMAGES = 5;
 const BUCKET = "profiling-photos";
 
+function cleanFileName(name: string): string {
+  return name.replace(/\.[^.]+$/, "").slice(0, 80);
+}
+
 export default function ClientSessionImages({ clientId, canEdit = true }: Props) {
   const { user } = useAuth();
   const [images, setImages] = useState<SessionImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [zoomedUrl, setZoomedUrl] = useState<string | null>(null);
+  const [pendingFiles, setPendingFiles] = useState<PendingFile[] | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   async function fetchImages() {
@@ -48,7 +58,8 @@ export default function ClientSessionImages({ clientId, canEdit = true }: Props)
     return supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
   }
 
-  async function handleFiles(files: FileList | null) {
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files;
     if (!files || !user) return;
     const remaining = MAX_IMAGES - images.length;
     if (remaining <= 0) {
@@ -56,13 +67,19 @@ export default function ClientSessionImages({ clientId, canEdit = true }: Props)
       return;
     }
     const toUpload = Array.from(files).slice(0, remaining);
+    setPendingFiles(toUpload.map((file) => ({ file, label: cleanFileName(file.name) })));
+    if (fileRef.current) fileRef.current.value = "";
+  }
+
+  async function confirmUpload() {
+    if (!pendingFiles || !user) return;
     setUploading(true);
     try {
-      for (const file of toUpload) {
-        const ext = file.name.split(".").pop() || "jpg";
+      for (const pf of pendingFiles) {
+        const ext = pf.file.name.split(".").pop() || "jpg";
         const path = `session-images/${clientId}/${crypto.randomUUID()}.${ext}`;
-        const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file, {
-          contentType: file.type,
+        const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, pf.file, {
+          contentType: pf.file.type,
           upsert: false,
         });
         if (upErr) throw upErr;
@@ -70,17 +87,17 @@ export default function ClientSessionImages({ clientId, canEdit = true }: Props)
           client_id: clientId,
           practitioner_id: user.id,
           storage_path: path,
-          label: file.name.replace(/\.[^.]+$/, "").slice(0, 80),
+          label: pf.label || cleanFileName(pf.file.name),
         });
         if (dbErr) throw dbErr;
       }
-      toast.success(`Uploaded ${toUpload.length} image${toUpload.length === 1 ? "" : "s"}`);
+      toast.success(`Uploaded ${pendingFiles.length} image${pendingFiles.length === 1 ? "" : "s"}`);
+      setPendingFiles(null);
       await fetchImages();
     } catch (e: any) {
       toast.error(e.message || "Upload failed");
     } finally {
       setUploading(false);
-      if (fileRef.current) fileRef.current.value = "";
     }
   }
 
@@ -127,7 +144,7 @@ export default function ClientSessionImages({ clientId, canEdit = true }: Props)
               accept="image/*"
               multiple
               className="hidden"
-              onChange={(e) => handleFiles(e.target.files)}
+              onChange={handleFileSelect}
             />
           </>
         )}
@@ -175,6 +192,46 @@ export default function ClientSessionImages({ clientId, canEdit = true }: Props)
         </div>
       )}
 
+      {/* Pre-upload naming dialog */}
+      <Dialog open={!!pendingFiles} onOpenChange={(open) => { if (!open) setPendingFiles(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-sm">Name your images</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+            {pendingFiles?.map((pf, idx) => (
+              <div key={idx} className="flex items-center gap-2">
+                <div className="w-10 h-10 rounded-md overflow-hidden border border-border bg-muted/30 flex-shrink-0">
+                  <img
+                    src={URL.createObjectURL(pf.file)}
+                    alt="Preview"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <Input
+                  value={pf.label}
+                  onChange={(e) => {
+                    const next = [...(pendingFiles || [])];
+                    next[idx] = { ...next[idx], label: e.target.value };
+                    setPendingFiles(next);
+                  }}
+                  placeholder="File name"
+                  className="h-8 text-xs flex-1"
+                />
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-end gap-2 mt-2">
+            <Button size="sm" variant="ghost" onClick={() => setPendingFiles(null)}>Cancel</Button>
+            <Button size="sm" onClick={confirmUpload} disabled={uploading}>
+              {uploading ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : null}
+              Upload
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Zoom dialog */}
       <Dialog open={!!zoomedUrl} onOpenChange={() => setZoomedUrl(null)}>
         <DialogContent className="max-w-4xl max-h-[90vh] p-2">
           {zoomedUrl && <img src={zoomedUrl} alt="Session image" className="w-full h-full object-contain max-h-[85vh]" />}
