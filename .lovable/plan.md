@@ -1,109 +1,75 @@
+# Card Game Pop-Out + Discount Engine — Build Plan
 
+## 1. Data model (new columns on `creator_types`)
 
-# 13 Creators — Phase 1: Full Foundations, Enrollment & Practitioner Portal
+Add five admin-editable fields to the existing `creator_types` table (one row per type, already 13 rows):
 
-## Vision
-Build the complete foundational architecture matching the mind map — **Website** as the central hub connecting **LMS**, **APP (PWA)**, **Subscriptions**, **Community**, **Game**, and **Shop**. Every branch gets its database structure from day one so nothing needs rewriting as features are added.
+- `famous_person_name` (text) — e.g. "Anne Hathaway"
+- `famous_person_image_url` (text) — image stored in the `email-assets` bucket (or a new `creator-card-assets` bucket)
+- `fact_signature` (text) — "Signature" paragraph from the MD
+- `fact_at_the_table` (text) — "At the table" paragraph
+- `fact_shadow_side` (text) — "Shadow side" paragraph
+- `fact_you_might_be` (text) — "You might be a … if" paragraph
 
----
+All four fact fields stored permanently; only one shown at a time on the card pop-out.
 
-## Foundations (All Branches Structured from Day One)
+Seed migration will pre-populate all 13 rows from the attached `13creators_card_back_fun_facts.md`. Famous-person names will be seeded from the "Who's Who in the Zoo" reference (Anne Hathaway → Snow, Taylor Swift → Lava, Will Ferrell → Lightning, Bruce Lee → Whirlwind, Hugh Jackman → Mountain, Melissa McCarthy → Sun, Kate Winslet → Lake, Simone Biles → Fire, Ryan Reynolds → River, Matthew McConaughey → Ocean, Ben Stiller → Tree, Judi Dench → Soil — Sky to be filled in by admin). Images themselves will be left blank for admin upload (copyright-safe path), with placeholders rendering until uploaded.
 
-### Role & Tier Architecture
-- **6 user roles** (users can hold multiple simultaneously): Trainer, Practitioner, Trainee, Client, Community Participant, Gamer
-- **4 subscription tiers** (independent from roles): Wren (free), Robin, Falcon, Owl
-- Roles and tiers stored as separate systems — either can evolve independently
+## 2. Admin panel — Creator Type editor
 
-### Core Database Structure
-- **User profiles** — personal info, physical details (height, shoe size, DOB, gender), avatar, medical history
-- **User roles** — multi-role table (a user can be Practitioner + Community Participant + Gamer simultaneously)
-- **Subscriptions** — tier, billing status, Stripe IDs, payment method preferences
-- **Creator Type profiles** — each user's determined Creator Type(s) and profiling data
-- **Client-Practitioner relationships** — linking Practitioners/Trainees to their assigned Clients
-- **Photo storage** — secure blob storage for 8 profiling photos per client (URLs stored in DB, files in Supabase Storage)
-- **Booking records** — Zoom/Calendly session scheduling and history
-- **LMS structure** — courses, modules, lessons (video/text/audio), assessments, case studies, progress tracking
-- **Case studies** — practitioner-created profiles of individuals they've profiled, linked to LMS
-- **Community structure** — placeholder tables for posts, discussions, member interactions
-- **Game structure** — placeholder tables for future Golden Games features
-- **Shop structure** — placeholder tables for product catalog (physical + digital), orders, fulfillment
-- **Row-Level Security** on all tables with role-based access policies
+A new admin section **"Creator Cards"** (tab on `/admin`) showing the 13 types in a list. Each row opens an editor with 5 sections in this order, exactly as you described:
 
----
+1. **Famous Person** — name field + image uploader (drag/drop, stored in Lovable Cloud storage)
+2. **Signature** — textarea
+3. **At the table** — textarea
+4. **Shadow side** — textarea
+5. **You might be a {Type} if** — textarea (label auto-fills with the type name)
 
-## Phase 1 Features (What Gets Built Now)
+Save writes back to `creator_types`. Same UI used for all 13.
 
-### 1. Public Website / Landing Page
-- Hero section with Creator Types branding — earthy golds, forest greens, warm naturals
-- Overview of the 4 subscription tiers with pricing
-- Call-to-action to enroll
-- About section explaining Creator Types and the 13 forces of nature
-- Navigation linking to all future sections (Community, Shop, Game shown as "Coming Soon")
+## 3. Card pop-out behaviour (player-facing)
 
-### 2. Enrollment Flow (6-Step Guided Process)
-1. **Plan Selection** — Choose tier with monthly/annual toggle and pricing breakdown
-2. **Signup** — Email/password + full personal details (name, DOB, gender, height, shoe size, phone, address, medical history)
-3. **Payment** — Stripe Checkout supporting multiple payment methods (card, EFT/bank transfer, BECS Direct Debit, PayID)
-4. **Photo Upload** — 8 specific photos (3 face, 3 body, feet, hands) with visual guidelines, stored securely in blob storage
-5. **Zoom Booking** — Embedded Calendly widget to schedule initial profiling session
-6. **Dashboard** — Confirmation with enrollment status and next steps
+When the player opens a creator card pop-out:
 
-### 3. Authentication & Role Management
-- Email + password sign-up and login
-- Auto-assign roles based on chosen subscription tier
-- Protected routes — role-based access to different sections of the app
-- Trainer (owner) has admin-level access to everything
+- Always show the **famous person image + name** at the top (fixed, never rotates)
+- Below it, show **one of the four fun-fact paragraphs**, picked at random on each open
+- Across a game session, rotate so the player sees a different fact each time they reopen the same card (track shown-facts in component state / localStorage keyed by type, reset once all four have been seen)
+- A small "Show another" link lets them cycle manually
 
-### 4. APP — Client Dashboard (Wrens / Robins / Subscribers)
-- **My Profile** — Personal details, Creator Type results (once profiled), photo management
-- **My Sessions** — Upcoming and past Zoom bookings
-- **Enrollment Status** — Visual progress tracker through the profiling journey
-- **Subscription** — View plan, upgrade, cancel, payment history
-- **Community** — "Coming Soon" link (foundation ready)
-- **Gamer** — "Coming Soon" link (foundation ready)
+This keeps the pop-out short and re-readable across a game.
 
-### 5. APP — Practitioner Dashboard (Trainees / Practitioners)
-- **My Clients** — Assigned clients with profiling status and submitted photos
-- **My Training** — Access LMS course modules and track progress
-- **My Sessions** — Upcoming/past Zoom sessions with clients
-- **My Case Studies** — Create and manage case studies of profiled individuals (stored in LMS)
-- **My Profile** — Personal details and Creator Type info
+## 4. Discount engine
 
-### 6. APP — Admin Panel (Trainer / Owner)
-- **User Management** — View all users, search/filter, assign or change roles
-- **Client Oversight** — See all clients across all practitioners, reassign as needed
-- **LMS Content Management** — Create/edit/reorder courses, modules, lessons, assessments
-- **Case Study Review** — View and approve practitioner-submitted case studies
-- **Enrollment Overview** — Dashboard of signups, payment status, pipeline metrics
-- **Role Assignment** — Promote Trainees to Practitioners, manage all permissions
+New table `game_discount_tiers` (admin-editable, seeded with your three tiers):
 
-### 7. LMS (Full Framework)
-- **Courses & Modules** — organized into sections with individual lessons
-- **Content Types** — video, text, audio, and photos
-- **Case Studies** — practitioners create case studies of profiled individuals, with peer review and trainer sign-off workflow; the core training mechanism
-- **Training Materials** — downloadable resources and reference materials
-- **Progress Tracking** — per-user completion markers and advancement indicators
-- **Access Control** — only Trainees, Practitioners, and Trainer see training content
+| points_threshold | discount_percent | label |
+|---|---|---|
+| 50 | 10 | 10% off your Profile Process |
+| 100 | 25 | 25% off your Profile Process |
+| 150 | 50 | 50% off your Profile Process |
 
-### 8. Stripe Payments (Multiple Methods)
-- 4 subscription products matching tier pricing
-- Owl tier: one-time enrollment fee + recurring subscription
-- Payment methods at checkout: credit/debit card, bank transfer/EFT, BECS Direct Debit, PayID
-- Payment history in user dashboard
-- Subscription management (upgrade/downgrade/cancel)
+Admin panel gets a new **"Game Rewards"** section where you can:
+- Edit existing tier rows (threshold / percent / label / active toggle)
+- Add additional tiers
+- Delete tiers
 
-### 9. Coming Soon Pages (Foundations Ready)
-- **Community** — placeholder page with "Coming Soon" messaging, database tables ready
-- **Game** — placeholder page with "Coming Soon" messaging, database tables ready
-- **Shop** — placeholder page with "Coming Soon" messaging, database tables ready (Shopify integration to be enabled when ready for physical products)
+This makes the tiers a "variable action item" you can tune without code changes.
 
----
+### Pop-up trigger logic (player side)
 
-## Design Direction
-- **Warm & nature-inspired** — earthy gold (#D4AF37), forest greens, warm creams and neutrals
-- Nature motifs reflecting the 13 Creator Types (River, Tree, Sun, Mountain, etc.)
-- Clean, welcoming typography with organic shapes and rounded corners
-- Smooth progress indicators throughout enrollment and LMS
-- Fully mobile-responsive, PWA-ready
-- Consistent navigation structure reflecting the mind map hierarchy
+- The game tracks `player_points` (already implied by your "if the player has achieved X pts" wording — if a points field doesn't yet exist on the player record we'll add `points int default 0` to the player/game-session table).
+- When `player_points` crosses a tier threshold, a celebratory pop-up appears once: "🎉 You've unlocked {percent}% off your Profile Process!" with a CTA button to the Robin tier checkout, carrying a Stripe coupon code.
+- Each unlocked tier is recorded in `player_discount_unlocks (player_id, tier_id, unlocked_at, redeemed_at)` so the same pop-up doesn't fire twice and Stripe can validate redemption.
+- The highest unlocked tier is shown as a persistent badge on the dashboard until used.
 
+### Stripe wiring
+
+For each tier row, on save we call Stripe (existing `STRIPE_SECRET_KEY` is already configured) to create/update a matching coupon (`GAME10`, `GAME25`, `GAME50` — or auto-generated codes) and store the `stripe_coupon_id` on the tier row. The checkout flow then applies the user's highest unredeemed coupon.
+
+## 5. What I'd like you to confirm before I code
+
+- **Where does the card game live today?** I couldn't find a "game" surface in the current project — is the B Creators card game (a) a separate app that will read from this DB, (b) something I should scaffold inside this app at `/game`, or (c) something you'll wire later and for now just need the DB + admin + pop-up components ready?
+- **Player points source of truth** — does a `player_points` field exist somewhere I haven't seen, or should I add one? (Affects whether the discount pop-up listens to a DB column or to in-memory game state.)
+- **Famous-person images** — happy for me to leave them blank for you to upload via the new admin uploader, or do you want me to generate placeholder silhouettes?
+
+Once you answer those three, I'll ship: migration → admin editors (Creator Cards + Game Rewards) → card pop-out component → discount pop-up + Stripe coupon sync.
