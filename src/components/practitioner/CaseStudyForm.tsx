@@ -172,18 +172,32 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
       try {
         let file = raw;
         if (isHeic) {
-          const heic2any = (await import("heic2any")).default;
-          const converted = await heic2any({ blob: raw, toType: "image/jpeg", quality: 0.9 });
-          const blob = Array.isArray(converted) ? converted[0] : converted;
-          const cleanName = (name || "page").replace(/\.(heic|heif|jpe?g)$/i, "") + ".jpg";
-          file = new File([blob], cleanName, { type: "image/jpeg" });
+          try {
+            const heic2any = (await import("heic2any")).default;
+            const converted = await heic2any({ blob: raw, toType: "image/jpeg", quality: 0.9 });
+            const blob = Array.isArray(converted) ? converted[0] : converted;
+            const cleanName = (name || "page").replace(/\.(heic|heif|jpe?g)$/i, "") + ".jpg";
+            file = new File([blob], cleanName, { type: "image/jpeg" });
+          } catch (convErr) {
+            // Some HEIC variants (e.g. 10-bit HEVC from newer iPhones) can't be decoded
+            // in-browser. Fall back to uploading the original file so it isn't lost —
+            // the trainer can still download and view it.
+            console.warn("HEIC conversion failed, uploading original:", convErr);
+            file = raw;
+            toast({
+              title: "Uploaded as HEIC",
+              description: `${name} couldn't be converted in-browser. Original file uploaded.`,
+            });
+          }
         }
         accepted.push(file);
-        previews.push(isPdf ? "" : URL.createObjectURL(file));
+        const isHeicFallback = isHeic && file === raw;
+        previews.push(isPdf || isHeicFallback ? "" : URL.createObjectURL(file));
       } catch (err) {
         console.error("File processing error:", err);
         toast({ title: "Couldn't process file", description: name, variant: "destructive" });
       }
+
     }
 
     if (accepted.length === 0) return;
