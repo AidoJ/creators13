@@ -202,6 +202,15 @@ export default function Photos() {
             profileRow.guardian_phone &&
             profileRow.guardian_email
           );
+          if (age < 16) {
+            toast({
+              title: "Photo uploads not permitted under 16",
+              description: "Our policy does not allow photo uploads for anyone under 16 years old. Please contact info@13creators.com if you have questions.",
+              variant: "destructive",
+            });
+            navigate("/dashboard");
+            return;
+          }
           if (age < 18 && !guardianComplete) {
             toast({
               title: "Parent/guardian consent required",
