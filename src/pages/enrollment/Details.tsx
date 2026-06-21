@@ -127,6 +127,25 @@ export default function Details() {
       return;
     }
 
+    if (isMinor) {
+      if (!guardianConsent) {
+        toast({ title: "Parent/guardian consent required", description: "Please tick the consent confirmation.", variant: "destructive" });
+        return;
+      }
+      if (!guardianFirstName.trim() || !guardianLastName.trim()) {
+        toast({ title: "Guardian name required", variant: "destructive" });
+        return;
+      }
+      if (!/^\+\d[\d\s\-]{6,}$/.test(guardianPhone.trim())) {
+        toast({ title: "Guardian phone must be in international format", description: "e.g. +61 412 345 678", variant: "destructive" });
+        return;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guardianEmail.trim())) {
+        toast({ title: "Valid guardian email required", variant: "destructive" });
+        return;
+      }
+    }
+
     setLoading(true);
 
     const profileData = {
@@ -147,6 +166,12 @@ export default function Details() {
       postal_code: postalCode || null,
       country: country || null,
       medical_history: medicalHistory || null,
+      guardian_consent: isMinor ? guardianConsent : null,
+      guardian_first_name: isMinor ? (guardianFirstName.trim() || null) : null,
+      guardian_last_name: isMinor ? (guardianLastName.trim() || null) : null,
+      guardian_phone: isMinor ? (guardianPhone.trim() || null) : null,
+      guardian_email: isMinor ? (guardianEmail.trim() || null) : null,
+      guardian_consent_at: isMinor && guardianConsent ? new Date().toISOString() : null,
     };
 
     const { error } = await supabase
