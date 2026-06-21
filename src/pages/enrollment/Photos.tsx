@@ -180,6 +180,41 @@ export default function Photos() {
   useEffect(() => {
     if (!user) { setLoadingExisting(false); return; }
     const loadExisting = async () => {
+      // Hard guard: if the user is under 18, block uploads until parent/guardian
+      // consent (and contact details) are recorded on their profile.
+      const { data: profileRow } = await supabase
+        .from("profiles")
+        .select("date_of_birth, guardian_consent, guardian_first_name, guardian_last_name, guardian_phone, guardian_email")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (profileRow?.date_of_birth) {
+        const dob = new Date(profileRow.date_of_birth);
+        if (!isNaN(dob.getTime())) {
+          const now = new Date();
+          let age = now.getFullYear() - dob.getFullYear();
+          const m = now.getMonth() - dob.getMonth();
+          if (m < 0 || (m === 0 && now.getDate() < dob.getDate())) age--;
+          const guardianComplete = !!(
+            profileRow.guardian_consent &&
+            profileRow.guardian_first_name &&
+            profileRow.guardian_last_name &&
+            profileRow.guardian_phone &&
+            profileRow.guardian_email
+          );
+          if (age < 18 && !guardianComplete) {
+            toast({
+              title: "Parent/guardian consent required",
+              description: "Since you are under 18, please complete the guardian consent section before uploading photos.",
+              variant: "destructive",
+            });
+            const qs = new URLSearchParams({ tier, billing, returnTo: "/enroll/photos" });
+            navigate(`/enroll/details?${qs.toString()}`);
+            return;
+          }
+        }
+      }
+
       const { data: photoRows } = await supabase
         .from("profiling_photos")
         .select("photo_type, storage_path")
