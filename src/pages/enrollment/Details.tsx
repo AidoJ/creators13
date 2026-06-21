@@ -105,6 +105,11 @@ export default function Details() {
         if (data.postal_code) setPostalCode(data.postal_code);
         if (data.country) setCountry(data.country);
         if (data.medical_history) setMedicalHistory(data.medical_history);
+        if (data.guardian_consent) setGuardianConsent(!!data.guardian_consent);
+        if (data.guardian_first_name) setGuardianFirstName(data.guardian_first_name);
+        if (data.guardian_last_name) setGuardianLastName(data.guardian_last_name);
+        if (data.guardian_phone) setGuardianPhone(data.guardian_phone);
+        if (data.guardian_email) setGuardianEmail(data.guardian_email);
       }
       setFetching(false);
     };
