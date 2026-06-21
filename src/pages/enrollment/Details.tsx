@@ -367,7 +367,7 @@ export default function Details() {
                   Yes, I confirm I have obtained consent from my parent/guardian named below and that they are aware of the following:
                   <ul className="list-disc pl-5 mt-2 space-y-1">
                     <li>I am having body and face photos submitted as a volunteer case study or paying client of 13CREATORS</li>
-                    <li>The privacy policy that states exactly how body photos are stored, viewed and removed from this website</li>
+                    <li>The <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-primary underline" onClick={(e) => e.stopPropagation()}>privacy policy</a> that states exactly how body photos are stored, viewed and removed from this website</li>
                     <li>They can contact us for more information via <span className="text-primary">info@13creators.com</span></li>
                   </ul>
                 </span>
