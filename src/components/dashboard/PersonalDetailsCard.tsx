@@ -14,6 +14,11 @@ interface ProfileData {
   city: string | null;
   state: string | null;
   country: string | null;
+  guardian_consent?: boolean | null;
+  guardian_first_name?: string | null;
+  guardian_last_name?: string | null;
+  guardian_phone?: string | null;
+  guardian_email?: string | null;
 }
 
 interface PersonalDetailsCardProps {
