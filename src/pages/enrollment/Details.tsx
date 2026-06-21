@@ -80,7 +80,7 @@ export default function Details() {
     const load = async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("first_name, last_name, phone, date_of_birth, gender, pronouns, height_cm, shoe_size, address_line1, address_line2, city, state, postal_code, country, medical_history")
+        .select("first_name, last_name, phone, date_of_birth, gender, pronouns, height_cm, shoe_size, address_line1, address_line2, city, state, postal_code, country, medical_history, guardian_consent, guardian_first_name, guardian_last_name, guardian_phone, guardian_email")
         .eq("user_id", user.id)
         .maybeSingle();
       if (data) {
