@@ -184,7 +184,7 @@ export default function WelcomeHero({ firstName, tier, subscriptionStatus, statu
               </a>
             </Button>
             <Button variant="outline" size="sm" className="w-full sm:w-auto justify-center gap-1.5 shrink-0 border-orange-400/40 text-orange-600 hover:bg-orange-500/10" asChild>
-              <a href="https://sacredbusiness.com.au/wp-content/uploads/2026/02/2026-13CREATORS-Training-Prospectus.pdf" target="_blank" rel="noopener noreferrer">
+              <a href="https://sacredbusiness.au/wp-content/uploads/2026/08/13CREATORS-Prospectus.pdf" target="_blank" rel="noopener noreferrer">
                 <GraduationCap className="h-3.5 w-3.5" />
                 Become a Practitioner
               </a>
@@ -221,7 +221,7 @@ export default function WelcomeHero({ firstName, tier, subscriptionStatus, statu
               </a>
             </Button>
             <Button variant="outline" size="sm" className="w-full sm:w-auto justify-center gap-1.5 shrink-0 border-orange-400/40 text-orange-600 hover:bg-orange-500/10" asChild>
-              <a href="https://sacredbusiness.com.au/wp-content/uploads/2026/02/2026-13CREATORS-Training-Prospectus.pdf" target="_blank" rel="noopener noreferrer">
+              <a href="https://sacredbusiness.au/wp-content/uploads/2026/08/13CREATORS-Prospectus.pdf" target="_blank" rel="noopener noreferrer">
                 <GraduationCap className="h-3.5 w-3.5" />
                 Become a Practitioner
               </a>
