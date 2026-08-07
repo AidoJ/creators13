@@ -91,9 +91,11 @@ export default function CreatorTypeAssignmentForm({ clientId, clientName }: Crea
 
     const { data: latestProfileData } = await supabase
       .from("creator_type_profiles")
-      .select("profiling_data")
+      .select("profiling_data, type_3, type_4")
       .eq("user_id", clientId)
       .maybeSingle();
+
+    const hadExtraTypes = !!(latestProfileData?.type_3 || latestProfileData?.type_4);
 
     const existingProfilingData =
       latestProfileData?.profiling_data && typeof latestProfileData.profiling_data === "object" && !Array.isArray(latestProfileData.profiling_data)
@@ -126,8 +128,21 @@ export default function CreatorTypeAssignmentForm({ clientId, clientName }: Crea
       setSaved(true);
       toast({ title: "Creator types assigned!", description: `${clientName} has been profiled.` });
       setTimeout(() => setSaved(false), 3000);
+
+      // Notify the client once their 3rd/4th types complete their full profile
+      const hasExtraTypes = !!(types[2] || types[3]);
+      if (hasExtraTypes && !hadExtraTypes) {
+        try {
+          await supabase.functions.invoke("notify-full-profile", {
+            body: { client_user_id: clientId, creator_types: types.filter(Boolean) },
+          });
+        } catch (e) {
+          console.error("Failed to send full profile email:", e);
+        }
+      }
     }
   };
+
 
   if (loading) return <div className="text-sm text-muted-foreground text-center py-4">Loading…</div>;
 
