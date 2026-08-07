@@ -50,3 +50,7 @@ verify_jwt = false
 
 [functions.admin-upload-photo]
 verify_jwt = false
+
+[functions.notify-full-profile]
+verify_jwt = false
+
