@@ -158,18 +158,25 @@ export default function TrainerDashboard() {
           // Mark enrollment as complete
           const { error: stepErr } = await supabase.from("profiles").update({ enrollment_step: "complete" }).eq("user_id", cs.subject_user_id);
           if (stepErr) console.error("Failed to update enrollment step:", stepErr);
-          // Notify client of their approved creator types
+          // Notify client — full profile email when 3+ types, otherwise the standard approval email
           try {
-            await supabase.functions.invoke("notify-client-approved", {
-              body: {
-                client_user_id: cs.subject_user_id,
-                primary_type: types[0] || "",
-                secondary_type: types[1] || "",
-              },
-            });
+            if (types.length >= 3) {
+              await supabase.functions.invoke("notify-full-profile", {
+                body: { client_user_id: cs.subject_user_id, creator_types: types },
+              });
+            } else {
+              await supabase.functions.invoke("notify-client-approved", {
+                body: {
+                  client_user_id: cs.subject_user_id,
+                  primary_type: types[0] || "",
+                  secondary_type: types[1] || "",
+                },
+              });
+            }
           } catch (e) {
             console.error("Failed to notify client of approval:", e);
           }
+
           // Notify practitioner that their case study was approved (include feedback)
           try {
             const csLocal = caseStudies.find(c => c.id === id);
