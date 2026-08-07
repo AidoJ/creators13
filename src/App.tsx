@@ -9,6 +9,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import Account from "./pages/Account";
 import PlanSelection from "./pages/enrollment/PlanSelection";
 import Signup from "./pages/enrollment/Signup";
 const Payment = lazy(() => import("./pages/enrollment/Payment"));
@@ -50,6 +51,7 @@ const App = () => (
                 <Route path="/enroll/photos" element={<ProtectedRoute><Photos /></ProtectedRoute>} />
                 <Route path="/enroll/booking" element={<ProtectedRoute><Booking /></ProtectedRoute>} />
                 <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
                 <Route path="/practitioner" element={<ProtectedRoute><RoleGuard allowedRoles={["practitioner", "trainee", "trainer"]}><PractitionerDashboard /></RoleGuard></ProtectedRoute>} />
                 <Route path="/trainer" element={<ProtectedRoute><RoleGuard allowedRoles={["trainer"]}><TrainerDashboard /></RoleGuard></ProtectedRoute>} />
                 <Route path="/admin" element={<ProtectedRoute><RoleGuard allowedRoles={["trainer", "admin"]}><AdminDashboard /></RoleGuard></ProtectedRoute>} />
