@@ -163,12 +163,9 @@ export default function CreatorTypeAssignmentForm({ clientId, clientName }: Crea
           <h3 className="text-lg font-display font-bold text-foreground">Assign Creator Type</h3>
         </div>
         <span className="text-xs text-muted-foreground">
-          {clientTier ? (
-            <>
-              <span className="capitalize font-semibold">{clientTier}</span> tier — {maxSlots} type{maxSlots > 1 ? "s" : ""}
-              {isCaseStudy && clientTier === "wren" && " (case study)"}
-            </>
-          ) : "No subscription"}
+          {clientTier && <span className="capitalize font-semibold">{clientTier} tier · </span>}
+          up to {maxSlots} types
+          {isCaseStudy && " (case study)"}
         </span>
       </div>
 
