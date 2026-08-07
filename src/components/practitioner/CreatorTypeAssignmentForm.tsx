@@ -21,22 +21,8 @@ interface CreatorTypeAssignmentFormProps {
   clientName: string;
 }
 
-// Tier-based type slot limits
-const TIER_TYPE_LIMITS: Record<string, number> = {
-  wren: 1,
-  robin: 2,
-  falcon: 4,
-  owl: 4,
-};
-
-// Case study participants get 2 slots (for wren)
-function getMaxSlots(tier: TierKey | null, isCaseStudy: boolean): number {
-  if (!tier) return 1;
-  const base = TIER_TYPE_LIMITS[tier] || 1;
-  // Wren case study gets 2
-  if (tier === "wren" && isCaseStudy) return 2;
-  return base;
-}
+// All client records support up to 4 Creator Types, regardless of subscription level
+const MAX_SLOTS = 4;
 
 export default function CreatorTypeAssignmentForm({ clientId, clientName }: CreatorTypeAssignmentFormProps) {
   const { user } = useAuth();
@@ -54,19 +40,20 @@ export default function CreatorTypeAssignmentForm({ clientId, clientName }: Crea
 
   useEffect(() => {
     async function load() {
-      const [typesRes, profileRes, subRes, caseStudyRes, practitionerProfileRes] = await Promise.all([
+      const [typesRes, profileRes, subRes, caseStudyRes, practitionerProfileRes, rolesRes] = await Promise.all([
         supabase.from("creator_types").select("name, family, element, color_hex").order("sort_order"),
         supabase.from("creator_type_profiles").select("id, primary_type, secondary_type, type_3, type_4, profiling_data").eq("user_id", clientId).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
         (supabase.from("client_subscription_summary" as any).select("tier").eq("user_id", clientId).maybeSingle() as any),
         supabase.from("case_studies").select("id").eq("subject_user_id", clientId).limit(1),
         user ? supabase.from("profiles").select("practitioner_status").eq("user_id", user.id).maybeSingle() : Promise.resolve({ data: null }),
+        user ? supabase.from("user_roles").select("role").eq("user_id", user.id) : Promise.resolve({ data: [] as { role: string }[] }),
       ]);
       if (typesRes.data) setCreatorTypes(typesRes.data);
       if (subRes.data) setClientTier(subRes.data.tier as TierKey);
       if (caseStudyRes.data && caseStudyRes.data.length > 0) setIsCaseStudy(true);
-      if (practitionerProfileRes.data) {
-        setIsCertified(practitionerProfileRes.data.practitioner_status === "certified");
-      }
+      const roles = (rolesRes.data || []).map((r: { role: string }) => r.role);
+      const isTrainerOrAdmin = roles.includes("trainer") || roles.includes("admin");
+      setIsCertified(isTrainerOrAdmin || practitionerProfileRes.data?.practitioner_status === "certified");
       if (profileRes.data) {
         setExistingProfileId(profileRes.data.id);
         const data = profileRes.data.profiling_data as Record<string, unknown> | null;
@@ -83,7 +70,7 @@ export default function CreatorTypeAssignmentForm({ clientId, clientName }: Crea
     load();
   }, [clientId]);
 
-  const maxSlots = getMaxSlots(clientTier, isCaseStudy);
+  const maxSlots = MAX_SLOTS;
 
   const handleSave = async () => {
     if (!types[0] || !user) return;
@@ -176,12 +163,9 @@ export default function CreatorTypeAssignmentForm({ clientId, clientName }: Crea
           <h3 className="text-lg font-display font-bold text-foreground">Assign Creator Type</h3>
         </div>
         <span className="text-xs text-muted-foreground">
-          {clientTier ? (
-            <>
-              <span className="capitalize font-semibold">{clientTier}</span> tier — {maxSlots} type{maxSlots > 1 ? "s" : ""}
-              {isCaseStudy && clientTier === "wren" && " (case study)"}
-            </>
-          ) : "No subscription"}
+          {clientTier && <span className="capitalize font-semibold">{clientTier} tier · </span>}
+          up to {maxSlots} types
+          {isCaseStudy && " (case study)"}
         </span>
       </div>
 
