@@ -21,22 +21,8 @@ interface CreatorTypeAssignmentFormProps {
   clientName: string;
 }
 
-// Tier-based type slot limits
-const TIER_TYPE_LIMITS: Record<string, number> = {
-  wren: 1,
-  robin: 2,
-  falcon: 4,
-  owl: 4,
-};
-
-// Case study participants get 2 slots (for wren)
-function getMaxSlots(tier: TierKey | null, isCaseStudy: boolean): number {
-  if (!tier) return 1;
-  const base = TIER_TYPE_LIMITS[tier] || 1;
-  // Wren case study gets 2
-  if (tier === "wren" && isCaseStudy) return 2;
-  return base;
-}
+// All client records support up to 4 Creator Types, regardless of subscription level
+const MAX_SLOTS = 4;
 
 export default function CreatorTypeAssignmentForm({ clientId, clientName }: CreatorTypeAssignmentFormProps) {
   const { user } = useAuth();
