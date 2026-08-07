@@ -70,7 +70,7 @@ export default function CreatorTypeAssignmentForm({ clientId, clientName }: Crea
     load();
   }, [clientId]);
 
-  const maxSlots = getMaxSlots(clientTier, isCaseStudy);
+  const maxSlots = MAX_SLOTS;
 
   const handleSave = async () => {
     if (!types[0] || !user) return;
