@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LogOut, LayoutDashboard, Users, GraduationCap, Settings, Menu, X } from "lucide-react";
+import { LogOut, LayoutDashboard, Users, GraduationCap, Settings, UserCog, Menu, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import logo from "@/assets/13creators-logo.png";
@@ -42,6 +42,7 @@ export default function DashboardHeader({ email, onSignOut }: DashboardHeaderPro
     { label: "Practitioner", path: "/practitioner", icon: Users, show: isPractitioner },
     { label: "Trainer", path: "/trainer", icon: GraduationCap, show: isTrainer },
     { label: "Admin", path: "/admin", icon: Settings, show: isTrainerOrAdmin },
+    { label: "Account", path: "/account", icon: UserCog, show: true },
   ];
 
   const visibleNavItems = navItems.filter(n => n.show);
