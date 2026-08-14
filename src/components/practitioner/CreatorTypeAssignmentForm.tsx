@@ -45,7 +45,7 @@ export default function CreatorTypeAssignmentForm({ clientId, clientName }: Crea
         supabase.from("creator_type_profiles").select("id, primary_type, secondary_type, type_3, type_4, profiling_data").eq("user_id", clientId).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
         (supabase.from("client_subscription_summary" as any).select("tier").eq("user_id", clientId).maybeSingle() as any),
         supabase.from("case_studies").select("id").eq("subject_user_id", clientId).limit(1),
-        user ? supabase.from("profiles").select("practitioner_status").eq("user_id", user.id).maybeSingle() : Promise.resolve({ data: null }),
+        user ? supabase.from("profiles").select("practitioner_status, certification_level").eq("user_id", user.id).maybeSingle() : Promise.resolve({ data: null }),
         user ? supabase.from("user_roles").select("role").eq("user_id", user.id) : Promise.resolve({ data: [] as { role: string }[] }),
       ]);
       if (typesRes.data) setCreatorTypes(typesRes.data);
@@ -53,7 +53,10 @@ export default function CreatorTypeAssignmentForm({ clientId, clientName }: Crea
       if (caseStudyRes.data && caseStudyRes.data.length > 0) setIsCaseStudy(true);
       const roles = (rolesRes.data || []).map((r: { role: string }) => r.role);
       const isTrainerOrAdmin = roles.includes("trainer") || roles.includes("admin");
-      setIsCertified(isTrainerOrAdmin || practitionerProfileRes.data?.practitioner_status === "certified");
+      const prac = practitionerProfileRes.data as { practitioner_status?: string | null; certification_level?: number | null } | null;
+      const isLevel3Certified = prac?.practitioner_status === "certified" && (prac?.certification_level ?? 1) >= 3;
+      setIsCertified(isTrainerOrAdmin || isLevel3Certified);
+
       if (profileRes.data) {
         setExistingProfileId(profileRes.data.id);
         const data = profileRes.data.profiling_data as Record<string, unknown> | null;
