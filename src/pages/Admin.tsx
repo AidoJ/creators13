@@ -114,6 +114,7 @@ export default function AdminDashboard() {
       enrollment_step: p.enrollment_step,
       practitioner_code: p.practitioner_code,
       practitioner_status: (p as any).practitioner_status || null,
+      certification_level: (p as any).certification_level ?? null,
       training_started_at: (p as any).training_started_at || null,
       roles: roleMap[p.user_id] || [],
       tier: subMap[p.user_id]?.tier || null,
