@@ -455,7 +455,7 @@ export default function AdminDashboard() {
                       <UserTableRow key={u.user_id} user={u} isExpanded={expandedUser === u.user_id}
                         onToggle={() => setExpandedUser(expandedUser === u.user_id ? null : u.user_id)}
                         onAddRole={handleAddRole} onRemoveRole={handleRemoveRole} addingRole={addingRole} stepLabel={stepLabel}
-                        onStatusChange={handlePractitionerStatus} onRefresh={fetchUsers}
+                        onStatusChange={handlePractitionerStatus} onLevelChange={handleCertificationLevel} onRefresh={fetchUsers}
                         assignedPractitioner={assignedPracMap[u.user_id] || null}
                         assignedPracCode={assignedPracCodeMap[u.user_id] || null}
                         practitioners={practitioners}
