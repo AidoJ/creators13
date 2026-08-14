@@ -521,13 +521,14 @@ export default function AdminDashboard() {
 }
 
 
-function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, addingRole, stepLabel, onStatusChange, onRefresh, assignedPractitioner, assignedPracCode, practitioners, currentPracId, onViewFile, onAssignPractitioner }: {
+function UserTableRow({ user: u, isExpanded, onToggle, onAddRole, onRemoveRole, addingRole, stepLabel, onStatusChange, onLevelChange, onRefresh, assignedPractitioner, assignedPracCode, practitioners, currentPracId, onViewFile, onAssignPractitioner }: {
   user: UserRow; isExpanded: boolean; onToggle: () => void;
   onAddRole: (userId: string, role: AppRole) => void;
   onRemoveRole: (userId: string, role: AppRole) => void;
   addingRole: { userId: string; role: AppRole } | null;
   stepLabel: (s: string | null) => string;
   onStatusChange: (userId: string, status: string) => void;
+  onLevelChange: (userId: string, level: number) => void;
   onRefresh: () => void;
   assignedPractitioner: string | null;
   assignedPracCode: string | null;
