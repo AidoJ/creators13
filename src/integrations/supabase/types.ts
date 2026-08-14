@@ -775,6 +775,7 @@ export type Database = {
           address_line2: string | null
           avatar_url: string | null
           case_study_consent_at: string | null
+          certification_level: number
           city: string | null
           country: string | null
           created_at: string
@@ -813,6 +814,7 @@ export type Database = {
           address_line2?: string | null
           avatar_url?: string | null
           case_study_consent_at?: string | null
+          certification_level?: number
           city?: string | null
           country?: string | null
           created_at?: string
@@ -853,6 +855,7 @@ export type Database = {
           address_line2?: string | null
           avatar_url?: string | null
           case_study_consent_at?: string | null
+          certification_level?: number
           city?: string | null
           country?: string | null
           created_at?: string
