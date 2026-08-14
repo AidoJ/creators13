@@ -36,6 +36,7 @@ interface UserRow {
   enrollment_step: EnrollmentStep | null;
   practitioner_code: string | null;
   practitioner_status: string | null;
+  certification_level: number | null;
   training_started_at: string | null;
   roles: AppRole[];
   tier: string | null;
