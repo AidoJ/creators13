@@ -144,10 +144,11 @@ export default function CreatorTypeAssignmentForm({ clientId, clientName }: Crea
           <h3 className="text-lg font-display font-bold text-foreground">Assign Creator Type</h3>
         </div>
         <p className="text-sm text-muted-foreground">
-          Creator type assignment is only available to certified profilers. Please complete your certification to unlock this feature.
+          Creator type assignment is only available to Level 3 certified profilers. Please complete your Level 3 certification to unlock this feature.
         </p>
       </div>
     );
+
   }
 
   const grouped = creatorTypes.reduce<Record<string, CreatorType[]>>((acc, ct) => {
