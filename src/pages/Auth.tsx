@@ -9,9 +9,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useEffect } from "react";
 import { Leaf } from "lucide-react";
 import logoFull from "@/assets/13creators-logo-full.png";
+import { getAppOrigin } from "@/lib/appOrigin";
+
+type Mode = "login" | "signup" | "forgot";
 
 export default function Auth() {
-  const [isLogin, setIsLogin] = useState(true);
+  const [mode, setMode] = useState<Mode>("login");
+  const isLogin = mode === "login";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -29,7 +33,20 @@ export default function Auth() {
     e.preventDefault();
     setLoading(true);
 
-    if (isLogin) {
+    if (mode === "forgot") {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${getAppOrigin()}/reset-password`,
+      });
+      if (error) {
+        toast({ title: "Could not send reset email", description: error.message, variant: "destructive" });
+      } else {
+        toast({
+          title: "Check your email",
+          description: "If an account exists for that address, we've sent a password reset link.",
+        });
+        setMode("login");
+      }
+    } else if (isLogin) {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
         toast({ title: "Login failed", description: error.message, variant: "destructive" });
@@ -40,7 +57,7 @@ export default function Auth() {
       const { error } = await supabase.auth.signUp({
         email,
         password,
-        options: { emailRedirectTo: window.location.origin },
+        options: { emailRedirectTo: getAppOrigin() },
       });
       if (error) {
         toast({ title: "Signup failed", description: error.message, variant: "destructive" });
@@ -62,10 +79,14 @@ export default function Auth() {
             <img src={logoFull} alt="13 Creators" className="h-64 w-auto mx-auto" />
           </a>
           <h1 className="text-2xl font-display font-bold text-foreground">
-            {isLogin ? "Welcome back" : "Create your account"}
+            {mode === "forgot" ? "Reset your password" : isLogin ? "Welcome back" : "Create your account"}
           </h1>
           <p className="text-muted-foreground mt-1">
-            {isLogin ? "Sign in to your account" : "Start your Creator Types journey"}
+            {mode === "forgot"
+              ? "We'll email you a link to set a new password"
+              : isLogin
+              ? "Sign in to your account"
+              : "Start your Creator Types journey"}
           </p>
         </div>
 
@@ -82,21 +103,36 @@ export default function Auth() {
                 required
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-              />
-            </div>
+            {mode !== "forgot" && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">Password</Label>
+                  {isLogin && (
+                    <button
+                      type="button"
+                      onClick={() => setMode("forgot")}
+                      className="text-xs text-primary font-medium hover:underline"
+                    >
+                      Forgot password?
+                    </button>
+                  )}
+                </div>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                />
+              </div>
+            )}
             <Button type="submit" className="w-full rounded-full" disabled={loading}>
               {loading ? (
                 <Leaf className="h-4 w-4 animate-spin" />
+              ) : mode === "forgot" ? (
+                "Send reset link"
               ) : isLogin ? (
                 "Sign In"
               ) : (
@@ -106,15 +142,26 @@ export default function Auth() {
           </form>
 
           <div className="mt-6 text-center text-sm">
-            <span className="text-muted-foreground">
-              {isLogin ? "Don't have an account? " : "Already have an account? "}
-            </span>
-            <button
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-primary font-medium hover:underline"
-            >
-              {isLogin ? "Sign up" : "Sign in"}
-            </button>
+            {mode === "forgot" ? (
+              <button
+                onClick={() => setMode("login")}
+                className="text-primary font-medium hover:underline"
+              >
+                Back to sign in
+              </button>
+            ) : (
+              <>
+                <span className="text-muted-foreground">
+                  {isLogin ? "Don't have an account? " : "Already have an account? "}
+                </span>
+                <button
+                  onClick={() => setMode(isLogin ? "signup" : "login")}
+                  className="text-primary font-medium hover:underline"
+                >
+                  {isLogin ? "Sign up" : "Sign in"}
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
