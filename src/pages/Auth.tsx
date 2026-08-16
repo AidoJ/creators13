@@ -9,9 +9,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useEffect } from "react";
 import { Leaf } from "lucide-react";
 import logoFull from "@/assets/13creators-logo-full.png";
+import { getAppOrigin } from "@/lib/appOrigin";
+
+type Mode = "login" | "signup" | "forgot";
 
 export default function Auth() {
-  const [isLogin, setIsLogin] = useState(true);
+  const [mode, setMode] = useState<Mode>("login");
+  const isLogin = mode === "login";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -29,7 +33,20 @@ export default function Auth() {
     e.preventDefault();
     setLoading(true);
 
-    if (isLogin) {
+    if (mode === "forgot") {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${getAppOrigin()}/reset-password`,
+      });
+      if (error) {
+        toast({ title: "Could not send reset email", description: error.message, variant: "destructive" });
+      } else {
+        toast({
+          title: "Check your email",
+          description: "If an account exists for that address, we've sent a password reset link.",
+        });
+        setMode("login");
+      }
+    } else if (isLogin) {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
         toast({ title: "Login failed", description: error.message, variant: "destructive" });
@@ -40,7 +57,7 @@ export default function Auth() {
       const { error } = await supabase.auth.signUp({
         email,
         password,
-        options: { emailRedirectTo: window.location.origin },
+        options: { emailRedirectTo: getAppOrigin() },
       });
       if (error) {
         toast({ title: "Signup failed", description: error.message, variant: "destructive" });
