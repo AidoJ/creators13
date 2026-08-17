@@ -1,0 +1,2 @@
+delete from public.profiles where user_id in ('ed6d0857-6a1f-4b5b-b055-61f51d6ba62b','de6a6030-5ad2-442d-b162-2260a260d42c');
+delete from auth.users where id in ('ed6d0857-6a1f-4b5b-b055-61f51d6ba62b','de6a6030-5ad2-442d-b162-2260a260d42c');
