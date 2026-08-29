@@ -221,10 +221,10 @@ export default function CaseStudyPipeline({ onSelectClient, onStartCaseStudy, on
     <div className="space-y-4">
       {/* Summary bar */}
       <div className="rounded-2xl border border-border bg-card p-5">
-        <div className="flex items-center gap-2 mb-4">
-          <FileText className="h-5 w-5 text-primary" />
-          <h2 className="text-lg font-display font-bold text-foreground">Case Study Pipeline</h2>
-          <Badge variant="outline" className="ml-auto text-xs">
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          <FileText className="h-5 w-5 text-primary shrink-0" />
+          <h2 className="text-lg font-display font-bold text-foreground whitespace-nowrap">Case Study Pipeline</h2>
+          <Badge variant="outline" className="ml-auto text-xs whitespace-nowrap">
             {totalStudies} of {totalClients} clients assessed
           </Badge>
         </div>
@@ -249,7 +249,7 @@ export default function CaseStudyPipeline({ onSelectClient, onStartCaseStudy, on
         </div>
 
         {/* Stage counts */}
-        <div className="grid grid-cols-5 gap-2 mt-4">
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mt-4">
           {PIPELINE_STAGES.map(stage => {
             const count = stage.key === "not_started"
               ? clientsWithoutStudy.length
