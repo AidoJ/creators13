@@ -198,7 +198,10 @@ serve(async (req) => {
       const profile = inv.user_id ? profileMap[inv.user_id] : null;
       const firstName = inv.name || profile?.first_name || "there";
       const timezone = profile?.timezone || "Australia/Sydney";
+      // Always prefer the account's current email over the snapshot taken at invite time
+      const recipientEmail = profile?.email || inv.email;
       const localTime = formatDateForTimezone(call.scheduled_at, timezone);
+
       const previousTime = previousScheduledAt
         ? formatDateForTimezone(previousScheduledAt, timezone)
         : "N/A";
