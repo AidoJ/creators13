@@ -219,7 +219,7 @@ serve(async (req) => {
         recurrenceText,
         zoomButton,
         calendarButtons,
-        email: inv.email,
+        email: recipientEmail,
       };
 
       const html = replaceTemplateVars(template.html_body, vars);
@@ -230,7 +230,7 @@ serve(async (req) => {
       try {
         const { error } = await resend.emails.send({
           from: "13 Creators <noreply@connect.13creators.com>",
-          to: [inv.email],
+          to: [recipientEmail],
           subject,
           html,
           attachments: isCancelled
@@ -238,9 +238,9 @@ serve(async (req) => {
             : [{ filename: "training-call-updated.ics", content: icsBase64 }],
         });
         if (!error) sentCount++;
-        else console.error(`Error sending to ${inv.email}:`, error);
+        else console.error(`Error sending to ${recipientEmail}:`, error);
       } catch (e) {
-        console.error(`Exception sending to ${inv.email}:`, e);
+        console.error(`Exception sending to ${recipientEmail}:`, e);
       }
     }
 
