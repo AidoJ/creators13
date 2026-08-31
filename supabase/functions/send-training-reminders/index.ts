@@ -173,14 +173,14 @@ serve(async (req) => {
 
       // Get profiles for user_ids to get timezones
       const userIds = uniqueInvitees.filter((i: any) => i.user_id).map((i: any) => i.user_id);
-      let profileMap: Record<string, { first_name: string; timezone: string }> = {};
+      let profileMap: Record<string, { first_name: string; timezone: string; email: string | null }> = {};
       if (userIds.length > 0) {
         const { data: profiles } = await supabase
           .from("profiles")
-          .select("user_id, first_name, timezone")
+          .select("user_id, first_name, timezone, email")
           .in("user_id", userIds);
         for (const p of profiles || []) {
-          profileMap[p.user_id] = { first_name: p.first_name || "Practitioner", timezone: p.timezone || "Australia/Sydney" };
+          profileMap[p.user_id] = { first_name: p.first_name || "Practitioner", timezone: p.timezone || "Australia/Sydney", email: p.email };
         }
       }
 
@@ -208,6 +208,8 @@ serve(async (req) => {
         const profile = inv.user_id ? profileMap[inv.user_id] : null;
         const firstName = inv.name || profile?.first_name || "there";
         const timezone = profile?.timezone || "UTC";
+        // Always prefer the account's current email over the snapshot taken at invite time
+        const recipientEmail = profile?.email || inv.email;
         const localTime = formatDateForTimezone(call.scheduled_at, timezone);
 
         const calendarButtons = buildCalendarButtons(call.title, call.scheduled_at, call.duration_minutes, call.description, call.zoom_link);
@@ -215,7 +217,7 @@ serve(async (req) => {
         const vars: Record<string, string> = {
           firstName, title: call.title, description: descriptionHtml,
           localTime, durationMinutes: String(call.duration_minutes),
-          timezone, recurrenceText, zoomButton, calendarButtons, email: inv.email,
+          timezone, recurrenceText, zoomButton, calendarButtons, email: recipientEmail,
         };
 
         const html = replaceTemplateVars(template.html_body, vars);
@@ -226,24 +228,24 @@ serve(async (req) => {
         try {
           const { error } = await resend.emails.send({
             from: "13 Creators <noreply@connect.13creators.com>",
-            to: [inv.email],
+            to: [recipientEmail],
             subject,
             html,
           });
           if (!error) {
             callSent++;
             totalSent++;
-            sentEmails.push(inv.email);
+            sentEmails.push(recipientEmail);
             alreadyReminded.add(sendKey);
           } else {
-            console.error(`Reminder error for ${inv.email}:`, error);
+            console.error(`Reminder error for ${recipientEmail}:`, error);
             totalFailed++;
-            failedEmails.push(inv.email);
+            failedEmails.push(recipientEmail);
           }
         } catch (e) {
-          console.error(`Reminder exception for ${inv.email}:`, e);
+          console.error(`Reminder exception for ${recipientEmail}:`, e);
           totalFailed++;
-          failedEmails.push(inv.email);
+          failedEmails.push(recipientEmail);
         }
       }
 
