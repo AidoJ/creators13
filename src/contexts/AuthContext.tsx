@@ -24,11 +24,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Keep the profile email (used for notifications) in sync with the auth email
+    const syncProfileEmail = (session: Session | null) => {
+      const currentUser = session?.user;
+      if (!currentUser?.email) return;
+      setTimeout(async () => {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("email")
+          .eq("user_id", currentUser.id)
+          .maybeSingle();
+        if (profile && (profile.email ?? "").toLowerCase() !== currentUser.email!.toLowerCase()) {
+          await supabase.from("profiles").update({ email: currentUser.email }).eq("user_id", currentUser.id);
+        }
+      }, 0);
+    };
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+        syncProfileEmail(session);
       }
     );
 
@@ -36,10 +53,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      syncProfileEmail(session);
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
 
   const signOut = async () => {
     await supabase.auth.signOut();

@@ -160,16 +160,17 @@ serve(async (req) => {
 
     // Get profiles for timezones
     const userIds = invitees.filter((i: any) => i.user_id).map((i: any) => i.user_id);
-    let profileMap: Record<string, { first_name: string; timezone: string }> = {};
+    let profileMap: Record<string, { first_name: string; timezone: string; email: string | null }> = {};
     if (userIds.length > 0) {
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("user_id, first_name, timezone")
+        .select("user_id, first_name, timezone, email")
         .in("user_id", userIds);
       for (const p of profiles || []) {
-        profileMap[p.user_id] = { first_name: p.first_name || "Practitioner", timezone: p.timezone || "Australia/Sydney" };
+        profileMap[p.user_id] = { first_name: p.first_name || "Practitioner", timezone: p.timezone || "Australia/Sydney", email: p.email };
       }
     }
+
 
     const isCancelled = updateType === "cancelled";
     const icsContent = generateICS(
@@ -197,7 +198,10 @@ serve(async (req) => {
       const profile = inv.user_id ? profileMap[inv.user_id] : null;
       const firstName = inv.name || profile?.first_name || "there";
       const timezone = profile?.timezone || "Australia/Sydney";
+      // Always prefer the account's current email over the snapshot taken at invite time
+      const recipientEmail = profile?.email || inv.email;
       const localTime = formatDateForTimezone(call.scheduled_at, timezone);
+
       const previousTime = previousScheduledAt
         ? formatDateForTimezone(previousScheduledAt, timezone)
         : "N/A";
@@ -215,7 +219,7 @@ serve(async (req) => {
         recurrenceText,
         zoomButton,
         calendarButtons,
-        email: inv.email,
+        email: recipientEmail,
       };
 
       const html = replaceTemplateVars(template.html_body, vars);
@@ -226,7 +230,7 @@ serve(async (req) => {
       try {
         const { error } = await resend.emails.send({
           from: "13 Creators <noreply@connect.13creators.com>",
-          to: [inv.email],
+          to: [recipientEmail],
           subject,
           html,
           attachments: isCancelled
@@ -234,9 +238,9 @@ serve(async (req) => {
             : [{ filename: "training-call-updated.ics", content: icsBase64 }],
         });
         if (!error) sentCount++;
-        else console.error(`Error sending to ${inv.email}:`, error);
+        else console.error(`Error sending to ${recipientEmail}:`, error);
       } catch (e) {
-        console.error(`Exception sending to ${inv.email}:`, e);
+        console.error(`Exception sending to ${recipientEmail}:`, e);
       }
     }
 
