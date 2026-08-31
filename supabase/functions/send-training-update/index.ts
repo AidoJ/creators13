@@ -160,16 +160,17 @@ serve(async (req) => {
 
     // Get profiles for timezones
     const userIds = invitees.filter((i: any) => i.user_id).map((i: any) => i.user_id);
-    let profileMap: Record<string, { first_name: string; timezone: string }> = {};
+    let profileMap: Record<string, { first_name: string; timezone: string; email: string | null }> = {};
     if (userIds.length > 0) {
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("user_id, first_name, timezone")
+        .select("user_id, first_name, timezone, email")
         .in("user_id", userIds);
       for (const p of profiles || []) {
-        profileMap[p.user_id] = { first_name: p.first_name || "Practitioner", timezone: p.timezone || "Australia/Sydney" };
+        profileMap[p.user_id] = { first_name: p.first_name || "Practitioner", timezone: p.timezone || "Australia/Sydney", email: p.email };
       }
     }
+
 
     const isCancelled = updateType === "cancelled";
     const icsContent = generateICS(
