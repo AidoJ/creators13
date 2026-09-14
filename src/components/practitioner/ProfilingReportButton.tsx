@@ -16,24 +16,26 @@ interface ProfilingReportButtonProps {
   bodyAnnotationData: BodyAnnotationData | null;
 }
 
-async function uploadDataUrlToStorage(
-  dataUrl: string,
+/**
+ * Uploads an image into the private reports/ folder and returns its storage
+ * path. The path (never a URL) is what the email function receives; it
+ * downloads the bytes server-side and attaches them inline.
+ */
+async function uploadToStorage(
+  source: string,
   storagePath: string
 ): Promise<string | null> {
   try {
-    const res = await fetch(dataUrl);
+    const res = await fetch(source);
     const blob = await res.blob();
     const { error } = await supabase.storage
       .from("profiling-photos")
-      .upload(storagePath, blob, { upsert: true, contentType: "image/png" });
+      .upload(storagePath, blob, { upsert: true, contentType: blob.type || "image/png" });
     if (error) {
       console.error("Upload error:", error);
       return null;
     }
-    const { data } = supabase.storage
-      .from("profiling-photos")
-      .getPublicUrl(storagePath);
-    return data.publicUrl;
+    return storagePath;
   } catch (e) {
     console.error("Upload failed:", e);
     return null;
