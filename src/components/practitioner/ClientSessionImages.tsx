@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Image as ImageIcon, Plus, Trash2, ZoomIn, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { getSignedPhotoUrl, getSignedPhotoUrls } from "@/lib/signedUrls";
 
 interface SessionImage {
   id: string;
@@ -36,6 +37,7 @@ export default function ClientSessionImages({ clientId, canEdit = true }: Props)
   const [images, setImages] = useState<SessionImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [urls, setUrls] = useState<Record<string, string>>({});
   const [zoomedUrl, setZoomedUrl] = useState<string | null>(null);
   const [pendingFiles, setPendingFiles] = useState<PendingFile[] | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -47,6 +49,7 @@ export default function ClientSessionImages({ clientId, canEdit = true }: Props)
       .eq("client_id", clientId)
       .order("created_at", { ascending: false });
     setImages(data || []);
+    setUrls(await getSignedPhotoUrls((data || []).map((r) => r.storage_path)));
     setLoading(false);
   }
 
@@ -54,8 +57,9 @@ export default function ClientSessionImages({ clientId, canEdit = true }: Props)
     fetchImages();
   }, [clientId]);
 
-  function publicUrl(path: string) {
-    return supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+  async function openZoom(path: string) {
+    const fresh = (await getSignedPhotoUrl(path)) ?? urls[path];
+    if (fresh) setZoomedUrl(fresh);
   }
 
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
@@ -155,11 +159,11 @@ export default function ClientSessionImages({ clientId, canEdit = true }: Props)
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
           {images.map(img => {
-            const url = publicUrl(img.storage_path);
+            const url = urls[img.storage_path];
             return (
               <div key={img.id} className="group relative">
                 <button
-                  onClick={() => setZoomedUrl(url)}
+                  onClick={() => openZoom(img.storage_path)}
                   className="block w-full aspect-square rounded-lg overflow-hidden border border-border bg-muted/30 hover:ring-2 hover:ring-primary/40 transition-all"
                 >
                   <img src={url} alt={img.label || "Session image"} className="w-full h-full object-cover" loading="lazy" />

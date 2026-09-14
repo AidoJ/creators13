@@ -1,7 +1,7 @@
-import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Paperclip, ZoomIn, FileText } from "lucide-react";
+import { getSignedPhotoUrl, getSignedPhotoUrls } from "@/lib/signedUrls";
 
 interface AttachmentGalleryProps {
   attachments: string[];
@@ -10,16 +10,30 @@ interface AttachmentGalleryProps {
 
 export default function AttachmentGallery({ attachments, title = "Paper Assessment Pages" }: AttachmentGalleryProps) {
   const [zoomedUrl, setZoomedUrl] = useState<string | null>(null);
+  const [urls, setUrls] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!attachments || attachments.length === 0) return;
+    getSignedPhotoUrls(attachments).then((map) => {
+      if (!cancelled) setUrls(map);
+    });
+    return () => { cancelled = true; };
+  }, [JSON.stringify(attachments)]);
 
   if (!attachments || attachments.length === 0) return null;
-
-  function getPublicUrl(path: string) {
-    return supabase.storage.from("profiling-photos").getPublicUrl(path).data.publicUrl;
-  }
 
   function getLabel(path: string) {
     const fileName = path.split("/").pop() || "";
     return fileName.replace(/\.[^.]+$/, "").replace(/_/g, " ");
+  }
+
+  // Links expire quickly, so mint a fresh one at the moment of opening.
+  async function openFresh(path: string, isPdf: boolean) {
+    const fresh = (await getSignedPhotoUrl(path)) ?? urls[path];
+    if (!fresh) return;
+    if (isPdf) window.open(fresh, "_blank", "noopener,noreferrer");
+    else setZoomedUrl(fresh);
   }
 
   return (
@@ -29,12 +43,12 @@ export default function AttachmentGallery({ attachments, title = "Paper Assessme
       </p>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {attachments.map((path, i) => {
-          const url = getPublicUrl(path);
+          const url = urls[path];
           const isPdf = /\.pdf$/i.test(path);
           return (
             <button
               key={i}
-              onClick={() => isPdf ? window.open(url, "_blank", "noopener,noreferrer") : setZoomedUrl(url)}
+              onClick={() => openFresh(path, isPdf)}
               className="group relative rounded-lg border border-border overflow-hidden bg-muted/30 aspect-[3/4] hover:ring-2 hover:ring-primary/40 transition-all"
             >
               {isPdf ? (

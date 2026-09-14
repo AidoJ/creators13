@@ -26,11 +26,49 @@ serve(async (req) => {
       practitioner_name,
       face_split_notes,
       body_annotation_notes,
-      image_urls, // { original?, leftMirrored?, rightMirrored?, bodyAnnotated? }
+      image_paths, // { original?, leftMirrored?, rightMirrored?, bodyAnnotated? } storage paths
       creator_types,
     } = await req.json();
 
     if (!client_email) throw new Error("client_email is required");
+
+    // Photos are embedded as inline attachments — never as links.
+    // A link in an email is forwardable, loggable and cacheable; attachments are not.
+    const SLOTS = ["original", "leftMirrored", "rightMirrored", "bodyAnnotated"] as const;
+    const attachments: {
+      filename: string;
+      content: string;
+      content_id: string;
+      content_type: string;
+    }[] = [];
+    const cids: Record<string, string> = {};
+
+    for (const slot of SLOTS) {
+      const path = image_paths?.[slot];
+      if (!path || typeof path !== "string") continue;
+      const { data: blob, error } = await supabase.storage
+        .from("profiling-photos")
+        .download(path);
+      if (error || !blob) {
+        console.error(`Could not download ${slot} (${path}):`, error?.message);
+        continue;
+      }
+      const bytes = new Uint8Array(await blob.arrayBuffer());
+      let binary = "";
+      for (let i = 0; i < bytes.length; i += 8192) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
+      }
+      const cid = `${slot}@13creators`;
+      attachments.push({
+        filename: `${slot}.png`,
+        content: btoa(binary),
+        content_id: cid,
+        content_type: blob.type || "image/png",
+      });
+      cids[slot] = `cid:${cid}`;
+    }
+
+    const image_urls = cids;
 
     const firstName = (client_name || "").split(" ")[0] || "there";
 
@@ -78,6 +116,7 @@ serve(async (req) => {
         to: [client_email],
         subject,
         html: htmlBody,
+        ...(attachments.length > 0 ? { attachments } : {}),
       }),
     });
 

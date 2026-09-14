@@ -49,11 +49,14 @@ export async function mergeCreatorProfilingData(
 export function getStoragePathFromPublicUrl(pathOrUrl?: string): string | undefined {
   if (!pathOrUrl) return undefined;
 
-  const marker = "/object/public/profiling-photos/";
-  const markerIndex = pathOrUrl.indexOf(marker);
+  // Handles both legacy public URLs and current short-lived signed URLs.
+  const markers = ["/object/public/profiling-photos/", "/object/sign/profiling-photos/"];
+  for (const marker of markers) {
+    const markerIndex = pathOrUrl.indexOf(marker);
+    if (markerIndex === -1) continue;
+    const rawPath = pathOrUrl.slice(markerIndex + marker.length).split("?")[0];
+    return decodeURIComponent(rawPath);
+  }
 
-  if (markerIndex === -1) return pathOrUrl;
-
-  const rawPath = pathOrUrl.slice(markerIndex + marker.length).split("?")[0];
-  return decodeURIComponent(rawPath);
+  return pathOrUrl;
 }

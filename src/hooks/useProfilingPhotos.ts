@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { getSignedPhotoUrls } from "@/lib/signedUrls";
 
 export interface ProfilingPhoto {
   photo_type: string;
@@ -15,23 +16,23 @@ export function useProfilingPhotos(userId: string | undefined) {
 
   useEffect(() => {
     if (!userId) { setPhotos([]); return; }
+    let cancelled = false;
     setLoading(true);
-    supabase
-      .from("profiling_photos")
-      .select("photo_type, storage_path")
-      .eq("user_id", userId)
-      .then(({ data }) => {
-        if (data) {
-          const mapped = data.map((row) => {
-            const { data: urlData } = supabase.storage
-              .from("profiling-photos")
-              .getPublicUrl(row.storage_path);
-            return { photo_type: row.photo_type, url: urlData.publicUrl };
-          });
-          setPhotos(mapped);
-        }
-        setLoading(false);
-      });
+    (async () => {
+      const { data } = await supabase
+        .from("profiling_photos")
+        .select("photo_type, storage_path")
+        .eq("user_id", userId);
+      const urls = await getSignedPhotoUrls((data ?? []).map((r) => r.storage_path));
+      if (cancelled) return;
+      setPhotos(
+        (data ?? [])
+          .filter((row) => urls[row.storage_path])
+          .map((row) => ({ photo_type: row.photo_type, url: urls[row.storage_path] })),
+      );
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
   }, [userId]);
 
   const facePhotos = photos.filter((p) => FACE_TYPES.includes(p.photo_type));

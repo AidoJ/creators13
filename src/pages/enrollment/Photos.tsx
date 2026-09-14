@@ -4,6 +4,7 @@ import { Camera, X, CheckCircle, AlertCircle, ArrowRight, ArrowLeft, Loader2, Ey
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { getSignedPhotoUrls } from "@/lib/signedUrls";
 import { useAuth } from "@/contexts/AuthContext";
 import EnrollmentHeader from "@/components/enrollment/EnrollmentHeader";
 import { useEnrollmentGate } from "@/hooks/useEnrollmentGate";
@@ -231,14 +232,15 @@ export default function Photos() {
 
       if (photoRows && photoRows.length > 0) {
         const updates: Partial<Record<PhotoKey, PhotoState>> = {};
+        const signed = await getSignedPhotoUrls(photoRows.map((r) => r.storage_path));
         for (const row of photoRows) {
           const key = row.photo_type as PhotoKey;
           if (!PHOTO_SLOTS.find((s) => s.key === key)) continue;
-          const { data: urlData } = supabase.storage.from("profiling-photos").getPublicUrl(row.storage_path);
-          if (urlData?.publicUrl) {
+          const url = signed[row.storage_path];
+          if (url) {
             updates[key] = {
               ...initialPhotoState,
-              preview: urlData.publicUrl,
+              preview: url,
               uploaded: true,
               existingPath: row.storage_path,
               review: { pass: true, feedback: "Previously uploaded" },

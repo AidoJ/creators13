@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { useProfilingPhotos } from "@/hooks/useProfilingPhotos";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { getSignedPhotoUrls } from "@/lib/signedUrls";
 import {
   getStoragePathFromPublicUrl,
   loadCreatorProfilingData,
@@ -125,17 +126,25 @@ export default function BodyAnnotationTool({ userId, onDataChange }: BodyAnnotat
     loadSaved();
   }, [userId]);
 
+  // Short-lived signed URLs for anything already saved in private storage
+  const [signedMap, setSignedMap] = useState<Record<string, string>>({});
+  useEffect(() => {
+    const paths = [savedData?.annotated_path].filter(Boolean) as string[];
+    if (paths.length === 0) { setSignedMap({}); return; }
+    let cancelled = false;
+    getSignedPhotoUrls(paths).then((m) => { if (!cancelled) setSignedMap(m); });
+    return () => { cancelled = true; };
+  }, [savedData?.annotated_path]);
+
   // Report data changes to parent
   useEffect(() => {
     onDataChange?.({
       annotatedImageDataUrl:
         canvasRef.current?.toDataURL("image/png") ||
-        (savedData?.annotated_path
-          ? supabase.storage.from("profiling-photos").getPublicUrl(savedData.annotated_path).data.publicUrl
-          : undefined),
+        (savedData?.annotated_path ? signedMap[savedData.annotated_path] : undefined),
       notes,
     });
-  }, [notes, actions, onDataChange, savedData]);
+  }, [notes, actions, onDataChange, savedData, signedMap]);
 
   const handleSave = async () => {
     if (!userId || !canvasRef.current) return;
@@ -340,8 +349,7 @@ export default function BodyAnnotationTool({ userId, onDataChange }: BodyAnnotat
   const formatPhotoType = (type: string) =>
     type.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
 
-  const getPublicUrl = (path: string) =>
-    supabase.storage.from("profiling-photos").getPublicUrl(path).data.publicUrl;
+  const getUrl = (path: string) => signedMap[path] || "";
 
   const showSavedResult = !image && !!savedData?.annotated_path;
 
@@ -367,7 +375,7 @@ export default function BodyAnnotationTool({ userId, onDataChange }: BodyAnnotat
               </Button>
             </div>
             <div className="flex justify-center">
-              <img src={getPublicUrl(savedData.annotated_path!)} alt="Body annotated" className="rounded-lg border border-border max-w-[300px]" />
+              <img src={getUrl(savedData.annotated_path!)} alt="Body annotated" className="rounded-lg border border-border max-w-[300px]" />
             </div>
           </div>
         )}

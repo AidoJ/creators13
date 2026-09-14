@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useProfilingPhotos } from "@/hooks/useProfilingPhotos";
 import { supabase } from "@/integrations/supabase/client";
+import { getSignedPhotoUrls } from "@/lib/signedUrls";
 import { useToast } from "@/hooks/use-toast";
 import {
   getStoragePathFromPublicUrl,
@@ -45,8 +46,7 @@ async function uploadDataUrl(dataUrl: string, path: string): Promise<string | nu
     const blob = await res.blob();
     const { error } = await supabase.storage.from("profiling-photos").upload(path, blob, { upsert: true });
     if (error) throw error;
-    const { data } = supabase.storage.from("profiling-photos").getPublicUrl(path);
-    return data.publicUrl;
+    return path;
   } catch {
     return null;
   }
@@ -115,27 +115,28 @@ export default function FaceSplitMirror({ userId, onDataChange }: FaceSplitMirro
     loadSaved();
   }, [userId]);
 
+  // Short-lived signed URLs for anything already saved in private storage
+  const [signedMap, setSignedMap] = useState<Record<string, string>>({});
+  useEffect(() => {
+    const paths = [savedData?.original_path, savedData?.left_path, savedData?.right_path].filter(Boolean) as string[];
+    if (paths.length === 0) { setSignedMap({}); return; }
+    let cancelled = false;
+    getSignedPhotoUrls(paths).then((m) => { if (!cancelled) setSignedMap(m); });
+    return () => { cancelled = true; };
+  }, [savedData?.original_path, savedData?.left_path, savedData?.right_path]);
+
   // Report data changes to parent
   useEffect(() => {
     onDataChange?.({
       originalImageUrl:
-        image?.src ||
-        (savedData?.original_path
-          ? supabase.storage.from("profiling-photos").getPublicUrl(savedData.original_path).data.publicUrl
-          : undefined),
+        image?.src || (savedData?.original_path ? signedMap[savedData.original_path] : undefined),
       leftMirroredDataUrl:
-        results?.left ||
-        (savedData?.left_path
-          ? supabase.storage.from("profiling-photos").getPublicUrl(savedData.left_path).data.publicUrl
-          : undefined),
+        results?.left || (savedData?.left_path ? signedMap[savedData.left_path] : undefined),
       rightMirroredDataUrl:
-        results?.right ||
-        (savedData?.right_path
-          ? supabase.storage.from("profiling-photos").getPublicUrl(savedData.right_path).data.publicUrl
-          : undefined),
+        results?.right || (savedData?.right_path ? signedMap[savedData.right_path] : undefined),
       notes,
     });
-  }, [image, results, notes, onDataChange, savedData]);
+  }, [image, results, notes, onDataChange, savedData, signedMap]);
 
   const handleSave = async () => {
     if (!userId || !results) return;
@@ -501,8 +502,7 @@ export default function FaceSplitMirror({ userId, onDataChange }: FaceSplitMirro
   const formatPhotoType = (type: string) =>
     type.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
 
-  const getPublicUrl = (path: string) =>
-    supabase.storage.from("profiling-photos").getPublicUrl(path).data.publicUrl;
+  const getUrl = (path: string) => signedMap[path] || "";
 
   // Show saved results if no active editing session
   const showSavedResults = !image && !results && !!(savedData?.left_path || savedData?.right_path || savedData?.original_path);
@@ -538,17 +538,17 @@ export default function FaceSplitMirror({ userId, onDataChange }: FaceSplitMirro
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2 text-center">
                 <p className="text-xs font-medium text-muted-foreground">Left Side Mirrored</p>
-                <img src={getPublicUrl(savedData.left_path!)} alt="Left mirrored" className="rounded-lg border border-border w-full" />
+                <img src={getUrl(savedData.left_path!)} alt="Left mirrored" className="rounded-lg border border-border w-full" />
               </div>
               {savedData.original_path && (
                 <div className="space-y-2 text-center">
                   <p className="text-xs font-medium text-muted-foreground">Original</p>
-                  <img src={getPublicUrl(savedData.original_path)} alt="Original" className="rounded-lg border border-border w-full" />
+                  <img src={getUrl(savedData.original_path)} alt="Original" className="rounded-lg border border-border w-full" />
                 </div>
               )}
               <div className="space-y-2 text-center">
                 <p className="text-xs font-medium text-muted-foreground">Right Side Mirrored</p>
-                <img src={getPublicUrl(savedData.right_path!)} alt="Right mirrored" className="rounded-lg border border-border w-full" />
+                <img src={getUrl(savedData.right_path!)} alt="Right mirrored" className="rounded-lg border border-border w-full" />
               </div>
             </div>
           </div>
