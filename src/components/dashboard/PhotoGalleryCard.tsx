@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Camera, User, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getSignedPhotoUrls } from "@/lib/signedUrls";
 
 const PHOTO_SLOTS = [
   { key: "face_front_closed", label: "Face" },

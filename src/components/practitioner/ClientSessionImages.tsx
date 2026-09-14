@@ -47,6 +47,7 @@ export default function ClientSessionImages({ clientId, canEdit = true }: Props)
       .eq("client_id", clientId)
       .order("created_at", { ascending: false });
     setImages(data || []);
+    setUrls(await getSignedPhotoUrls((data || []).map((r) => r.storage_path)));
     setLoading(false);
   }
 
@@ -54,8 +55,9 @@ export default function ClientSessionImages({ clientId, canEdit = true }: Props)
     fetchImages();
   }, [clientId]);
 
-  function publicUrl(path: string) {
-    return supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+  async function openZoom(path: string) {
+    const fresh = (await getSignedPhotoUrl(path)) ?? urls[path];
+    if (fresh) setZoomedUrl(fresh);
   }
 
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
