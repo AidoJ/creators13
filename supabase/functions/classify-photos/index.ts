@@ -44,18 +44,18 @@ serve(async (req) => {
       });
     }
 
-    // Get public URLs and build image data for AI
+    // Bucket is private — mint short-lived signed URLs for the AI to read
     const photoData: { id: string; currentType: string; storagePath: string; publicUrl: string }[] = [];
     for (const photo of photos) {
-      const { data: urlData } = supabaseAdmin.storage
+      const { data: urlData } = await supabaseAdmin.storage
         .from("profiling-photos")
-        .getPublicUrl(photo.storage_path);
-      if (urlData?.publicUrl) {
+        .createSignedUrl(photo.storage_path, 600);
+      if (urlData?.signedUrl) {
         photoData.push({
           id: photo.id,
           currentType: photo.photo_type,
           storagePath: photo.storage_path,
-          publicUrl: urlData.publicUrl,
+          publicUrl: urlData.signedUrl,
         });
       }
     }
