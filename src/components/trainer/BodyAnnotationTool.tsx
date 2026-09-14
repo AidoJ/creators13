@@ -349,8 +349,7 @@ export default function BodyAnnotationTool({ userId, onDataChange }: BodyAnnotat
   const formatPhotoType = (type: string) =>
     type.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
 
-  const getPublicUrl = (path: string) =>
-    supabase.storage.from("profiling-photos").getPublicUrl(path).data.publicUrl;
+  const getUrl = (path: string) => signedMap[path] || "";
 
   const showSavedResult = !image && !!savedData?.annotated_path;
 
@@ -376,7 +375,7 @@ export default function BodyAnnotationTool({ userId, onDataChange }: BodyAnnotat
               </Button>
             </div>
             <div className="flex justify-center">
-              <img src={getPublicUrl(savedData.annotated_path!)} alt="Body annotated" className="rounded-lg border border-border max-w-[300px]" />
+              <img src={getUrl(savedData.annotated_path!)} alt="Body annotated" className="rounded-lg border border-border max-w-[300px]" />
             </div>
           </div>
         )}
