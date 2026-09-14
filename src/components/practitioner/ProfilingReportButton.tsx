@@ -73,59 +73,40 @@ export default function ProfilingReportButton({
 
     try {
       const ts = Date.now();
-      const imageUrls: Record<string, string> = {};
+      const imagePaths: Record<string, string> = {};
 
       // Upload face split images
       if (faceSplitData?.leftMirroredDataUrl) {
-        const url = await uploadDataUrlToStorage(
+        const path = await uploadToStorage(
           faceSplitData.leftMirroredDataUrl,
           `reports/${clientId}/face-left-${ts}.png`
         );
-        if (url) imageUrls.leftMirrored = url;
+        if (path) imagePaths.leftMirrored = path;
       }
       if (faceSplitData?.rightMirroredDataUrl) {
-        const url = await uploadDataUrlToStorage(
+        const path = await uploadToStorage(
           faceSplitData.rightMirroredDataUrl,
           `reports/${clientId}/face-right-${ts}.png`
         );
-        if (url) imageUrls.rightMirrored = url;
+        if (path) imagePaths.rightMirrored = path;
       }
       if (faceSplitData?.originalImageUrl) {
-        if (faceSplitData.originalImageUrl.startsWith("data:")) {
-          const url = await uploadDataUrlToStorage(
-            faceSplitData.originalImageUrl,
-            `reports/${clientId}/face-original-${ts}.png`
-          );
-          if (url) imageUrls.original = url;
-        } else {
-          // Re-upload the public URL as a copy into reports/ so it's always accessible
-          try {
-            const resp = await fetch(faceSplitData.originalImageUrl);
-            const blob = await resp.blob();
-            const { error } = await supabase.storage
-              .from("profiling-photos")
-              .upload(`reports/${clientId}/face-original-${ts}.png`, blob, { upsert: true, contentType: blob.type || "image/png" });
-            if (!error) {
-              const { data: urlData } = supabase.storage
-                .from("profiling-photos")
-                .getPublicUrl(`reports/${clientId}/face-original-${ts}.png`);
-              imageUrls.original = urlData.publicUrl;
-            } else {
-              imageUrls.original = faceSplitData.originalImageUrl;
-            }
-          } catch {
-            imageUrls.original = faceSplitData.originalImageUrl;
-          }
-        }
+        // Works for both data URLs and short-lived signed URLs — the bytes are
+        // copied into reports/ and referenced by path from here on.
+        const path = await uploadToStorage(
+          faceSplitData.originalImageUrl,
+          `reports/${clientId}/face-original-${ts}.png`
+        );
+        if (path) imagePaths.original = path;
       }
 
       // Upload body annotation image
       if (bodyAnnotationData?.annotatedImageDataUrl) {
-        const url = await uploadDataUrlToStorage(
+        const path = await uploadToStorage(
           bodyAnnotationData.annotatedImageDataUrl,
           `reports/${clientId}/body-annotated-${ts}.png`
         );
-        if (url) imageUrls.bodyAnnotated = url;
+        if (path) imagePaths.bodyAnnotated = path;
       }
 
       const { data, error } = await supabase.functions.invoke("send-profiling-report", {
@@ -135,7 +116,7 @@ export default function ProfilingReportButton({
           practitioner_name: practitionerName,
           face_split_notes: faceSplitData?.notes || "",
           body_annotation_notes: bodyAnnotationData?.notes || "",
-          image_urls: imageUrls,
+          image_paths: imagePaths,
           creator_types: creatorTypes.join(", "),
         },
       });
