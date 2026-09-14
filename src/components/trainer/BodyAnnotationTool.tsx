@@ -125,17 +125,25 @@ export default function BodyAnnotationTool({ userId, onDataChange }: BodyAnnotat
     loadSaved();
   }, [userId]);
 
+  // Short-lived signed URLs for anything already saved in private storage
+  const [signedMap, setSignedMap] = useState<Record<string, string>>({});
+  useEffect(() => {
+    const paths = [savedData?.annotated_path].filter(Boolean) as string[];
+    if (paths.length === 0) { setSignedMap({}); return; }
+    let cancelled = false;
+    getSignedPhotoUrls(paths).then((m) => { if (!cancelled) setSignedMap(m); });
+    return () => { cancelled = true; };
+  }, [savedData?.annotated_path]);
+
   // Report data changes to parent
   useEffect(() => {
     onDataChange?.({
       annotatedImageDataUrl:
         canvasRef.current?.toDataURL("image/png") ||
-        (savedData?.annotated_path
-          ? supabase.storage.from("profiling-photos").getPublicUrl(savedData.annotated_path).data.publicUrl
-          : undefined),
+        (savedData?.annotated_path ? signedMap[savedData.annotated_path] : undefined),
       notes,
     });
-  }, [notes, actions, onDataChange, savedData]);
+  }, [notes, actions, onDataChange, savedData, signedMap]);
 
   const handleSave = async () => {
     if (!userId || !canvasRef.current) return;
