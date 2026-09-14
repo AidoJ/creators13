@@ -59,21 +59,19 @@ export default function CompositePhotoLayout({ userId, subjectName, className, s
       return;
     }
 
+    const paths = data.map((r) => r.storage_path);
+    const [fullUrls, thumbUrls] = await Promise.all([
+      getSignedPhotoUrls(paths),
+      getSignedPhotoThumbUrls(paths, 300),
+    ]);
+
     const photoMap: Record<string, { thumb: string; full: string } | null> = {};
     let earliestDate: string | null = null;
     for (const row of data) {
-      const { data: urlData } = supabase.storage
-        .from("profiling-photos")
-        .getPublicUrl(row.storage_path);
-      if (urlData?.publicUrl) {
-        const base = urlData.publicUrl;
-        photoMap[row.photo_type] = {
-          thumb: `${base}?width=300&quality=60`,
-          full: base,
-        };
-      } else {
-        photoMap[row.photo_type] = null;
-      }
+      const full = fullUrls[row.storage_path];
+      photoMap[row.photo_type] = full
+        ? { thumb: thumbUrls[row.storage_path] || full, full }
+        : null;
       if (row.uploaded_at && (!earliestDate || row.uploaded_at < earliestDate)) {
         earliestDate = row.uploaded_at;
       }

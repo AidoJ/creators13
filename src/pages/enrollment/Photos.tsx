@@ -231,14 +231,15 @@ export default function Photos() {
 
       if (photoRows && photoRows.length > 0) {
         const updates: Partial<Record<PhotoKey, PhotoState>> = {};
+        const signed = await getSignedPhotoUrls(photoRows.map((r) => r.storage_path));
         for (const row of photoRows) {
           const key = row.photo_type as PhotoKey;
           if (!PHOTO_SLOTS.find((s) => s.key === key)) continue;
-          const { data: urlData } = supabase.storage.from("profiling-photos").getPublicUrl(row.storage_path);
-          if (urlData?.publicUrl) {
+          const url = signed[row.storage_path];
+          if (url) {
             updates[key] = {
               ...initialPhotoState,
-              preview: urlData.publicUrl,
+              preview: url,
               uploaded: true,
               existingPath: row.storage_path,
               review: { pass: true, feedback: "Previously uploaded" },

@@ -89,13 +89,13 @@ export default function CaseStudyForm({ clientId, clientName, onSaved, existingC
   // Load existing body drawing from storage when editing
   useEffect(() => {
     if (!existingCaseStudy?.body_drawing_path || existingDrawingLoaded) return;
-    const { data } = supabase.storage
-      .from("profiling-photos")
-      .getPublicUrl(existingCaseStudy.body_drawing_path);
-    if (data?.publicUrl) {
-      setBodyDrawing(data.publicUrl);
+    let cancelled = false;
+    getSignedPhotoUrl(existingCaseStudy.body_drawing_path).then((url) => {
+      if (cancelled || !url) return;
+      setBodyDrawing(url);
       setExistingDrawingLoaded(true);
-    }
+    });
+    return () => { cancelled = true; };
   }, [existingCaseStudy?.body_drawing_path, existingDrawingLoaded]);
   const [headNeck, setHeadNeck] = useState(p1.head_neck || "");
   const [chestArms, setChestArms] = useState(p1.chest_arms || "");
