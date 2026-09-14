@@ -4,6 +4,7 @@ import { Camera, X, CheckCircle, AlertCircle, ArrowRight, ArrowLeft, Loader2, Ey
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { getSignedPhotoUrls } from "@/lib/signedUrls";
 import { useAuth } from "@/contexts/AuthContext";
 import EnrollmentHeader from "@/components/enrollment/EnrollmentHeader";
 import { useEnrollmentGate } from "@/hooks/useEnrollmentGate";

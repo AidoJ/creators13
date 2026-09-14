@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { getSignedPhotoUrls, getSignedPhotoThumbUrls } from "@/lib/signedUrls";
 import { Loader2, User, X, ZoomIn, RefreshCw, ChevronLeft, ChevronRight, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
