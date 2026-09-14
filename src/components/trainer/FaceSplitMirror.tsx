@@ -115,27 +115,28 @@ export default function FaceSplitMirror({ userId, onDataChange }: FaceSplitMirro
     loadSaved();
   }, [userId]);
 
+  // Short-lived signed URLs for anything already saved in private storage
+  const [signedMap, setSignedMap] = useState<Record<string, string>>({});
+  useEffect(() => {
+    const paths = [savedData?.original_path, savedData?.left_path, savedData?.right_path].filter(Boolean) as string[];
+    if (paths.length === 0) { setSignedMap({}); return; }
+    let cancelled = false;
+    getSignedPhotoUrls(paths).then((m) => { if (!cancelled) setSignedMap(m); });
+    return () => { cancelled = true; };
+  }, [savedData?.original_path, savedData?.left_path, savedData?.right_path]);
+
   // Report data changes to parent
   useEffect(() => {
     onDataChange?.({
       originalImageUrl:
-        image?.src ||
-        (savedData?.original_path
-          ? supabase.storage.from("profiling-photos").getUrl(savedData.original_path).data.publicUrl
-          : undefined),
+        image?.src || (savedData?.original_path ? signedMap[savedData.original_path] : undefined),
       leftMirroredDataUrl:
-        results?.left ||
-        (savedData?.left_path
-          ? supabase.storage.from("profiling-photos").getPublicUrl(savedData.left_path).data.publicUrl
-          : undefined),
+        results?.left || (savedData?.left_path ? signedMap[savedData.left_path] : undefined),
       rightMirroredDataUrl:
-        results?.right ||
-        (savedData?.right_path
-          ? supabase.storage.from("profiling-photos").getPublicUrl(savedData.right_path).data.publicUrl
-          : undefined),
+        results?.right || (savedData?.right_path ? signedMap[savedData.right_path] : undefined),
       notes,
     });
-  }, [image, results, notes, onDataChange, savedData]);
+  }, [image, results, notes, onDataChange, savedData, signedMap]);
 
   const handleSave = async () => {
     if (!userId || !results) return;
