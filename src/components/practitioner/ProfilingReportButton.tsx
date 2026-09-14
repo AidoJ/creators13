@@ -5,6 +5,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Send, Check, Loader2 } from "lucide-react";
 import type { FaceSplitData } from "@/components/trainer/FaceSplitMirror";
 import type { BodyAnnotationData } from "@/components/trainer/BodyAnnotationTool";
+import { getSignedPhotoUrl } from "@/lib/signedUrls";
+import { getStoragePathFromPublicUrl } from "@/lib/creatorTypeProfilingData";
 
 interface ProfilingReportButtonProps {
   clientId: string;
@@ -26,7 +28,17 @@ async function uploadToStorage(
   storagePath: string
 ): Promise<string | null> {
   try {
-    const res = await fetch(source);
+    let fetchFrom = source;
+    if (!source.startsWith("data:")) {
+      // Signed links expire in 60s — re-mint one from the storage path.
+      const path = getStoragePathFromPublicUrl(source);
+      if (path) {
+        if (path === storagePath) return storagePath;
+        const fresh = await getSignedPhotoUrl(path);
+        if (fresh) fetchFrom = fresh;
+      }
+    }
+    const res = await fetch(fetchFrom);
     const blob = await res.blob();
     const { error } = await supabase.storage
       .from("profiling-photos")
