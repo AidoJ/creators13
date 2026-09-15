@@ -54,6 +54,14 @@ export async function getSignedPhotoUrl(path: string): Promise<string | null> {
   return map[path] ?? null;
 }
 
+/** Bypass the cache and mint a brand new URL (used when an image fails to load). */
+export async function refreshSignedPhotoUrl(path: string, width?: number): Promise<string | null> {
+  if (!path) return null;
+  cache.delete(cacheKey(path, width));
+  const map = await mint([path], width);
+  return map[path] ?? null;
+}
+
 export async function getSignedPhotoUrls(paths: string[]): Promise<Record<string, string>> {
   return mint(paths);
 }

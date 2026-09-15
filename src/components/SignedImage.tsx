@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { getSignedPhotoUrl } from "@/lib/signedUrls";
+import { useEffect, useRef, useState } from "react";
+import { getSignedPhotoUrl, refreshSignedPhotoUrl } from "@/lib/signedUrls";
 
 interface SignedImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   path: string;
