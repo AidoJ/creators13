@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { getSignedPhotoUrl } from "@/lib/signedUrls";
+import { useEffect, useRef, useState } from "react";
+import { getSignedPhotoUrl, refreshSignedPhotoUrl } from "@/lib/signedUrls";
 
 interface SignedImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   path: string;
@@ -11,9 +11,11 @@ interface SignedImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
  */
 export default function SignedImage({ path, ...imgProps }: SignedImageProps) {
   const [url, setUrl] = useState<string | null>(null);
+  const retried = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
+    retried.current = false;
     setUrl(null);
     getSignedPhotoUrl(path).then((u) => {
       if (!cancelled) setUrl(u);
@@ -24,5 +26,17 @@ export default function SignedImage({ path, ...imgProps }: SignedImageProps) {
   }, [path]);
 
   if (!url) return null;
-  return <img src={url} {...imgProps} />;
+  return (
+    <img
+      src={url}
+      {...imgProps}
+      onError={(e) => {
+        if (!retried.current) {
+          retried.current = true;
+          refreshSignedPhotoUrl(path).then((u) => u && setUrl(u));
+        }
+        imgProps.onError?.(e);
+      }}
+    />
+  );
 }

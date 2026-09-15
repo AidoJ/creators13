@@ -8,8 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
  * trainer/admin. They expire after 60 seconds and are never stored anywhere.
  */
 
-const EXPIRES_IN = 60; // seconds, matches the edge function
-const CACHE_TTL = 45_000; // refresh before expiry
+const EXPIRES_IN = 900; // seconds, matches the edge function
+const CACHE_TTL = 720_000; // 12 min — refresh well before expiry
 
 type CacheEntry = { url: string; at: number };
 const cache = new Map<string, CacheEntry>();
@@ -51,6 +51,14 @@ async function mint(paths: string[], width?: number): Promise<Record<string, str
 export async function getSignedPhotoUrl(path: string): Promise<string | null> {
   if (!path) return null;
   const map = await mint([path]);
+  return map[path] ?? null;
+}
+
+/** Bypass the cache and mint a brand new URL (used when an image fails to load). */
+export async function refreshSignedPhotoUrl(path: string, width?: number): Promise<string | null> {
+  if (!path) return null;
+  cache.delete(cacheKey(path, width));
+  const map = await mint([path], width);
   return map[path] ?? null;
 }
 
