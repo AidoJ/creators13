@@ -8,8 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
  * trainer/admin. They expire after 60 seconds and are never stored anywhere.
  */
 
-const EXPIRES_IN = 60; // seconds, matches the edge function
-const CACHE_TTL = 45_000; // refresh before expiry
+const EXPIRES_IN = 900; // seconds, matches the edge function
+const CACHE_TTL = 720_000; // 12 min — refresh well before expiry
 
 type CacheEntry = { url: string; at: number };
 const cache = new Map<string, CacheEntry>();
