@@ -36,13 +36,14 @@ async function buildImport(db: ReturnType<typeof admin>) {
     db.from("profiles").select("user_id, first_name, last_name, email, phone, date_of_birth, medical_history, guardian_first_name, guardian_last_name, guardian_phone, guardian_email").in("user_id", ids),
     db.from("profiles").select("user_id, first_name, last_name").in("user_id", pracIds),
     db.from("user_roles").select("user_id, role").in("user_id", ids),
-    db.from("subscriptions").select("user_id, status").in("user_id", ids).in("status", ["active", "trialing", "past_due"]),
+    db.from("subscriptions").select("user_id, tier, stripe_subscription_id").in("user_id", ids).in("status", ["active", "trialing", "past_due"]),
     db.from("migration_choices").select("user_id").eq("is_test", false),
   ]);
   const pracName = new Map((pracs || []).map((p) => [p.user_id, `${p.first_name ?? ""} ${p.last_name ?? ""}`.trim()]));
   const roleMap = new Map<string, string[]>();
   for (const r of roles || []) roleMap.set(r.user_id, [...(roleMap.get(r.user_id) || []), r.role]);
-  const paid = new Set((subs || []).map((s) => s.user_id));
+  // Paid = a paid tier or a Stripe subscription. Free Wren case-study access does not count.
+  const paid = new Set((subs || []).filter((s) => s.tier !== "wren" || s.stripe_subscription_id).map((s) => s.user_id));
   const already = new Set((existing || []).map((e) => e.user_id));
 
   const rows = [];
