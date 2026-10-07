@@ -73,7 +73,7 @@ async function buildImport(db: ReturnType<typeof admin>) {
       needs_admin: reasons.length > 0, needs_admin_reason: reasons.join("; ") || null, protect_account: protect,
       guardian_first_name: under18 ? p.guardian_first_name : null, guardian_last_name: under18 ? p.guardian_last_name : null,
       guardian_phone: under18 ? p.guardian_phone : null, guardian_email: under18 ? p.guardian_email : null,
-      health_info: h.has, health_check: h.check, is_test: false, _why: { r, paid: paid.has(p.user_id) },
+      health_info: h.has, health_check: h.check, is_test: false,
     });
   }
   rows.sort((a, b) => a.name.localeCompare(b.name));
@@ -103,7 +103,7 @@ Deno.serve(async (req) => {
         total: rows.length,
         needs_admin: rows.filter((r) => r.needs_admin).length,
         rows: rows.map((r) => ({ name: r.name, practitioner_name: r.practitioner_name, has_email: !!r.email,
-          phone_country: r.phone_country, needs_admin_reason: r.needs_admin_reason, why: (r as any)._why })),
+          phone_country: r.phone_country, needs_admin_reason: r.needs_admin_reason })),
       });
     }
 
@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
       if (body.approved !== true) return json({ error: "Import needs explicit approval" }, 400);
       const rows = await buildImport(db);
       if (rows.length === 0) return json({ inserted: 0 });
-      const { error } = await db.from("migration_choices").insert(rows.map(({ _why, ...r }: any) => ({ ...r, code: newCode() })));
+      const { error } = await db.from("migration_choices").insert(rows.map((r) => ({ ...r, code: newCode() })));
       if (error) throw error;
       return json({ inserted: rows.length });
     }
