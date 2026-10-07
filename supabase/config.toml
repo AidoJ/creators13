@@ -54,3 +54,9 @@ verify_jwt = false
 [functions.notify-full-profile]
 verify_jwt = false
 
+
+[functions.migration-choice]
+verify_jwt = false
+
+[functions.migration-admin]
+verify_jwt = false

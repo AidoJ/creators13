@@ -132,8 +132,9 @@ Deno.serve(async (req) => {
         protected_warning: choice === 1 && protectedWarning ? protectedWarning : null,
         confirm_helper: render(s.confirm_helper, pv),
       };
-      const mismatch = norm(typed) !== norm(row.name) &&
-        !(norm(typed).includes(norm(firstName(row.name))) && norm(row.name.split(/\s+/).slice(-1)[0]) && norm(typed).includes(norm(row.name.split(/\s+/).slice(-1)[0])));
+      const parts = (row.name || "").trim().split(/\s+/);
+      const t = norm(typed);
+      const mismatch = !(t.includes(norm(parts[0])) && t.includes(norm(parts[parts.length - 1])));
       const { error } = await db.from("migration_choices").update({
         choice, option3_consent: choice === 3 ? true : false, typed_name: typed, responder_type: "subject",
         answered_at: now, answered_by: "self", wording_shown: wording, history, status: "answered",
