@@ -26,6 +26,9 @@ import RoleGuard from "@/components/RoleGuard";
 import NotFound from "./pages/NotFound";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
+import ChooseMigration from "./pages/ChooseMigration";
+import ChoosePrivacy from "./pages/ChoosePrivacy";
+import MigrationAdmin from "./pages/MigrationAdmin";
 import GlobalFooter from "@/components/shared/GlobalFooter";
 
 const queryClient = new QueryClient();
@@ -57,6 +60,9 @@ const App = () => (
                 <Route path="/practitioner" element={<ProtectedRoute><RoleGuard allowedRoles={["practitioner", "trainee", "trainer"]}><PractitionerDashboard /></RoleGuard></ProtectedRoute>} />
                 <Route path="/trainer" element={<ProtectedRoute><RoleGuard allowedRoles={["trainer"]}><TrainerDashboard /></RoleGuard></ProtectedRoute>} />
                 <Route path="/admin" element={<ProtectedRoute><RoleGuard allowedRoles={["trainer", "admin"]}><AdminDashboard /></RoleGuard></ProtectedRoute>} />
+                <Route path="/admin/migration-choice" element={<ProtectedRoute><RoleGuard allowedRoles={["admin"]}><MigrationAdmin /></RoleGuard></ProtectedRoute>} />
+                <Route path="/choose/privacy" element={<ChoosePrivacy />} />
+                <Route path="/choose/:code" element={<ChooseMigration />} />
                 <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                 <Route path="/terms-of-service" element={<TermsOfService />} />
                 <Route path="*" element={<NotFound />} />

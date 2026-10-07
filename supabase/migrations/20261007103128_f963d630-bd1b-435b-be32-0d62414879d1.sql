@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.migration_settings_guard() FROM PUBLIC, anon, authenticated;
