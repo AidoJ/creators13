@@ -644,6 +644,183 @@ export type Database = {
           },
         ]
       }
+      migration_attempts: {
+        Row: {
+          bucket: string
+          created_at: string
+          id: number
+        }
+        Insert: {
+          bucket: string
+          created_at?: string
+          id?: number
+        }
+        Update: {
+          bucket?: string
+          created_at?: string
+          id?: number
+        }
+        Relationships: []
+      }
+      migration_choices: {
+        Row: {
+          admin_cleared_at: string | null
+          admin_cleared_by: string | null
+          admin_cleared_note: string | null
+          answered_at: string | null
+          answered_by: string | null
+          choice: number | null
+          code: string
+          contact_status: string
+          created_at: string
+          email: string | null
+          emails_sent: number
+          guardian_email: string | null
+          guardian_first_name: string | null
+          guardian_last_name: string | null
+          guardian_phone: string | null
+          health_check: boolean
+          health_info: boolean | null
+          history: Json
+          id: string
+          invite_sent_at: string | null
+          is_test: boolean
+          last_reminder_at: string | null
+          link_opened_at: string | null
+          name: string
+          name_mismatch: boolean
+          needs_admin: boolean
+          needs_admin_reason: string | null
+          notes: string | null
+          option3_consent: boolean | null
+          phone: string | null
+          phone_country: string | null
+          practitioner_id: string | null
+          practitioner_name: string | null
+          protect_account: boolean
+          responder_type: string | null
+          revoked_at: string | null
+          status: string
+          texted_at: string | null
+          texted_by: string | null
+          typed_name: string | null
+          updated_at: string
+          user_id: string | null
+          wording_shown: Json | null
+        }
+        Insert: {
+          admin_cleared_at?: string | null
+          admin_cleared_by?: string | null
+          admin_cleared_note?: string | null
+          answered_at?: string | null
+          answered_by?: string | null
+          choice?: number | null
+          code?: string
+          contact_status?: string
+          created_at?: string
+          email?: string | null
+          emails_sent?: number
+          guardian_email?: string | null
+          guardian_first_name?: string | null
+          guardian_last_name?: string | null
+          guardian_phone?: string | null
+          health_check?: boolean
+          health_info?: boolean | null
+          history?: Json
+          id?: string
+          invite_sent_at?: string | null
+          is_test?: boolean
+          last_reminder_at?: string | null
+          link_opened_at?: string | null
+          name: string
+          name_mismatch?: boolean
+          needs_admin?: boolean
+          needs_admin_reason?: string | null
+          notes?: string | null
+          option3_consent?: boolean | null
+          phone?: string | null
+          phone_country?: string | null
+          practitioner_id?: string | null
+          practitioner_name?: string | null
+          protect_account?: boolean
+          responder_type?: string | null
+          revoked_at?: string | null
+          status?: string
+          texted_at?: string | null
+          texted_by?: string | null
+          typed_name?: string | null
+          updated_at?: string
+          user_id?: string | null
+          wording_shown?: Json | null
+        }
+        Update: {
+          admin_cleared_at?: string | null
+          admin_cleared_by?: string | null
+          admin_cleared_note?: string | null
+          answered_at?: string | null
+          answered_by?: string | null
+          choice?: number | null
+          code?: string
+          contact_status?: string
+          created_at?: string
+          email?: string | null
+          emails_sent?: number
+          guardian_email?: string | null
+          guardian_first_name?: string | null
+          guardian_last_name?: string | null
+          guardian_phone?: string | null
+          health_check?: boolean
+          health_info?: boolean | null
+          history?: Json
+          id?: string
+          invite_sent_at?: string | null
+          is_test?: boolean
+          last_reminder_at?: string | null
+          link_opened_at?: string | null
+          name?: string
+          name_mismatch?: boolean
+          needs_admin?: boolean
+          needs_admin_reason?: string | null
+          notes?: string | null
+          option3_consent?: boolean | null
+          phone?: string | null
+          phone_country?: string | null
+          practitioner_id?: string | null
+          practitioner_name?: string | null
+          protect_account?: boolean
+          responder_type?: string | null
+          revoked_at?: string | null
+          status?: string
+          texted_at?: string | null
+          texted_by?: string | null
+          typed_name?: string | null
+          updated_at?: string
+          user_id?: string | null
+          wording_shown?: Json | null
+        }
+        Relationships: []
+      }
+      migration_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: string
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: string
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: string
+        }
+        Relationships: []
+      }
       modules: {
         Row: {
           course_id: string
