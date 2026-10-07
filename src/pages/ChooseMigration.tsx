@@ -115,7 +115,8 @@ export default function ChooseMigration() {
           ))}
         </ul>
         {data.photos_note && <p className="text-sm text-muted-foreground">{data.photos_note}</p>}
-        <p className="text-sm text-muted-foreground">{data.hosting_line} {readMore}</p>
+        {data.hosting_line && <p className="text-sm text-muted-foreground">{data.hosting_line}</p>}
+        <p className="text-sm text-muted-foreground">{readMore}</p>
         <Button className="w-full" onClick={() => setStep("choose")}>Continue</Button>
       </CardContent></Card>,
     );
