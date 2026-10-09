@@ -56,7 +56,8 @@ serve(async (req) => {
     if (!userId) throw new Error("No user ID available");
 
     const tierValue = tier || "wren";
-    const role = tierValue === "owl" ? "trainee" : "client";
+    // Checkout only ever grants "client". Trainee is granted solely by an admin or trainer.
+    const role = "client";
     const practitionerCode = body.practitioner_code || null;
     const inviteToken = body.invite_token || null;
 

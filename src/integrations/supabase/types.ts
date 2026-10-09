@@ -1468,6 +1468,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_active_practitioner_of: {
+        Args: { _client_id: string }
+        Returns: boolean
+      }
       lookup_practitioner_by_code: {
         Args: { _code: string }
         Returns: {

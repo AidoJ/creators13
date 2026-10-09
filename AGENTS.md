@@ -3,3 +3,5 @@
 - Migration invitation counts are read at send time from profiling photos, client session images and case-study attachments; fail the individual send on count-read errors rather than misrepresent missing data as zero.
 - Migration email HTML formatting lives in a pure shared helper, separate from database access, so presentation can be tested without sending emails or changing stored wording.
 - Migration choice behaviour keys off `choice_key` (keep_all | keep_account | delete_all), never the option number; numbers are display-only via settings `option{n}_key` — so wording can be reordered without flipping stored answers.
+- Practitioners see others' approved case studies only for clients they are actively linked to (is_active_practitioner_of helper) — avoids platform-wide case-study exposure.
+- create-checkout only ever grants the client role; trainee/practitioner come only from admin or trainer actions — checkout runs before payment and accepts unauthenticated user ids.
