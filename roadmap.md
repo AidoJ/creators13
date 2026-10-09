@@ -1,2 +1,3 @@
 - [x] Save A’Hara’s exact invitation and matching option wording in settings.
 - [x] Personalise invitation file counts and verify without sending emails.
+- [x] Match A’Hara’s email layout with indented bullet and numbered lists and bold choice headings; preserve wording and recorded choice identifiers.
