@@ -2,7 +2,7 @@
 // Reads existing data read-only; writes only to migration_choices.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import {
-  admin, baseVars, choiceLink, corsHeaders, firstName, healthFlags, json, loadSettings, normalisePhone, render,
+  admin, baseVars, choiceLink, corsHeaders, healthFlags, json, keyFor, loadSettings, normalisePhone, personVars, render,
   sendEmail, validEmail,
 } from "../_shared/migration.ts";
 
@@ -143,26 +143,28 @@ Deno.serve(async (req) => {
     if (action === "record_answer") {
       const { data: row } = await db.from("migration_choices").select("*").eq("id", body.id).single();
       const choice = Number(body.choice);
-      if (![1, 2, 3].includes(choice)) return json({ error: "Choose an option" }, 400);
-      if (choice === 3 && body.option3_consent !== true) return json({ error: "Option 3 needs the consent tick" }, 400);
+      const key = [1, 2, 3].includes(choice) ? keyFor(s, choice) : null;
+      if (!key) return json({ error: "Choose an option" }, 400);
+      if (key === "keep_all" && body.option3_consent !== true) return json({ error: "Keep everything needs the consent tick" }, 400);
       const responder = body.responder_type === "guardian" ? "guardian" : "subject";
-      const v = { ...baseVars(s), first_name: firstName(row.name), practitioner_name: row.practitioner_name || "" };
+      const v = personVars(s, row.name, row.practitioner_name);
       const now = new Date().toISOString();
       const history = Array.isArray(row.history) ? [...row.history] : [];
-      if (row.choice) history.push({
-        choice: row.choice, option3_consent: row.option3_consent, typed_name: row.typed_name,
+      if (row.choice_key) history.push({
+        choice_key: row.choice_key, choice_number_shown: row.wording_shown?.option_number ?? null, option3_consent: row.option3_consent, typed_name: row.typed_name,
         responder_type: row.responder_type, answered_at: row.answered_at, answered_by: row.answered_by,
         wording_shown: row.wording_shown, replaced_at: now,
       });
       const wording = {
+        option_key: key, option_number: choice,
         option_label: render(s[`option${choice}_label`], v), option_title: render(s[`option${choice}_title`], v),
         option_text: render(s[`option${choice}_text`], v),
-        option3_tick_text: choice === 3 ? render(s.option3_tick_text, v) : null,
+        tick_text: key === "keep_all" ? render(s.keep_all_tick_text, v) : null,
         recorded_by_admin: { by: user.id, method: String(body.method || "phone"), note: String(body.note || "") },
       };
       const notes = body.note ? [row.notes, `${now.slice(0, 10)} (${body.method || "phone"}): ${body.note}`].filter(Boolean).join("\n") : row.notes;
       const { error } = await db.from("migration_choices").update({
-        choice, option3_consent: choice === 3, typed_name: body.typed_name || null, responder_type: responder,
+        choice_key: key, choice: null, option3_consent: key === "keep_all", typed_name: body.typed_name || null, responder_type: responder,
         answered_at: now, answered_by: "admin", wording_shown: wording, history, status: "answered", notes,
         name_mismatch: false,
       }).eq("id", row.id);
@@ -204,8 +206,8 @@ Deno.serve(async (req) => {
         const to = toTest ? s.test_email.trim() : r.email!.trim();
         try {
           const counts = kind === "invite" ? await invitationCounts(db, r.user_id) : {};
-          const v = { ...baseVars(s), ...counts, first_name: firstName(r.name), practitioner_name: r.practitioner_name || "", link: choiceLink(s, r.code) };
-          await sendEmail(s, to, (toTest ? `[TEST for ${r.name}] ` : "") + render(s[subjKey], v), render(s[bodyKey], v));
+          const v = { ...personVars(s, r.name, r.practitioner_name), ...counts, link: choiceLink(s, r.code) };
+          await sendEmail(s, to, (toTest ? `[TEST for ${r.name}] ` : "") + render(s[subjKey], v), render(s[bodyKey], v), { photo: kind === "invite" });
           const now = new Date().toISOString();
           await db.from("migration_choices").update({
             emails_sent: (r.emails_sent || 0) + 1,

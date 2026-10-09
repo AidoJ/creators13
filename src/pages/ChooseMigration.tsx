@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-interface Option { value: number; label: string; title: string; text: string }
+interface Option { value: number; key: "keep_all" | "keep_account" | "delete_all" | null; label: string; title: string; text: string }
 interface ViewData {
   state: string; message?: string; first_name?: string; intro?: string; photos_note?: string; hosting_line?: string;
   confirm_helper?: string; already_chosen?: string; tick?: string; protected_warning?: string; is_test?: boolean;
@@ -28,7 +28,8 @@ export default function ChooseMigration() {
   const [typed, setTyped] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [thanks, setThanks] = useState<{ thankyou: string; option1_note: string } | null>(null);
+  const needsTick = data?.options?.find((o) => o.value === choice)?.key === "keep_all";
+  const [thanks, setThanks] = useState<{ thankyou: string; delete_note: string } | null>(null);
 
   useEffect(() => {
     document.title = "Your case study choice — 13 Creators";
@@ -46,7 +47,7 @@ export default function ChooseMigration() {
   const submit = async () => {
     setSaving(true); setError("");
     const { data: res, error } = await supabase.functions.invoke("migration-choice", {
-      body: { action: "submit", code, choice, option3_consent: choice === 3 ? tick : false, typed_name: typed },
+      body: { action: "submit", code, choice, option3_consent: needsTick ? tick : false, typed_name: typed },
     });
     setSaving(false);
     if (error || res?.error) { setError(res?.error || "Something went wrong. Please try again."); return; }
@@ -87,7 +88,7 @@ export default function ChooseMigration() {
       <Card><CardContent className="space-y-4 p-6">
         <h1 className="font-display text-2xl">Thank you</h1>
         <p className="leading-relaxed">{thanks.thankyou}</p>
-        {thanks.option1_note && <p className="leading-relaxed text-muted-foreground">{thanks.option1_note}</p>}
+        {thanks.delete_note && <p className="leading-relaxed text-muted-foreground">{thanks.delete_note}</p>}
       </CardContent></Card>,
     );
   }
@@ -135,19 +136,19 @@ export default function ChooseMigration() {
                 choice === o.value ? "border-primary bg-primary/10" : "border-border hover:border-primary/50")}>
               <p className="font-semibold">{o.value}. {o.title}</p>
               <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{o.text}</p>
-              {o.value === 1 && data.protected_warning && (
+              {o.key === "delete_all" && data.protected_warning && (
                 <p className="mt-2 rounded-md bg-accent/40 p-2 text-sm">{data.protected_warning}</p>
               )}
             </button>
           ))}
         </div>
-        {choice === 3 && (
+        {needsTick && (
           <div className="flex items-start gap-3 rounded-lg border border-primary/40 p-4">
             <Checkbox id="tick" checked={tick} onCheckedChange={(v) => setTick(v === true)} className="mt-1" />
             <Label htmlFor="tick" className="text-sm font-normal leading-relaxed">{data.tick}</Label>
           </div>
         )}
-        <Button className="w-full" disabled={!choice || (choice === 3 && !tick)} onClick={() => setStep("confirm")}>Continue</Button>
+        <Button className="w-full" disabled={!choice || (needsTick && !tick)} onClick={() => setStep("confirm")}>Continue</Button>
         <button type="button" className="w-full text-sm text-muted-foreground underline" onClick={() => setStep("hold")}>Back</button>
       </CardContent></Card>,
     );

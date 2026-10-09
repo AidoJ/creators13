@@ -38,21 +38,26 @@ export function isClosed(cut: string): boolean {
   return Date.now() > Date.parse(`${cut}T23:59:59.999+10:00`);
 }
 
+const EMPTY = "\u0000";
+
 /**
- * Replace {tokens}. Empty tokens vanish; a sentence (or line) left with only
- * punctuation/whitespace is dropped. Runs twice so settings can contain tokens.
+ * Replace {tokens}. Any sentence (or line) containing an empty token is dropped
+ * cleanly. Runs several passes so settings can contain tokens.
  */
-export function render(text: string, vars: Record<string, string | undefined>): string {
+export function render(text: string, vars: Record<string, string | undefined | null>): string {
   let out = text || "";
   for (let pass = 0; pass < 3; pass++) {
-    out = out.replace(/\{([a-z0-9_]+)\}/g, (_, k) => (vars[k] ?? ""));
+    out = out.replace(/\{([a-z0-9_]+)\}/g, (_, k) => {
+      const val = vars[k];
+      return val && val.trim() ? val : EMPTY;
+    });
   }
   return out
     .split("\n")
     .map((line) =>
       line
         .split(/(?<=[.!?])\s+/)
-        .filter((s) => /[\p{L}\p{N}]/u.test(s) || s.trim() === "")
+        .filter((s) => !s.includes(EMPTY) && (/[\p{L}\p{N}]/u.test(s) || s.trim() === ""))
         .join(" ")
         .replace(/[ \t]{2,}/g, " ")
         .replace(/\s+([.,!?])/g, "$1")
@@ -61,6 +66,29 @@ export function render(text: string, vars: Record<string, string | undefined>): 
     .filter((line, i, arr) => !(line.trim() === "" && (arr[i - 1] ?? "").trim() === ""))
     .join("\n")
     .trim();
+}
+
+export type ChoiceKey = "keep_all" | "keep_account" | "delete_all";
+export const CHOICE_KEYS: ChoiceKey[] = ["keep_all", "keep_account", "delete_all"];
+/** Display number (1–3) for a key, from settings option{n}_key. */
+export function numberFor(s: Settings, key: string | null | undefined): number | null {
+  for (const n of [1, 2, 3]) if (s[`option${n}_key`] === key) return n;
+  return null;
+}
+export function keyFor(s: Settings, n: number): ChoiceKey | null {
+  const k = s[`option${n}_key`];
+  return CHOICE_KEYS.includes(k as ChoiceKey) ? (k as ChoiceKey) : null;
+}
+
+/** Person-level vars: names and the practitioner sentence variant. */
+export function personVars(s: Settings, name: string, practitionerName: string | null | undefined) {
+  const p = (practitionerName || "").trim();
+  return {
+    ...baseVars(s),
+    first_name: firstName(name),
+    practitioner_name: p,
+    practitioner_phrase: p ? `${p}, who has now completed their training!` : "13 Creators.",
+  };
 }
 
 export function baseVars(s: Settings): Record<string, string> {
@@ -102,12 +130,12 @@ export function normalisePhone(raw: string | null | undefined): { e164: string; 
 
 export const validEmail = (e: string | null | undefined) => !!e && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
 
-export async function sendEmail(s: Settings, to: string, subject: string, text: string) {
+export async function sendEmail(s: Settings, to: string, subject: string, text: string, opts: { photo?: boolean } = {}) {
   const key = Deno.env.get("RESEND_API_KEY");
   if (!key) throw new Error("Email is not configured");
   const body: Record<string, unknown> = {
     from: `${(s.email_from_name || "13 Creators").replace(/[<>"]/g, "")} <noreply@connect.13creators.com>`,
-    to: [to], subject, text, html: textToHtml(text),
+    to: [to], subject, text, html: textToHtml(text, opts.photo ? { photoUrl: photoUrl(s) } : {}),
   };
   if (validEmail(s.email_reply_to)) body.reply_to = s.email_reply_to.trim();
   const r = await fetch("https://api.resend.com/emails", {
@@ -116,6 +144,12 @@ export async function sendEmail(s: Settings, to: string, subject: string, text: 
     body: JSON.stringify(body),
   });
   if (!r.ok) throw new Error(`Email failed (${r.status}): ${(await r.text()).slice(0, 200)}`);
+}
+
+/** A'Hara's photo, served as a fixed file from our own site (link_base_url host). */
+export function photoUrl(s: Settings) {
+  const base = (s.link_base_url || "https://creators13.lovable.app").replace(/\/+$/, "");
+  return `${base}/email/ahara.jpg`;
 }
 
 export function choiceLink(s: Settings, code: string) {

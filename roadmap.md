@@ -1,3 +1,4 @@
 - [x] Save A’Hara’s exact invitation and matching option wording in settings.
 - [x] Personalise invitation file counts and verify without sending emails.
-- [x] Match A’Hara’s email layout with indented bullet and numbered lists and bold choice headings; preserve wording and recorded choice identifiers.
+- [x] Match A’Hara’s email layout with indented bullet and numbered lists and bold choice headings; preserve wording and recorded choice identifiers.- [x] Case study choice: stable choice keys in A'Hara's order, tick on keep-everything, neutral no-answer wording, settings-driven retention/cooling-off, optional access sentence, email photo slot, empty-token sentence dropping, live-mode required settings.
+- [ ] Upload A'Hara's real photo (replace placeholder at /email/ahara.jpg).

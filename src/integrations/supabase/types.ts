@@ -670,6 +670,7 @@ export type Database = {
           answered_at: string | null
           answered_by: string | null
           choice: number | null
+          choice_key: string | null
           code: string
           contact_status: string
           created_at: string
@@ -715,6 +716,7 @@ export type Database = {
           answered_at?: string | null
           answered_by?: string | null
           choice?: number | null
+          choice_key?: string | null
           code?: string
           contact_status?: string
           created_at?: string
@@ -760,6 +762,7 @@ export type Database = {
           answered_at?: string | null
           answered_by?: string | null
           choice?: number | null
+          choice_key?: string | null
           code?: string
           contact_status?: string
           created_at?: string
