@@ -17,9 +17,9 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "@/hooks/use-toast";
 import { ArrowLeft, ChevronDown, Copy, Download, Loader2, Mail, MessageSquare, Plus, Upload } from "lucide-react";
-import { choiceLink, firstName, render, settingsVars } from "@/lib/migrationText";
+import { choiceLink, keyFor, labelFor, numberFor, personVars, render, settingsVars } from "@/lib/migrationText";
 
-const REQUIRED = ["cut_off_date", "retention_period", "non_responder_period", "non_responder_text", "backup_days", "privacy_phone", "privacy_email", "privacy_link", "link_base_url", "email_provider_name", "ai_disclosure_text"];
+const REQUIRED = ["cut_off_date", "retention_period", "backup_days", "privacy_phone", "privacy_email", "privacy_link", "link_base_url", "email_provider_name", "ai_disclosure_text"];
 const SHORT = ["test_email", "cut_off_date", "cooling_off_days", "retention_period", "non_responder_period", "backup_days", "privacy_phone", "privacy_email", "privacy_link", "link_base_url", "email_provider_name", "email_from_name", "email_reply_to", "option1_label", "option2_label", "option3_label", "option1_title", "option2_title", "option3_title", "invite_subject", "reminder_subject", "final_reminder_subject", "confirmation_subject"];
 const HIDDEN = ["enabled", "email_mode", "send_confirmation_email"];
 
@@ -124,7 +124,7 @@ export default function MigrationAdmin() {
     setBusy(""); load();
   };
 
-  const vars = (r: Row) => ({ ...settingsVars(settings), first_name: firstName(r.name), practitioner_name: r.practitioner_name || "", link: choiceLink(settings, r.code) });
+  const vars = (r: Row) => ({ ...personVars(settings, r.name, r.practitioner_name), link: choiceLink(settings, r.code) });
   const copy = async (text: string, msg: string) => { await navigator.clipboard.writeText(text); toast({ title: msg }); };
   const textLink = async (r: Row) => {
     const msg = render(settings.sms_template, vars(r));
@@ -141,7 +141,7 @@ export default function MigrationAdmin() {
     switch (filter) {
       case "not_answered": return r.status === "not_answered";
       case "answered": return r.status !== "not_answered";
-      case "c1": case "c2": case "c3": return r.choice === Number(filter[1]);
+      case "c1": case "c2": case "c3": return !!r.choice_key && r.choice_key === keyFor(settings, Number(filter[1]));
       case "needs_admin": return flagged(r);
       case "not_sent": return r.contact_status === "not_sent";
       case "bounced": return r.contact_status === "bounced";
@@ -149,20 +149,20 @@ export default function MigrationAdmin() {
       case "test": return r.is_test;
       default: return true;
     }
-  }), [rows, filter, pracFilter, search, includeTest]);
+  }), [rows, filter, pracFilter, search, includeTest, settings]);
 
   const real = rows.filter((r) => !r.is_test || includeTest);
   const counts = {
     total: real.length, notAnswered: real.filter((r) => r.status === "not_answered").length,
-    o1: real.filter((r) => r.choice === 1).length, o2: real.filter((r) => r.choice === 2).length, o3: real.filter((r) => r.choice === 3).length,
+    o1: real.filter((r) => r.choice_key === keyFor(settings, 1)).length, o2: real.filter((r) => r.choice_key === keyFor(settings, 2)).length, o3: real.filter((r) => r.choice_key === keyFor(settings, 3)).length,
     answered: real.filter((r) => r.status === "answered").length, confirmed: real.filter((r) => r.status === "confirmed").length,
     actioned: real.filter((r) => r.status === "actioned").length, needsAdmin: real.filter(flagged).length,
   };
   const pracOptions = [...new Map(rows.filter((r) => r.practitioner_id).map((r) => [r.practitioner_id, r.practitioner_name || "Unknown"])).entries()];
 
   const exportAll = () => download("migration-choices.csv", csv([
-    ["Name", "Email", "Phone", "Country", "Practitioner", "Contact", "Opened", "Choice", "Option 3 tick", "Status", "Answered", "By", "Responder", "Needs admin", "Reason", "Notes", "Test"],
-    ...real.map((r) => [r.name, r.email, r.phone, r.phone_country, r.practitioner_name, r.contact_status, r.link_opened_at, r.choice, r.option3_consent, r.status, r.answered_at, r.answered_by, r.responder_type, flagged(r), r.needs_admin_reason, r.notes, r.is_test]),
+    ["Name", "Email", "Phone", "Country", "Practitioner", "Contact", "Opened", "Choice key", "Choice number", "Choice label", "Keep-everything tick", "Status", "Answered", "By", "Responder", "Needs admin", "Reason", "Notes", "Test"],
+    ...real.map((r) => [r.name, r.email, r.phone, r.phone_country, r.practitioner_name, r.contact_status, r.link_opened_at, r.choice_key, numberFor(settings, r.choice_key), r.choice_key ? labelFor(settings, r.choice_key) : "", r.option3_consent, r.status, r.answered_at, r.answered_by, r.responder_type, flagged(r), r.needs_admin_reason, r.notes, r.is_test]),
   ]));
   const exportChase = () => download("not-answered-by-practitioner.csv", csv([
     ["Practitioner", "Name", "Phone"],
@@ -235,6 +235,7 @@ export default function MigrationAdmin() {
                   {Object.keys(draft).filter((k) => !HIDDEN.includes(k)).sort((a, b) => Number(REQUIRED.includes(b)) - Number(REQUIRED.includes(a)) || Number(SHORT.includes(b)) - Number(SHORT.includes(a))).map((k) => (
                     <div key={k} className={SHORT.includes(k) ? "space-y-1" : "space-y-1 md:col-span-2"}>
                       <Label className="text-xs">{k}{REQUIRED.includes(k) && <span className="text-destructive"> *</span>}</Label>
+                      {(k === "non_responder_period" || k === "non_responder_text") && <p className="text-xs text-destructive">Changing this to a deletion rule means the invitation wording must change too.</p>}
                       {SHORT.includes(k)
                         ? <Input value={draft[k] ?? ""} type={k === "cut_off_date" ? "date" : "text"} onChange={(e) => setDraft({ ...draft, [k]: e.target.value })} />
                         : <Textarea rows={k.endsWith("_body") || k === "privacy_page_text" ? 10 : 3} value={draft[k] ?? ""} onChange={(e) => setDraft({ ...draft, [k]: e.target.value })} />}
@@ -273,7 +274,7 @@ export default function MigrationAdmin() {
         <div className="flex flex-wrap items-center gap-2">
           <Select value={filter} onValueChange={setFilter}>
             <SelectTrigger className="w-52"><SelectValue /></SelectTrigger>
-            <SelectContent>{FILTERS.map(([v, l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}</SelectContent>
+            <SelectContent>{FILTERS.map(([v, l]) => <SelectItem key={v} value={v}>{/^c[123]$/.test(v) ? labelFor(settings, keyFor(settings, Number(v[1]))) || l : l}</SelectItem>)}</SelectContent>
           </Select>
           <Select value={pracFilter} onValueChange={setPracFilter}>
             <SelectTrigger className="w-52"><SelectValue placeholder="Practitioner" /></SelectTrigger>
@@ -312,7 +313,7 @@ export default function MigrationAdmin() {
                   <td className="p-3">{r.practitioner_name || "—"}</td>
                   <td className="p-3">{r.contact_status.replace(/_/g, " ")}</td>
                   <td className="p-3">{fmt(r.link_opened_at)}</td>
-                  <td className="p-3">{r.choice ? `Option ${r.choice}` : "—"}</td>
+                  <td className="p-3">{r.choice_key ? labelFor(settings, r.choice_key) : "—"}</td>
                   <td className="p-3">{r.status.replace(/_/g, " ")}</td>
                   <td className="p-3">{flagged(r) ? <Badge variant="destructive">yes</Badge> : r.admin_cleared_at ? "cleared" : "—"}</td>
                   <td className="max-w-[200px] truncate p-3 text-muted-foreground">{r.notes || ""}</td>
@@ -428,7 +429,7 @@ function PersonSheet({ row: r, settings, pracs, onClose, update, call, reload, s
             <p className="text-muted-foreground">Health info</p><p>{r.health_info == null ? "—" : r.health_info ? "yes" : "no"}{r.health_check && " — check entry"}</p>
           </div>
 
-          {r.protect_account && <p className="rounded-md bg-accent/40 p-3">Also a practitioner / trainer / paid member. Option 1 means delete case study information only — never the account, a role or a membership.</p>}
+          {r.protect_account && <p className="rounded-md bg-accent/40 p-3">Also a practitioner / trainer / paid member. "Delete everything" means delete case study information only — never the account, a role or a membership.</p>}
           {r.needs_admin && (
             <div className="space-y-2 rounded-md border border-destructive/40 p-3">
               <p><strong>Needs admin:</strong> {r.needs_admin_reason}</p>
@@ -470,7 +471,7 @@ function PersonSheet({ row: r, settings, pracs, onClose, update, call, reload, s
             <div><Label>Status</Label>
               <Select value={r.status} onValueChange={(v) => update(r.id, { status: v }, "Status changed")}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{["not_answered", "answered", "confirmed", "actioned"].map((s) => <SelectItem key={s} value={s} disabled={s === "not_answered" && !!r.choice}>{s.replace(/_/g, " ")}</SelectItem>)}</SelectContent>
+                <SelectContent>{["not_answered", "answered", "confirmed", "actioned"].map((s) => <SelectItem key={s} value={s} disabled={s === "not_answered" && !!r.choice_key}>{s.replace(/_/g, " ")}</SelectItem>)}</SelectContent>
               </Select></div>
           </div>
 
@@ -481,7 +482,7 @@ function PersonSheet({ row: r, settings, pracs, onClose, update, call, reload, s
           <div className="space-y-2 rounded-md border border-border p-3">
             <p className="font-semibold">Record an answer received by phone or paper</p>
             <div className="grid gap-2 sm:grid-cols-3">
-              <Select value={ans.choice} onValueChange={(v) => setAns({ ...ans, choice: v, tick: v === "3" ? ans.tick : false })}>
+              <Select value={ans.choice} onValueChange={(v) => setAns({ ...ans, choice: v, tick: keyFor(settings, Number(v)) === "keep_all" ? ans.tick : false })}>
                 <SelectTrigger><SelectValue placeholder="Option" /></SelectTrigger>
                 <SelectContent>{[1, 2, 3].map((n) => <SelectItem key={n} value={String(n)}>{settings[`option${n}_label`]}</SelectItem>)}</SelectContent>
               </Select>
@@ -494,15 +495,15 @@ function PersonSheet({ row: r, settings, pracs, onClose, update, call, reload, s
                 <SelectContent><SelectItem value="phone">By phone</SelectItem><SelectItem value="paper">On paper</SelectItem></SelectContent>
               </Select>
             </div>
-            {ans.choice === "3" && <div className="flex items-start gap-2"><Checkbox id="at" checked={ans.tick} onCheckedChange={(v) => setAns({ ...ans, tick: v === true })} /><Label htmlFor="at" className="text-xs font-normal">{render(settings.option3_tick_text, settingsVars(settings))}</Label></div>}
+            {keyFor(settings, Number(ans.choice)) === "keep_all" && <div className="flex items-start gap-2"><Checkbox id="at" checked={ans.tick} onCheckedChange={(v) => setAns({ ...ans, tick: v === true })} /><Label htmlFor="at" className="text-xs font-normal">{render(settings.keep_all_tick_text, settingsVars(settings))}</Label></div>}
             <Textarea rows={2} placeholder="Note" value={ans.note} onChange={(e) => setAns({ ...ans, note: e.target.value })} />
-            <Button size="sm" disabled={!ans.choice || (ans.choice === "3" && !ans.tick)} onClick={record}>Record answer</Button>
+            <Button size="sm" disabled={!ans.choice || (keyFor(settings, Number(ans.choice)) === "keep_all" && !ans.tick)} onClick={record}>Record answer</Button>
           </div>
 
           <div className="space-y-2">
             <p className="font-semibold">History</p>
-            {!r.choice && history.length === 0 && <p className="text-muted-foreground">No answer yet.</p>}
-            {r.choice && <HistoryItem h={r} current />}
+            {!r.choice_key && history.length === 0 && <p className="text-muted-foreground">No answer yet.</p>}
+            {r.choice_key && <HistoryItem h={r} current />}
             {history.map((h: any, i: number) => <HistoryItem key={i} h={h} />)}
           </div>
         </div>
@@ -514,12 +515,12 @@ function PersonSheet({ row: r, settings, pracs, onClose, update, call, reload, s
 function HistoryItem({ h, current }: { h: any; current?: boolean }) {
   return (
     <div className={`rounded-md border border-border p-3 ${current ? "" : "opacity-60"}`}>
-      <p className="font-medium">{current ? "Current: " : ""}{h.wording_shown?.option_label || `Option ${h.choice}`}</p>
+      <p className="font-medium">{current ? "Current: " : ""}{h.wording_shown?.option_label || h.choice_key || `Option ${h.choice}`}</p>
       <p className="text-xs text-muted-foreground">{fmt(h.answered_at)} · by {h.answered_by} · {h.responder_type}{h.typed_name && ` · typed "${h.typed_name}"`}{h.replaced_at && ` · replaced ${fmt(h.replaced_at)}`}</p>
       {h.wording_shown && (
         <details className="mt-2 text-xs"><summary className="cursor-pointer">Wording shown</summary>
           <p className="mt-1 whitespace-pre-line">{h.wording_shown.option_text}</p>
-          {h.wording_shown.option3_tick_text && <p className="mt-1 italic">Tick: {h.wording_shown.option3_tick_text}</p>}
+          {(h.wording_shown.tick_text || h.wording_shown.option3_tick_text) && <p className="mt-1 italic">Tick: {h.wording_shown.tick_text || h.wording_shown.option3_tick_text}</p>}
           {h.wording_shown.protected_warning && <p className="mt-1">{h.wording_shown.protected_warning}</p>}
         </details>
       )}
