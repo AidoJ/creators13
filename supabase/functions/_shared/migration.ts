@@ -1,5 +1,7 @@
 // Shared helpers for the case study migration choice feature.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { textToHtml } from "./migration-email.ts";
+export { textToHtml } from "./migration-email.ts";
 
 export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -99,14 +101,6 @@ export function normalisePhone(raw: string | null | undefined): { e164: string; 
 }
 
 export const validEmail = (e: string | null | undefined) => !!e && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
-
-export function textToHtml(text: string): string {
-  const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  return `<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.5;color:#222">` +
-    text.split(/\n{2,}/).map((p) =>
-      `<p>${esc(p).replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1">$1</a>').replace(/\n/g, "<br>")}</p>`
-    ).join("") + `</div>`;
-}
 
 export async function sendEmail(s: Settings, to: string, subject: string, text: string) {
   const key = Deno.env.get("RESEND_API_KEY");
