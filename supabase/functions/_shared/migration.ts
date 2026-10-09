@@ -130,12 +130,12 @@ export function normalisePhone(raw: string | null | undefined): { e164: string; 
 
 export const validEmail = (e: string | null | undefined) => !!e && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
 
-export async function sendEmail(s: Settings, to: string, subject: string, text: string) {
+export async function sendEmail(s: Settings, to: string, subject: string, text: string, opts: { photo?: boolean } = {}) {
   const key = Deno.env.get("RESEND_API_KEY");
   if (!key) throw new Error("Email is not configured");
   const body: Record<string, unknown> = {
     from: `${(s.email_from_name || "13 Creators").replace(/[<>"]/g, "")} <noreply@connect.13creators.com>`,
-    to: [to], subject, text, html: textToHtml(text),
+    to: [to], subject, text, html: textToHtml(text, opts.photo ? { photoUrl: photoUrl(s) } : {}),
   };
   if (validEmail(s.email_reply_to)) body.reply_to = s.email_reply_to.trim();
   const r = await fetch("https://api.resend.com/emails", {
@@ -144,6 +144,12 @@ export async function sendEmail(s: Settings, to: string, subject: string, text: 
     body: JSON.stringify(body),
   });
   if (!r.ok) throw new Error(`Email failed (${r.status}): ${(await r.text()).slice(0, 200)}`);
+}
+
+/** A'Hara's photo, served as a fixed file from our own site (link_base_url host). */
+export function photoUrl(s: Settings) {
+  const base = (s.link_base_url || "https://creators13.lovable.app").replace(/\/+$/, "");
+  return `${base}/email/ahara.jpg`;
 }
 
 export function choiceLink(s: Settings, code: string) {

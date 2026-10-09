@@ -1,5 +1,5 @@
 // Presentation only: preserve the stored letter and choice identifiers.
-export function textToHtml(text: string): string {
+export function textToHtml(text: string, opts: { photoUrl?: string } = {}): string {
   const escape = (value: string) => value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   const inline = (value: string) => escape(value).replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1">$1</a>');
   const headings = ["Keep everything, including my photos.", "Keep my account, delete my photos.", "Delete everything."];
@@ -16,5 +16,8 @@ export function textToHtml(text: string): string {
     const body = inline(paragraph).replace(/\n/g, "<br>");
     return `<p style="margin:0 0 20px">${paragraph.startsWith("Please note:") ? `<strong><em>${body}</em></strong>` : body}</p>`;
   }).join("");
-  return `<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.5;color:#222">${content}</div>`;
+  const photo = opts.photoUrl
+    ? `<p style="margin:0 0 20px"><img src="${escape(opts.photoUrl)}" alt="A'Hara" width="96" height="96" style="display:block;width:96px;height:96px;border-radius:48px;border:0" /></p>`
+    : "";
+  return `<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.5;color:#222">${photo}${content}</div>`;
 }
