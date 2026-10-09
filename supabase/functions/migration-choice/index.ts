@@ -1,6 +1,6 @@
 // Public endpoint for /choose/:code. Records answers only; never deletes or moves data.
 import {
-  admin, baseVars, choiceLink, corsHeaders, firstName, healthFlags, isClosed, json, loadSettings, render,
+  admin, baseVars, choiceLink, corsHeaders, healthFlags, isClosed, json, keyFor, loadSettings, personVars, render,
   sendEmail, validEmail, type Settings,
 } from "../_shared/migration.ts";
 
@@ -20,6 +20,7 @@ const norm = (t: string) => (t || "").toLowerCase().normalize("NFD").replace(/[^
 function optionsFor(s: Settings, v: Record<string, string>) {
   return [1, 2, 3].map((n) => ({
     value: n,
+    key: keyFor(s, n),
     label: render(s[`option${n}_label`], v),
     title: render(s[`option${n}_title`], v),
     text: render(s[`option${n}_text`], v),
@@ -60,10 +61,10 @@ Deno.serve(async (req) => {
     if (row.needs_admin && !row.admin_cleared_at) return json({ state: "needs_admin", message: render(s.needs_admin_text, v) });
     if (isClosed(s.cut_off_date)) return json({ state: "closed", message: render(s.closed_text, v) });
 
-    const pv = { ...v, first_name: firstName(row.name), practitioner_name: row.practitioner_name || "" };
+    const pv = personVars(s, row.name, row.practitioner_name);
     const options = optionsFor(s, pv);
-    const tick = render(s.option3_tick_text, pv);
-    const protectedWarning = row.protect_account ? render(s.protected_option1_warning, pv) : "";
+    const tick = render(s.keep_all_tick_text, pv);
+    const protectedWarning = row.protect_account ? render(s.protected_delete_warning, pv) : "";
 
     if (action === "view") {
       if (!row.link_opened_at) {
@@ -91,9 +92,9 @@ Deno.serve(async (req) => {
         counts.session_images = si.count ?? 0;
         counts.health = healthFlags(pr.data?.medical_history).has;
       }
-      const current = row.choice ? options.find((o) => o.value === row.choice) : null;
+      const current = row.choice_key ? options.find((o) => o.key === row.choice_key) : null;
       return json({
-        state: row.choice ? "answered" : "open",
+        state: row.choice_key ? "answered" : "open",
         first_name: pv.first_name,
         intro: render(s.page_intro, pv),
         photos_note: render(s.page_photos_note, pv),
@@ -111,32 +112,34 @@ Deno.serve(async (req) => {
       const choice = Number(body.choice);
       const typed = String(body.typed_name || "").trim().slice(0, 200);
       const consent = body.option3_consent === true;
-      if (![1, 2, 3].includes(choice)) return json({ error: "Please choose an option." }, 400);
-      if (choice === 3 && !consent) return json({ error: "Please tick the consent box for option 3." }, 400);
+      const key = [1, 2, 3].includes(choice) ? keyFor(s, choice) : null;
+      if (!key) return json({ error: "Please choose an option." }, 400);
+      if (key === "keep_all" && !consent) return json({ error: "Please tick the consent box to keep everything." }, 400);
       if (typed.replace(/\s/g, "").length < 3) return json({ error: "Please type your full name." }, 400);
       if (row.status === "actioned") return json({ error: "This choice has already been acted on. Please contact A'Hara." }, 409);
 
-      const opt = options.find((o) => o.value === choice)!;
+      const opt = options.find((o) => o.key === key)!;
       const now = new Date().toISOString();
       const history = Array.isArray(row.history) ? [...row.history] : [];
-      if (row.choice) {
+      if (row.choice_key) {
         history.push({
-          choice: row.choice, option3_consent: row.option3_consent, typed_name: row.typed_name,
+          choice_key: row.choice_key, choice_number_shown: row.wording_shown?.option_number ?? null, option3_consent: row.option3_consent, typed_name: row.typed_name,
           responder_type: row.responder_type, answered_at: row.answered_at, answered_by: row.answered_by,
           wording_shown: row.wording_shown, replaced_at: now,
         });
       }
       const wording = {
+        option_key: key, option_number: choice,
         option_label: opt.label, option_title: opt.title, option_text: opt.text,
-        option3_tick_text: choice === 3 ? tick : null,
-        protected_warning: choice === 1 && protectedWarning ? protectedWarning : null,
+        tick_text: key === "keep_all" ? tick : null,
+        protected_warning: key === "delete_all" && protectedWarning ? protectedWarning : null,
         confirm_helper: render(s.confirm_helper, pv),
       };
       const parts = (row.name || "").trim().split(/\s+/);
       const t = norm(typed);
       const mismatch = !(t.includes(norm(parts[0])) && t.includes(norm(parts[parts.length - 1])));
       const { error } = await db.from("migration_choices").update({
-        choice, option3_consent: choice === 3 ? true : false, typed_name: typed, responder_type: "subject",
+        choice_key: key, choice: null, option3_consent: key === "keep_all", typed_name: typed, responder_type: "subject",
         answered_at: now, answered_by: "self", wording_shown: wording, history, status: "answered",
         name_mismatch: mismatch,
       }).eq("id", row.id);
@@ -158,7 +161,8 @@ Deno.serve(async (req) => {
       return json({
         state: "thankyou",
         thankyou: render(s.thankyou_text, { ...pv, option_label: opt.label }),
-        option1_note: choice === 1 ? render(s.thankyou_option1_note, pv) : "",
+        delete_note: key === "delete_all" ? render(s.delete_all_note, pv) : "",
+        option_key: key, option_number: choice, option_label: opt.label,
       });
     }
     return json({ error: "Unknown action" }, 400);
