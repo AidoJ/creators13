@@ -25,6 +25,24 @@ function ageOn(dob: string): number {
   return a;
 }
 
+async function invitationCounts(db: ReturnType<typeof admin>, userId: string | null) {
+  if (!userId) return { profiling_photos: "0", session_images: "0", paper_assessments: "0" };
+  const results = await Promise.all([
+    db.from("profiling_photos").select("id", { count: "exact", head: true }).eq("user_id", userId),
+    db.from("client_session_images").select("id", { count: "exact", head: true }).eq("client_id", userId),
+    db.from("case_studies").select("form_data").eq("subject_user_id", userId),
+  ]);
+  for (const result of results) if (result.error) throw result.error;
+  if (results[0].count === null || results[1].count === null) throw new Error("Could not read photo counts");
+  const papers = (results[2].data || []).reduce((total, study) =>
+    total + (Array.isArray(study.form_data?.attachments) ? study.form_data.attachments.length : 0), 0);
+  return {
+    profiling_photos: String(results[0].count),
+    session_images: String(results[1].count),
+    paper_assessments: String(papers),
+  };
+}
+
 async function buildImport(db: ReturnType<typeof admin>) {
   const { data: cs } = await db.from("case_studies").select("subject_user_id, practitioner_id, created_at")
     .not("subject_user_id", "is", null).order("created_at", { ascending: false });
@@ -182,10 +200,11 @@ Deno.serve(async (req) => {
       const subjKey = kind === "invite" ? "invite_subject" : kind === "reminder" ? "reminder_subject" : "final_reminder_subject";
       const bodyKey = kind === "invite" ? "invite_body" : kind === "reminder" ? "reminder_body" : "final_reminder_body";
       for (const r of batch) {
-        const v = { ...baseVars(s), first_name: firstName(r.name), practitioner_name: r.practitioner_name || "", link: choiceLink(s, r.code) };
         const toTest = mode === "test" || r.is_test;
         const to = toTest ? s.test_email.trim() : r.email!.trim();
         try {
+          const counts = kind === "invite" ? await invitationCounts(db, r.user_id) : {};
+          const v = { ...baseVars(s), ...counts, first_name: firstName(r.name), practitioner_name: r.practitioner_name || "", link: choiceLink(s, r.code) };
           await sendEmail(s, to, (toTest ? `[TEST for ${r.name}] ` : "") + render(s[subjKey], v), render(s[bodyKey], v));
           const now = new Date().toISOString();
           await db.from("migration_choices").update({

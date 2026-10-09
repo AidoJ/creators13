@@ -1,0 +1,2 @@
+- [ ] Save A’Hara’s exact invitation and matching option wording in settings.
+- [ ] Personalise invitation file counts and verify without sending emails.
