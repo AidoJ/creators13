@@ -136,7 +136,7 @@ export default function ChooseMigration() {
                 choice === o.value ? "border-primary bg-primary/10" : "border-border hover:border-primary/50")}>
               <p className="font-semibold">{o.value}. {o.title}</p>
               <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{o.text}</p>
-              {o.value === 1 && data.protected_warning && (
+              {o.key === "delete_all" && data.protected_warning && (
                 <p className="mt-2 rounded-md bg-accent/40 p-2 text-sm">{data.protected_warning}</p>
               )}
             </button>
