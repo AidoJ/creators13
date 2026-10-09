@@ -17,7 +17,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "@/hooks/use-toast";
 import { ArrowLeft, ChevronDown, Copy, Download, Loader2, Mail, MessageSquare, Plus, Upload } from "lucide-react";
-import { choiceLink, keyFor, labelFor, numberFor, personVars, render, settingsVars } from "@/lib/migrationText";
+import { choiceLink, firstName, keyFor, labelFor, numberFor, personVars, render, settingsVars } from "@/lib/migrationText";
 
 const REQUIRED = ["cut_off_date", "retention_period", "backup_days", "privacy_phone", "privacy_email", "privacy_link", "link_base_url", "email_provider_name", "ai_disclosure_text"];
 const SHORT = ["test_email", "cut_off_date", "cooling_off_days", "retention_period", "non_responder_period", "backup_days", "privacy_phone", "privacy_email", "privacy_link", "link_base_url", "email_provider_name", "email_from_name", "email_reply_to", "option1_label", "option2_label", "option3_label", "option1_title", "option2_title", "option3_title", "invite_subject", "reminder_subject", "final_reminder_subject", "confirmation_subject"];
